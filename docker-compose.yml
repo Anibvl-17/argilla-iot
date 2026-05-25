@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  broker-mqtt:
+    build: ./mosquitto
+    container_name: broker_mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes: # Mantiene data y log para no perder historial
+      - ./mosquitto/data:/mosquitto/data 
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped

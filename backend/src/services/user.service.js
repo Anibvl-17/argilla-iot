@@ -5,7 +5,7 @@ export async function createUser(data) {
   const hashedPassword = await bcrypt.hash(data.password, 10);
 
   const newUser = await prisma.user.create({
-    data: { email: data.email, password: hashedPassword },
+    data: { email: data.email, password: hashedPassword, name: data.name },
   });
 
   return newUser;
@@ -13,4 +13,9 @@ export async function createUser(data) {
 
 export async function findUserByEmail(email) {
   return await prisma.user.findUnique({ where: { email } });
+}
+
+// Usado en kiln.service.js -> createKiln()
+export async function findUserById(userId) {
+  return await prisma.user.findUnique({ where: { userId } });
 }
