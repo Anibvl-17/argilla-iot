@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { CONTROLLER_STATUS } from "./controller.service.js";
 import { findUserById } from "./user.service.js";
 
 export async function createKiln(userId, kilnData) {
@@ -62,7 +63,7 @@ export async function linkControllerToKiln(userId, kilnId, pin) {
   // Elimina el pin y actualiza status
   await prisma.controller.update({
     where: { controllerId: controller.controllerId },
-    data: { pin: null, status: "linked" },
+    data: { pin: null, status: CONTROLLER_STATUS.LINKED },
   });
 
   return updatedKiln;

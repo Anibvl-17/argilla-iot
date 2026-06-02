@@ -1,7 +1,12 @@
 import { prisma } from "../config/prisma.js";
 
+export const CONTROLLER_STATUS = {
+  WAITING: 0,       // Operativo, en espera de vinculacion
+  LINKED: 1,        // Operativo y vinculado
+  OUT_OF_SERVICE: 2 // Fuera de servicio
+}
+
 export async function register(macAddress) {
-  // Genera pin de 4 digitos
   const pin = Math.floor(1000 + Math.random() * 9000).toString();
 
   // upsert: crea o actualiza si ya existe
@@ -9,12 +14,12 @@ export async function register(macAddress) {
     where: { macAddress },
     update: {
       pin,
-      status: "waiting",
+      status: CONTROLLER_STATUS.WAITING,
     },
     create: {
       macAddress,
       pin,
-      status: "waiting",
+      status: CONTROLLER_STATUS.WAITING,
     },
   });
 }
