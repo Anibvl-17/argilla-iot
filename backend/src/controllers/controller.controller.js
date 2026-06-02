@@ -3,7 +3,7 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/response.handler.js";
-import { getStatusByMAC, register } from "../services/controller.service.js";
+import { getStatusById, register } from "../services/controller.service.js";
 
 // Endpoint para que el controlador solicite el pin con su dirección MAC
 export async function registerController(req, res) {
@@ -30,8 +30,8 @@ export async function registerController(req, res) {
 // Endpoint para verificar si el PIN ya se envío
 export async function checkLinkStatus(req, res) {
   try {
-    const { macAddress } = req.params;
-    const controller = await getStatusByMAC(macAddress);
+    const { id } = req.params;
+    const controller = await getStatusById(id);
 
     const isLinked = controller.kilnId !== null;
     const responseMessage = isLinked ? "vinculado" : "no vinculado"

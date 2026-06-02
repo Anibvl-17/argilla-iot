@@ -19,7 +19,7 @@ export async function register(macAddress) {
   });
 }
 
-export async function getStatusByMAC(macAddress) {
+export async function getStatusById(macAddress) {
   const controller = await prisma.controller.findUnique({
     where: { macAddress },
     include: { kiln: true }, // trae el horno si ya esta vinculado

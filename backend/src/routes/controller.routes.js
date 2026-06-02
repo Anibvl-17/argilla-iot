@@ -5,7 +5,7 @@ import {
 
 const router = Router();
 
-router.get("/:macAddress/status", checkLinkStatus);
+router.get("/:id/status", checkLinkStatus);
 router.post("/register", registerController);
 
 export default router;
