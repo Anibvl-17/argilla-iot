@@ -17,7 +17,6 @@ export async function login(email, password) {
   
   const payload = { id: user.userId, email: user.email };
   const token = jwt.sign(payload, process.env.SESSION_SECRET, { expiresIn: "2h" });
-  console.log(payload);
   
   delete user.password;
   return { user, token };
