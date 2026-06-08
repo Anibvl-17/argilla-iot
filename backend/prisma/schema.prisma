@@ -19,10 +19,9 @@ model User {
 
 // Hardware físico (ESP32)
 model Controller {
-  controllerId Int     @id @default(autoincrement())
-  macAddress   String  @unique // Para identificacion del ESP32
+  controllerId String  @id @default(uuid())
   pin          String? // PIN temporal para vinculación
-  status       String  @default("offline")
+  status       String  @default("waiting")
 
   // Un controlador maneja un horno a la vez
   kiln Kiln?
@@ -38,11 +37,11 @@ model Kiln {
   amps   Int // Ej. 20, 25
 
   // Dueño del horno
-  userId Int
-  user   User @relation(fields: [userId], references: [userId])
+  userId Int?
+  user   User? @relation(fields: [userId], references: [userId])
 
   // Controlador instalado en el horno
-  controllerId Int?        @unique
+  controllerId String?     @unique
   controller   Controller? @relation(fields: [controllerId], references: [controllerId])
 
   // Historial térmico (asociado al horno, si se cambia controlador no pasa nada)

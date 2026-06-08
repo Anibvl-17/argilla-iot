@@ -1,29 +1,27 @@
 import { prisma } from "../config/prisma.js";
 
+/**
+ * Constantes de estado de controlador
+ * @todo Evaluar utilizar archivo separado para constantes
+ */
 export const CONTROLLER_STATUS = {
-  WAITING: 0,       // Operativo, en espera de vinculacion
-  LINKED: 1,        // Operativo y vinculado
-  OUT_OF_SERVICE: 2 // Fuera de servicio
+  WAITING: "waiting", // Operativo, en espera de vinculacion a horno
+  LINKED: "linked", // Operativo y vinculado a horno
+  CLAIMED: "claimed", // Vinculado a horno y usuario
+  OUT_OF_SERVICE: "out_of_service", // Fuera de servicio
+};
+
+/**
+ * Crea un controlador de forma lógica. El UUID generado se asigna al
+ * controlador físico para ser vinculado posteriormente.
+ */
+export async function create() {
+  return await prisma.controller.create({data:{}});
 }
 
-export async function register(macAddress) {
-  const pin = Math.floor(1000 + Math.random() * 9000).toString();
-
-  // upsert: crea o actualiza si ya existe
-  return await prisma.controller.upsert({
-    where: { macAddress },
-    update: {
-      pin,
-      status: CONTROLLER_STATUS.WAITING,
-    },
-    create: {
-      macAddress,
-      pin,
-      status: CONTROLLER_STATUS.WAITING,
-    },
-  });
-}
-
+/**
+ * @todo En desuso, evaluar eliminacion
+ */
 export async function getStatusById(id) {
   const controller = await prisma.controller.findUnique({
     where: { controllerId: id },
@@ -37,9 +35,88 @@ export async function getStatusById(id) {
   return controller;
 }
 
-export async function updateStatus(macAddress, status) {
+/**
+ * Genera un pin de 4 digitos
+ * 
+ * @param {string} uuid UUID del controlador
+ * @returns PIN aleatorio
+ */
+export async function generatePin(uuid) {
+  const pin = Math.floor(1000 + Math.random() * 9000).toString();
+
+  await prisma.controller.update({
+    where: { controllerId: uuid },
+    data: {
+      pin,
+    }
+  })
+
+  return pin;
+}
+
+/**
+ * Restablece el controlador al estado inicial (waiting). Usado al desvincular
+ * un controlador de un horno.
+ * 
+ * @param {string} id UUID del controlador
+ * @returns El Controlador actualizado
+ */
+export async function reset(id) {
   return await prisma.controller.update({
-    where: { macAddress },
-    data: { status },
+    where: { controllerId: id },
+    data: {
+      status: CONTROLLER_STATUS.WAITING,
+    },
+  });
+}
+
+/**
+ * Cambia el campo status del Controlador a "linked" y elimina el PIN
+ * 
+ * @param {string} id UUID del Controlador
+ * @returns El Controlador actualizado
+ */
+export async function setAsLinked(id) {
+  return await prisma.controller.update({
+    where: { controllerId: id },
+    data: {
+      pin: null,
+      status: CONTROLLER_STATUS.LINKED,
+    },
+  });
+}
+
+/**
+ * Cambia el campo status del controlador a "claimed" y elimina el PIN
+ * 
+ * @param {string} id UUID del Controlador
+ * @returns El Controlador actualizado
+ */
+export async function setAsClaimed(id) {
+  return await prisma.controller.update({
+    where: { controllerId: id },
+    data: {
+      pin: null,
+      status: CONTROLLER_STATUS.CLAIMED,
+    },
+  });
+}
+
+/**
+ * Cambia el estado del controlador a fuera de servicio.
+ * 
+ * @param {string} id UUID del controlador
+ * @returns El Controlador actualizado
+ * 
+ * @todo Fuera de servicio indicaria que el controlador no se puede utilizar mas
+ * por lo tanto es necesario realizar esta verificacion en otras funciones
+ */
+export async function setAsOutOfService(id) {
+  return await prisma.controller.update({
+    where: { controllerId: id },
+    data: {
+      pin: null,
+      status: CONTROLLER_STATUS.OUT_OF_SERVICE,
+    },
   });
 }

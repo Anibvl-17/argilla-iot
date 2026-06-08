@@ -1,11 +1,12 @@
 import { Router } from "express";
 import {
-  registerController, checkLinkStatus
-} from "../controllers/controller.controller.js"
+  createController,
+  generateControllerPin,
+} from "../controllers/controller.controller.js";
 
 const router = Router();
 
-router.get("/:id/status", checkLinkStatus);
-router.post("/register", registerController);
+router.patch("/:uuid/pin", generateControllerPin);
+router.post("/create", createController);
 
 export default router;

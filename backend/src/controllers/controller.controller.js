@@ -3,18 +3,18 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/response.handler.js";
-import { getStatusById, register } from "../services/controller.service.js";
+import { create, generatePin } from "../services/controller.service.js";
 
-// Endpoint para que el controlador solicite el pin con su dirección MAC
-export async function registerController(req, res) {
+/**
+ * Endpoint para crear un controlador lógico
+ *
+ * @returns HTTP 200 si se crea con exito, HTTP 500 en caso de error de servidor
+ *
+ * @todo Evaluar rol que puede utilizar esta función
+ */
+export async function createController(req, res) {
   try {
-    const { macAddress } = req.body;
-
-    if (!macAddress) {
-      return handleErrorClient(res, 400, "La dirección MAC es obligatoria");
-    }
-
-    const controller = await register(macAddress);
+    const controller = await create();
 
     return handleSuccess(
       res,
@@ -23,29 +23,34 @@ export async function registerController(req, res) {
       controller,
     );
   } catch (error) {
-    return handleErrorServer(res, 500, "Error al registrar controlador", error.message);
+    return handleErrorServer(
+      res,
+      500,
+      "Error al registrar controlador",
+      error.message,
+    );
   }
 }
 
-// Endpoint para verificar si el PIN ya se envío
-export async function checkLinkStatus(req, res) {
+/**
+ * Endpoint para vincular controlador con horno, u usuario con horno a traves
+ * de la relación controlador-horno. Se espera que el controlador utilice este
+ * endpoint
+ * 
+ * @returns PIN aleatorio
+ */
+export async function generateControllerPin(req, res) {
   try {
-    const { id } = req.params;
-    const controller = await getStatusById(id);
+    const { uuid } = req.params;
 
-    const isLinked = controller.kilnId !== null;
-    const responseMessage = isLinked ? "vinculado" : "no vinculado"
+    if (!uuid) {
+      return handleErrorClient(res, 400, "El ID es requerido");
+    }
 
-    return handleSuccess(res, 200, `Controlador ${responseMessage}`, {
-      isLinked,
-      kiln: controller.kiln || null, // null en caso de que no este vinculado
-    });
+    const pin = await generatePin(uuid);
+
+    return handleSuccess(res, 200, "PIN generado exitosamente", { pin });
   } catch (error) {
-    return handleErrorClient(
-      res,
-      404,
-      "MENSAJE POR REVISAR (controller.controller.js)",
-      error.message,
-    );
+    return handleErrorServer(res, 500, "Error al generar pin", error.message);
   }
 }
