@@ -1,15 +1,5 @@
 import { prisma } from "../config/prisma.js";
-
-/**
- * Constantes de estado de controlador
- * @todo Evaluar utilizar archivo separado para constantes
- */
-export const CONTROLLER_STATUS = {
-  WAITING: "waiting", // Operativo, en espera de vinculacion a horno
-  LINKED: "linked", // Operativo y vinculado a horno
-  CLAIMED: "claimed", // Vinculado a horno y usuario
-  OUT_OF_SERVICE: "out_of_service", // Fuera de servicio
-};
+import { CONTROLLER_STATUS } from "../constants/status.constants.js";
 
 /**
  * Crea un controlador de forma lógica. El UUID generado se asigna al
