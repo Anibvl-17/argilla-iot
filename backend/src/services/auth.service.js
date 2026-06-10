@@ -14,10 +14,10 @@ export async function login(email, password) {
   if (!isMatch) {
     throw new Error("Credenciales incorrectas");
   }
-  
-  const payload = { id: user.userId, email: user.email };
-  const token = jwt.sign(payload, process.env.SESSION_SECRET, { expiresIn: "2h" });
-  
+
+  const payload = { id: user.userId, email: user.email, role: user.role };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+
   delete user.password;
   return { user, token };
 }

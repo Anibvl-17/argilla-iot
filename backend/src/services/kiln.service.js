@@ -1,6 +1,6 @@
 import { prisma } from "../config/prisma.js";
+import { CONTROLLER_STATUS } from "../constants/status.constants.js";
 import {
-  CONTROLLER_STATUS,
   reset,
   setAsClaimed,
   setAsLinked,
