@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId   Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String
+
+  // Un usuario puede tener muchos hornos
+  kilns Kiln[]
+}
+
+// Hardware físico (ESP32)
+model Controller {
+  controllerId String  @id @default(uuid())
+  pin          String? // PIN temporal para vinculación
+  status       String  @default("waiting")
+
+  // Un controlador maneja un horno a la vez
+  kiln Kiln?
+}
+
+// Horno
+model Kiln {
+  kilnId Int    @id @default(autoincrement())
+  name   String @default("Mi Horno Argillá")
+  liters Int // Ej. 30, 40
+  phases Int    @default(1) // 1 = monofasico, 3 = trifasico
+  volts  Int    @default(220)
+  amps   Int // Ej. 20, 25
+
+  // Dueño del horno
+  userId Int?
+  user   User? @relation(fields: [userId], references: [userId])
+
+  // Controlador instalado en el horno
+  controllerId String?     @unique
+  controller   Controller? @relation(fields: [controllerId], references: [controllerId])
+
+  // Historial térmico (asociado al horno, si se cambia controlador no pasa nada)
+  telemetry Telemetry[]
+}
+
+// Datos de telemetría
+model Telemetry {
+  telemetryId Int      @id @default(autoincrement())
+  temperature Float
+  switchState Boolean
+  timestamp   DateTime @default(now())
+
+  kilnId Int
+  kiln   Kiln @relation(fields: [kilnId], references: [kilnId])
+}
