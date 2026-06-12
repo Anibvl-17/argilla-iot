@@ -12,6 +12,11 @@ enum Role {
   ADMIN // Administrador del sistema
 }
 
+enum SwitchTypes {
+  SSR
+  CONTACTOR
+}
+
 model User {
   userId   Int    @id @default(autoincrement())
   email    String @unique
@@ -27,7 +32,9 @@ model User {
 model Controller {
   controllerId String  @id @default(uuid())
   pin          String? // PIN temporal para vinculación
-  status       String  @default("waiting")
+  status       String  @default("WAITING")
+  switchType   SwitchTypes @default(CONTACTOR)
+  switchAmps   Int @default(20)
 
   // Un controlador maneja un horno a la vez
   kiln Kiln?
