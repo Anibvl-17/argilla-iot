@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
   addKiln,
+  editKiln,
   getUserKilns,
   linkController,
   linkUser,
+  removeKiln,
   unlinkController,
   unlinkUser
 } from "../controllers/kiln.controller.js";
@@ -17,6 +19,9 @@ router.use(authenticateJWT);
 
 router.get("/all", getUserKilns);
 router.post("/", verifyRoles([ROLES.ADMIN]), addKiln);
+router.patch("/:kilnId", verifyRoles([ROLES.ADMIN]), editKiln);
+router.delete("/:kilnId", verifyRoles([ROLES.ADMIN]), removeKiln)
+
 router.post("/:kilnId/link", linkController);
 router.post("/:kilnId/unlink", unlinkController);
 router.post("/:kilnId/claim", linkUser);

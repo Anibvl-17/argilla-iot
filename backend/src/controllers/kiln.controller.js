@@ -5,9 +5,11 @@ import {
 } from "../handlers/response.handler.js";
 import {
   createKiln,
+  edit,
   getKilnsByUserId,
   linkControllerToKiln,
   linkUserToKiln,
+  remove,
   unlinkControllerFromKiln,
   unlinkUserFromKiln,
 } from "../services/kiln.service.js";
@@ -138,7 +140,12 @@ export async function linkUser(req, res) {
       return handleSuccess(res, 200, "Usuario ya posee horno");
     }
 
-    return handleSuccess(res, 200, "Usuario vinculado exitosamente", linkedKiln);
+    return handleSuccess(
+      res,
+      200,
+      "Usuario vinculado exitosamente",
+      linkedKiln,
+    );
   } catch (error) {
     return handleErrorServer(
       res,
@@ -156,12 +163,60 @@ export async function unlinkUser(req, res) {
 
     const unlinkedKiln = await unlinkUserFromKiln(userId, parseInt(kilnId));
 
-    return handleSuccess(res, 200, "Usuario desvinculado exitosamente", unlinkedKiln);
+    return handleSuccess(
+      res,
+      200,
+      "Usuario desvinculado exitosamente",
+      unlinkedKiln,
+    );
   } catch (error) {
     return handleErrorServer(
       res,
       500,
       "Error al desvincular usuario",
+      error.message,
+    );
+  }
+}
+
+export async function editKiln(req, res) {
+  try {
+    const { kilnId } = req.params;
+    const { body } = req;
+
+    const updatedKiln = await edit(parseInt(kilnId), body);
+
+    return handleSuccess(
+      res,
+      200,
+      "Horno actualizado exitosamente",
+      updatedKiln,
+    );
+  } catch (error) {
+    if (error.code === "P2025") {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+
+    return handleErrorServer(res, 500, "Error al editar horno", error.message);
+  }
+}
+
+export async function removeKiln(req, res) {
+  try {
+    const { kilnId } = req.params;
+
+    const isRemoved = await remove(parseInt(kilnId));
+
+    if (!isRemoved) {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+
+    return handleSuccess(res, 200, "Horno eliminado exitosamente");
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al eliminar horno",
       error.message,
     );
   }

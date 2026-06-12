@@ -1,10 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { CONTROLLER_STATUS } from "../constants/status.constants.js";
-import {
-  reset,
-  setAsClaimed,
-  setAsLinked,
-} from "./controller.service.js";
+import { reset, setAsClaimed, setAsLinked } from "./controller.service.js";
 import { findUserById } from "./user.service.js";
 
 export async function createKiln(kilnData) {
@@ -115,10 +111,10 @@ export async function unlinkControllerFromKiln(kilnId) {
  * Vincula un Usuario a un Horno, debe existir la relación Horno - Controlador.
  * Utiliza los últimos 6 caracteres del UUID del controlador para identificarlo.
  * Debe existir un PIN.
- * 
- * @param {number} userId 
- * @param {string} partialControllerId 
- * @param {number} pin 
+ *
+ * @param {number} userId
+ * @param {string} partialControllerId
+ * @param {number} pin
  * @returns El Horno actualizado
  */
 export async function linkUserToKiln(userId, partialControllerId, pin) {
@@ -135,7 +131,6 @@ export async function linkUserToKiln(userId, partialControllerId, pin) {
     throw new Error("Controlador no enlazado a horno");
   }
 
-  
   if (controller.kiln.userId !== null && controller.kiln.userId !== userId) {
     throw new Error("El horno ya esta registrado");
   }
@@ -161,9 +156,9 @@ export async function linkUserToKiln(userId, partialControllerId, pin) {
 
 /**
  * Desvincula un Horno de un Usuario.
- * 
- * @param {number} userId 
- * @param {number} kilnId 
+ *
+ * @param {number} userId
+ * @param {number} kilnId
  * @returns El Horno actualizado
  * @todo Al desvincular el horno, el usuario no necesita el objeto de vuelta.
  */
@@ -189,4 +184,49 @@ export async function unlinkUserFromKiln(userId, kilnId) {
   }
 
   return updatedKiln;
+}
+
+/**
+ * Actualiza los datos propios de un Horno, es decir: nombre, litros, fases,
+ * voltaje, amperaje
+ *
+ * @param {number} kilnId El ID del Horno
+ * @param {object} data Los datos que se actualizaran (name, liters, phases,
+ *                      volts, amps)
+ * @returns El Horno con los datos actualizados
+ */
+export async function edit(kilnId, data) {
+  return await prisma.kiln.update({
+    where: {
+      kilnId,
+    },
+    data, // liters, phases, volts, amps
+  });
+}
+
+/**
+ * Elimina un Horno de la base de datos. Al eliminarse, se desvincula del
+ * usuario y/o controlador si estuviera enlazado, y elimina la telemetría si
+ * existiera.
+ *
+ * @param {number} kilnId El ID del Horno
+ * @returns true si se elimina exitosamente, false si no se encuentra el Horno.
+ */
+export async function remove(kilnId) {
+  const kilnToRemove = await prisma.kiln.findUnique({
+    where: { kilnId },
+    include: { controller: true },
+  });
+
+  if (!kilnToRemove) {
+    return false;
+  }
+
+  if (kilnToRemove.controller) {
+    await reset(kilnToRemove.controllerId);
+  }
+
+  await prisma.kiln.delete({ where: { kilnId } });
+
+  return true;
 }

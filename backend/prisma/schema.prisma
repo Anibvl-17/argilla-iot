@@ -44,7 +44,7 @@ model Kiln {
 
   // Dueño del horno
   userId Int?
-  user   User? @relation(fields: [userId], references: [userId])
+  user   User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
 
   // Controlador instalado en el horno
   controllerId String?     @unique
@@ -62,5 +62,5 @@ model Telemetry {
   timestamp   DateTime @default(now())
 
   kilnId Int
-  kiln   Kiln @relation(fields: [kilnId], references: [kilnId])
+  kiln   Kiln @relation(fields: [kilnId], references: [kilnId], onDelete: Cascade)
 }
