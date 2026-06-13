@@ -106,6 +106,10 @@ export async function generateControllerPin(req, res) {
 
     return handleSuccess(res, 200, "PIN generado exitosamente", { pin });
   } catch (error) {
+    if (error.code === "P2025") {
+      return handleErrorClient(res, 404, "Controlador no encontrado");
+    }
+
     return handleErrorServer(res, 500, "Error al generar pin", error.message);
   }
 }
