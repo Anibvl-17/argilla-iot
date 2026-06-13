@@ -31,7 +31,7 @@ model User {
 // Hardware físico (ESP32)
 model Controller {
   controllerId String  @id @default(uuid())
-  pin          String? // PIN temporal para vinculación
+  pin          Int? // PIN temporal para vinculación
   status       String  @default("WAITING")
   switchType   SwitchTypes @default(CONTACTOR)
   switchAmps   Int @default(20)
