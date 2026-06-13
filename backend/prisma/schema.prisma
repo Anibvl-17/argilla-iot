@@ -12,6 +12,11 @@ enum Role {
   ADMIN // Administrador del sistema
 }
 
+enum SwitchTypes {
+  SSR
+  CONTACTOR
+}
+
 model User {
   userId   Int    @id @default(autoincrement())
   email    String @unique
@@ -26,8 +31,10 @@ model User {
 // Hardware físico (ESP32)
 model Controller {
   controllerId String  @id @default(uuid())
-  pin          String? // PIN temporal para vinculación
-  status       String  @default("waiting")
+  pin          Int? // PIN temporal para vinculación
+  status       String  @default("WAITING")
+  switchType   SwitchTypes @default(CONTACTOR)
+  switchAmps   Int @default(20)
 
   // Un controlador maneja un horno a la vez
   kiln Kiln?
@@ -44,7 +51,7 @@ model Kiln {
 
   // Dueño del horno
   userId Int?
-  user   User? @relation(fields: [userId], references: [userId])
+  user   User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
 
   // Controlador instalado en el horno
   controllerId String?     @unique
@@ -62,5 +69,5 @@ model Telemetry {
   timestamp   DateTime @default(now())
 
   kilnId Int
-  kiln   Kiln @relation(fields: [kilnId], references: [kilnId])
+  kiln   Kiln @relation(fields: [kilnId], references: [kilnId], onDelete: Cascade)
 }
