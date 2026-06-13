@@ -67,7 +67,7 @@ export async function getStatusById(id) {
  * @returns PIN aleatorio
  */
 export async function generatePin(uuid) {
-  const pin = Math.floor(1000 + Math.random() * 9000).toString();
+  const pin = crypto.randomInt(100000, 1000000);
 
   await prisma.controller.update({
     where: { controllerId: uuid },
