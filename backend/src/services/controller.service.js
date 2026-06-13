@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import { CONTROLLER_STATUS } from "../constants/status.constants.js";
 import { unlinkControllerFromKiln } from "./kiln.service.js";
+import crypto from "crypto";
 
 /**
  * Crea un controlador de forma lógica. El UUID generado se asigna al
