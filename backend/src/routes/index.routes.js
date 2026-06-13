@@ -2,6 +2,7 @@ import { Router } from "express";
 import authRoutes from "./auth.routes.js";
 import kilnRoutes from "./kiln.routes.js";
 import controllerRoutes from "./controller.routes.js";
+import userRoutes from "./user.routes.js";
 
 export function routerApi(app) {
   const router = Router();
@@ -10,4 +11,5 @@ export function routerApi(app) {
   router.use("/auth", authRoutes);
   router.use("/kiln", kilnRoutes);
   router.use("/controller", controllerRoutes);
+  router.use("/user", userRoutes);
 }
