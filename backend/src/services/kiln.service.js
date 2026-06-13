@@ -31,6 +31,7 @@ export async function getKilnsByUserId(userId) {
  * @param {string} partialControllerId Ultimos 6 caracteres del UUID del Controlador
  * @param {number} pin Pin de 4 digitos
  * @returns El Horno con el controlador asociado, o Error
+ * @todo Verificar capacidad de amperaje del switch con amperaje del horno
  */
 export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
   const kiln = await prisma.kiln.findUnique({
