@@ -23,4 +23,19 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+instance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Sesión expirada. Redirigiendo a inicio de sesión...");
+      cookies.remove("jwt-auth");
+      window.location.href = "/";
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 export default instance;
