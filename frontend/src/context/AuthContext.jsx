@@ -17,16 +17,14 @@ export const AuthProvider = ({ children }) => {
 
         if (decoded.exp * 1000 > Date.now()) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setUser(
-            JSON.parse({
-              id: decoded.id,
-              name: decoded.name,
-              email: decoded.email,
-              role: decoded.role,
-            }),
-          );
+          setUser({
+            id: decoded.id,
+            name: decoded.name,
+            email: decoded.email,
+            role: decoded.role,
+          });
         } else {
-          cookies.remove("jwt-auth");
+          throw Error("Token expirado");
         }
       } catch (error) {
         console.error("Error al decodificar datos", error);
