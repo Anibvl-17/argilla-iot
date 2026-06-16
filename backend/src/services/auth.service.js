@@ -15,7 +15,12 @@ export async function login(email, password) {
     throw new Error("Credenciales incorrectas");
   }
 
-  const payload = { id: user.userId, email: user.email, role: user.role };
+  const payload = {
+    id: user.userId,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
 
   delete user.password;
