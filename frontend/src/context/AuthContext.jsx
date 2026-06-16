@@ -10,23 +10,27 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = cookies.get("jwt-auth");
-    const storedUser = sessionStorage.getItem("user");
 
-    if (token && storedUser) {
+    if (token) {
       try {
         const decoded = jwtDecode(token);
 
         if (decoded.exp * 1000 > Date.now()) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setUser(JSON.parse(storedUser));
+          setUser(
+            JSON.parse({
+              id: decoded.id,
+              name: decoded.name,
+              email: decoded.email,
+              role: decoded.role,
+            }),
+          );
         } else {
           cookies.remove("jwt-auth");
-          sessionStorage.removeItem("user");
         }
       } catch (error) {
         console.error("Error al decodificar datos", error);
         cookies.remove("jwt-auth");
-        sessionStorage.removeItem("user");
       }
     }
 
@@ -40,6 +44,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
 
