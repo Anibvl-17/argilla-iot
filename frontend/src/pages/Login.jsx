@@ -1,20 +1,23 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
-import { login, logout } from "@services/auth.service";
+import { login } from "@services/auth.service";
 import useLogin from "@hooks/useLogin";
 import argillaIcon from "@assets/argilla-icon-light.png";
 
 const Login = () => {
-  const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { setUser } = useAuth();
-
+  const { loading: authLoading, user, setUser } = useAuth();
   const { error, errorData, handleInputChange } = useLogin();
+
+  // Evita cargar formulario en caso que haya un usuario con sesión iniciada
+  if (authLoading) return null;
+
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,17 +26,15 @@ const Login = () => {
     handleInputChange();
 
     try {
-      await logout();
       const result = await login(email, password);
 
       if (result.success) {
         setUser(result.user);
-        navigate("/home");
       } else {
         errorData(result || "Credenciales incorrectas");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Error al iniciar sesión:", error);
       errorData("Error inesperado al iniciar sesión.");
     }
 
@@ -42,8 +43,8 @@ const Login = () => {
 
   return (
     <div className="h-full flex flex-col justify-evenly bg-linear-to-b from-red-900/60 to-30% to-black p-8">
-      <div className="flex flex-row items-center justify-center gap-6">
-        <img src={argillaIcon} className="size-16" />
+      <div className="flex flex-col items-center justify-center gap-6">
+        <img src={argillaIcon} className="size-16" alt="Logo Argilla Hornos" />
         <p className="font-[Pinyon_Script] font text-3xl">
           <span className="text-red-500">a</span>rgilla
         </p>
