@@ -7,7 +7,6 @@ export async function login(email, password) {
     const { token, user } = response.data.data;
 
     cookies.set("jwt-auth", token, { path: "/" });
-    sessionStorage.setItem("user", JSON.stringify(user));
 
     return { success: true, user };
   } catch (error) {
@@ -41,8 +40,7 @@ export async function register(data) {
 export async function logout() {
   try {
     await axios.post("/auth/logout");
-
-    sessionStorage.removeItem("user");
+    
     cookies.remove("jwt-auth");
   } catch (error) {
     console.error("Error al cerrar sesión", error);
