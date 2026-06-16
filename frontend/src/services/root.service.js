@@ -29,9 +29,13 @@ instance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn("Sesión expirada. Redirigiendo a inicio de sesión...");
-      cookies.remove("jwt-auth");
-      window.location.href = "/";
+      const isLoginRequest = error.config.url.includes("/login");
+
+      if (!isLoginRequest) {
+        console.warn("Sesión expirada. Redirigiendo a inicio de sesión...");
+        cookies.remove("jwt-auth");
+        window.location.href = "/";
+      }
     }
 
     return Promise.reject(error);
