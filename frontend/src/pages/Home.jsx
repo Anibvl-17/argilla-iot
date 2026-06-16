@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
-import { logout } from "../services/auth.service";
+import { logout } from "@services/auth.service";
+import { useAuth } from "@context/AuthContext";
 
 const Home = () => {
+  const { setUser } = useAuth();
+
   return (
-    <div>
-      <h1>This is home!</h1>
+    <div className="p-12">
+      <h1>Home :)</h1>
       <Link
         className="underline"
         to={{
@@ -12,9 +15,10 @@ const Home = () => {
         }}
         onClick={async () => {
           await logout();
+          setUser(null);
         }}
       >
-        Logout
+        Cerrar sesión
       </Link>
     </div>
   );
