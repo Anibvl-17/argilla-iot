@@ -31,7 +31,6 @@ export async function getKilnsByUserId(userId) {
  * @param {string} partialControllerId Ultimos 6 caracteres del UUID del Controlador
  * @param {number} pin Pin de 4 digitos
  * @returns El Horno con el controlador asociado, o Error
- * @todo Verificar capacidad de amperaje del switch con amperaje del horno
  */
 export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
   const kiln = await prisma.kiln.findUnique({
@@ -55,6 +54,12 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
 
   if (controller.status !== CONTROLLER_STATUS.WAITING) {
     throw new Error("El controlador no esta disponible");
+  }
+
+  if (controller.switchAmps < kiln.amps) {
+    throw new Error(
+      "La capacidad de amperaje del switch es inferior al amperaje del horno",
+    );
   }
 
   const updatedKiln = await prisma.kiln.update({
@@ -161,7 +166,6 @@ export async function linkUserToKiln(userId, partialControllerId, pin) {
  * @param {number} userId
  * @param {number} kilnId
  * @returns El Horno actualizado
- * @todo Al desvincular el horno, el usuario no necesita el objeto de vuelta.
  */
 export async function unlinkUserFromKiln(userId, kilnId) {
   const kiln = await prisma.kiln.findUnique({
@@ -169,7 +173,7 @@ export async function unlinkUserFromKiln(userId, kilnId) {
     include: { controller: true },
   });
 
-  if (!kiln || kiln.userId !== userId) {
+  if (kiln.userId !== userId) {
     throw new Error("Horno no encontrado o no pertenece al usuario");
   }
 
@@ -183,8 +187,6 @@ export async function unlinkUserFromKiln(userId, kilnId) {
   if (kiln.controllerId) {
     await setAsLinked(kiln.controllerId);
   }
-
-  return updatedKiln;
 }
 
 /**

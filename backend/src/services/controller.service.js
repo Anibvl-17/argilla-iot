@@ -46,22 +46,6 @@ export async function remove(controllerId) {
 }
 
 /**
- * @todo En desuso, evaluar eliminacion
- */
-export async function getStatusById(id) {
-  const controller = await prisma.controller.findUnique({
-    where: { controllerId: id },
-    include: { kiln: true }, // trae el horno si ya esta vinculado
-  });
-
-  if (!controller) {
-    throw new Error("Controlador no encontrado");
-  }
-
-  return controller;
-}
-
-/**
  * Genera un pin de 4 digitos
  *
  * @param {string} uuid UUID del controlador

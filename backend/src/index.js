@@ -8,7 +8,6 @@ const app = express();
 app.use(express.json());
 app.use(morgan("dev"));
 
-// TODO: configurar CORS para frontend
 app.use(cors({ credentials: true, origin: FRONTEND_URL }));
 
 app.get("/", (req, res) => {

@@ -13,8 +13,6 @@ import {
  * actualizar nombre, email y contraseña.
  *
  * @returns HTTP 200: actualizacion exitosa; HTTP 500: error de servidor
- * @todo Verificar cambio de email
- * @todo agregar validacion de campos, no debe permitir role
  */
 export async function editProfile(req, res) {
   try {

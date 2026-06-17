@@ -57,8 +57,6 @@ export async function getUserKilns(req, res) {
  *
  * @returns HTTP 400: Pin no proporcionado; HTTP 200: Vinculado con exito;
  * HTTP 500: Error de servidor
- *
- * @todo Evaluar rol que puede acceder a esta función
  */
 export async function linkController(req, res) {
   try {
@@ -161,13 +159,12 @@ export async function unlinkUser(req, res) {
     const userId = req.user.id;
     const { kilnId } = req.params;
 
-    const unlinkedKiln = await unlinkUserFromKiln(userId, parseInt(kilnId));
+    await unlinkUserFromKiln(userId, parseInt(kilnId));
 
     return handleSuccess(
       res,
       200,
       "Usuario desvinculado exitosamente",
-      unlinkedKiln,
     );
   } catch (error) {
     return handleErrorServer(
