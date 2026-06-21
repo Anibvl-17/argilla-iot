@@ -12,6 +12,7 @@ import {
   remove,
   unlinkControllerFromKiln,
   unlinkUserFromKiln,
+  getAllKilns as getAllKilnsRequest
 } from "../services/kiln.service.js";
 
 export async function addKiln(req, res) {
@@ -214,6 +215,30 @@ export async function removeKiln(req, res) {
       res,
       500,
       "Error al eliminar horno",
+      error.message,
+    );
+  }
+}
+
+export async function getAllKilns(req, res) {
+  try {
+    const kilns = await getAllKilnsRequest();
+
+    if (kilns && kilns.length === 0) {
+      return handleSuccess(
+        res,
+        204,
+        "No hay hornos registrados",
+        kilns,
+      );
+    }
+
+    return handleSuccess(res, 200, "Hornos obtenidos exitosamente", kilns);
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener todos los hornos",
       error.message,
     );
   }

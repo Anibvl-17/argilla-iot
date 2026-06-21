@@ -46,6 +46,7 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
     where: {
       controllerId: { endsWith: partialControllerId },
     },
+    include: { kiln: true },
   });
 
   if (!controller || controller.pin !== pin) {
@@ -232,4 +233,12 @@ export async function remove(kilnId) {
   await prisma.kiln.delete({ where: { kilnId } });
 
   return true;
+}
+
+export async function getAllKilns() {
+  console.log("peticion");
+
+  return await prisma.kiln.findMany({
+    include: { user: true, controller: true },
+  });
 }

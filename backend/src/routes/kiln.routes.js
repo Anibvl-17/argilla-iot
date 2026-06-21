@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addKiln,
   editKiln,
+  getAllKilns,
   getUserKilns,
   linkController,
   linkUser,
@@ -23,24 +24,18 @@ const router = Router();
 
 router.use(authenticateJWT);
 
-router.get("/all", getUserKilns);
-router.post(
-  "/",
-  verifyRoles([ROLES.ADMIN]),
-  validateSchema(createKilnValidation),
-  addKiln,
-);
-router.patch(
-  "/:kilnId",
-  verifyRoles([ROLES.ADMIN]),
-  validateSchema(editKilnValidation),
-  editKiln,
-);
-router.delete("/:kilnId", verifyRoles([ROLES.ADMIN]), removeKiln);
+router.get("/my-kilns", getUserKilns);
 
 router.post("/:kilnId/link", validateSchema(linkValidation), linkController);
 router.post("/:kilnId/unlink", unlinkController);
 router.post("/:kilnId/claim", validateSchema(linkValidation), linkUser);
 router.post("/:kilnId/release", unlinkUser);
+
+router.use(verifyRoles([ROLES.ADMIN]));
+
+router.get("/all", getAllKilns);
+router.post("/create", validateSchema(createKilnValidation), addKiln);
+router.patch("/:kilnId/edit", validateSchema(editKilnValidation), editKiln);
+router.delete("/:kilnId/delete", verifyRoles([ROLES.ADMIN]), removeKiln);
 
 export default router;
