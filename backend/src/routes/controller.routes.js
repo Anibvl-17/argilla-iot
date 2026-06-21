@@ -28,10 +28,10 @@ router.post(
   createController,
 );
 router.patch(
-  "/:controllerId",
+  "/:controllerId/edit",
   validateSchema(editControllerValidation),
   editController,
 );
-router.delete("/:controllerId", removeController);
+router.delete("/:controllerId/delete", removeController);
 
 export default router;

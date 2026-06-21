@@ -26,7 +26,7 @@ router.use(verifyRoles([ROLES.ADMIN]));
 
 router.get("/all", getAllUsers);
 router.post("/create", validateSchema(createUserValidation), addUser);
-router.patch("/:userId", validateSchema(updateUserValidation), editUser);
-router.delete("/:userId", removeUser);
+router.patch("/:userId/edit", validateSchema(updateUserValidation), editUser);
+router.delete("/:userId/delete", removeUser);
 
 export default router;
