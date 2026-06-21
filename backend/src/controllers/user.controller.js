@@ -102,6 +102,11 @@ export async function editUser(req, res) {
 export async function removeUser(req, res) {
   try {
     const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    if (currentUserId === parseInt(userId)) {
+      return handleErrorClient(res, 403, "No puedes eliminar tu propio usuario.");
+    }
 
     await deleteUser(parseInt(userId));
 
