@@ -3,6 +3,7 @@ import {
   createController,
   editController,
   generateControllerPin,
+  getAllControllers,
   removeController,
 } from "../controllers/controller.controller.js";
 import { authenticateJWT } from "../middlewares/authentication.middleware.js";
@@ -20,6 +21,7 @@ router.patch("/:uuid/pin", generateControllerPin);
 
 router.use(authenticateJWT, verifyRoles([ROLES.ADMIN]));
 
+router.get("/all", getAllControllers);
 router.post(
   "/create",
   validateSchema(createControllerValidation),

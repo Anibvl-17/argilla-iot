@@ -8,6 +8,7 @@ import {
   edit,
   generatePin,
   remove,
+  getAllControllers as getAllControllersRequest,
 } from "../services/controller.service.js";
 
 /**
@@ -109,5 +110,29 @@ export async function generateControllerPin(req, res) {
     }
 
     return handleErrorServer(res, 500, "Error al generar pin", error.message);
+  }
+}
+
+export async function getAllControllers(req, res) {
+  try {
+    const controllers = await getAllControllersRequest();
+
+    if (controllers && controllers.length === 0) {
+      return handleSuccess(res, 204, "No hay controladores registrados", []);
+    }
+
+    return handleSuccess(
+      res,
+      200,
+      "Controladores obtenidos exitosamente",
+      controllers,
+    );
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener todos los controladores",
+      error.message,
+    );
   }
 }

@@ -96,37 +96,8 @@ export async function setAsLinked(id) {
   });
 }
 
-/**
- * Cambia el campo status del controlador a "claimed" y elimina el PIN
- *
- * @param {string} id UUID del Controlador
- * @returns El Controlador actualizado
- */
-export async function setAsClaimed(id) {
-  return await prisma.controller.update({
-    where: { controllerId: id },
-    data: {
-      pin: null,
-      status: CONTROLLER_STATUS.CLAIMED,
-    },
-  });
-}
+export async function getAllControllers() {
+  const controllers = await prisma.controller.findMany({ include: { kiln: true } });
 
-/**
- * Cambia el estado del controlador a fuera de servicio.
- *
- * @param {string} id UUID del controlador
- * @returns El Controlador actualizado
- *
- * @todo Fuera de servicio indicaria que el controlador no se puede utilizar mas
- * por lo tanto es necesario realizar esta verificacion en otras funciones
- */
-export async function setAsOutOfService(id) {
-  return await prisma.controller.update({
-    where: { controllerId: id },
-    data: {
-      pin: null,
-      status: CONTROLLER_STATUS.OUT_OF_SERVICE,
-    },
-  });
+  return decorateControllers(controllers);
 }
