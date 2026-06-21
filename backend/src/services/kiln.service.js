@@ -1,7 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { CONTROLLER_STATUS } from "../constants/status.constants.js";
-import { reset, setAsClaimed, setAsLinked } from "./controller.service.js";
-import { findUserById } from "./user.service.js";
+import { clearPin } from "./controller.service.js";
 
 export async function createKiln(kilnData) {
   return await prisma.kiln.create({
@@ -53,7 +51,7 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
     throw new Error("Credenciales incorrectas");
   }
 
-  if (controller.status !== CONTROLLER_STATUS.WAITING) {
+  if (controller.kiln) {
     throw new Error("El controlador no esta disponible");
   }
 
@@ -71,7 +69,7 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
     include: { controller: true },
   });
 
-  await setAsLinked(controller.controllerId);
+  await clearPin(controller.controllerId);
 
   return updatedKiln;
 }
@@ -108,9 +106,6 @@ export async function unlinkControllerFromKiln(kilnId) {
     },
   });
 
-  // Resetea controlador al estado inicial, con pin y en espera de vinculacion
-  await reset(controllerId);
-
   return updatedKiln;
 }
 
@@ -144,7 +139,7 @@ export async function linkUserToKiln(userId, partialControllerId, pin) {
 
   if (controller.kiln.userId === userId) {
     // Usuario ya posee horno
-    await setAsClaimed(controller.controllerId);
+    await clearPin(controller.controllerId);
     return;
   }
 
@@ -156,7 +151,7 @@ export async function linkUserToKiln(userId, partialControllerId, pin) {
     include: { controller: true },
   });
 
-  await setAsClaimed(controller.controllerId);
+  await clearPin(controller.controllerId);
 
   return claimedKiln;
 }
@@ -185,9 +180,7 @@ export async function unlinkUserFromKiln(userId, kilnId) {
     },
   });
 
-  if (kiln.controllerId) {
-    await setAsLinked(kiln.controllerId);
-  }
+  return updatedKiln;
 }
 
 /**
@@ -227,7 +220,14 @@ export async function remove(kilnId) {
   }
 
   if (kilnToRemove.controller) {
-    await reset(kilnToRemove.controllerId);
+    await prisma.kiln.update({
+      where: { kilnId },
+      data: {
+        controller: {
+          disconnect: true,
+        },
+      },
+    });
   }
 
   await prisma.kiln.delete({ where: { kilnId } });

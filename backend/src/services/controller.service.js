@@ -1,21 +1,54 @@
 import { prisma } from "../config/prisma.js";
-import { CONTROLLER_STATUS } from "../constants/status.constants.js";
-import { unlinkControllerFromKiln } from "./kiln.service.js";
+import { CONTROLLER_LINK_STATUS } from "../constants/status.constants.js";
 import crypto from "crypto";
+
+function getControllerLinkStatus(controller) {
+  if (!controller?.kiln) {
+    return CONTROLLER_LINK_STATUS.UNLINKED;
+  }
+
+  if (!controller.kiln.userId) {
+    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN;
+  }
+
+  return CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER;
+}
+
+function decorateController(controller) {
+  if (!controller) {
+    return controller;
+  }
+
+  const linkStatus = getControllerLinkStatus(controller);
+
+  return {
+    ...controller,
+    linkStatus,
+    status: linkStatus,
+  };
+}
+
+function decorateControllers(controllers) {
+  return controllers.map((controller) => decorateController(controller));
+}
 
 /**
  * Crea un controlador de forma lógica. El UUID generado se asigna al
  * controlador físico para ser vinculado posteriormente.
  */
 export async function create(data) {
-  return await prisma.controller.create({ data });
+  const controller = await prisma.controller.create({ data });
+
+  return decorateController(controller);
 }
 
 export async function edit(controllerId, data) {
-  return await prisma.controller.update({
+  const controller = await prisma.controller.update({
     where: { controllerId },
     data,
   });
+
+  return decorateController(controller);
 }
 
 export async function remove(controllerId) {
@@ -26,9 +59,6 @@ export async function remove(controllerId) {
 
   if (!controllerToRemove) return false;
 
-  // Evitar usar unlinkControllerFromKiln(): esta funcion desvincula el horno
-  // y ademas actualiza el estado del controlador a WAITING, algo innecesario en
-  // este caso
   if (controllerToRemove.kiln) {
     await prisma.kiln.update({
       where: { kilnId: controllerToRemove.kiln.kilnId },
@@ -65,33 +95,16 @@ export async function generatePin(uuid) {
 }
 
 /**
- * Restablece el controlador al estado inicial (waiting). Usado al desvincular
- * un controlador de un horno.
- *
- * @param {string} id UUID del controlador
- * @returns El Controlador actualizado
- */
-export async function reset(id) {
-  return await prisma.controller.update({
-    where: { controllerId: id },
-    data: {
-      status: CONTROLLER_STATUS.WAITING,
-    },
-  });
-}
-
-/**
- * Cambia el campo status del Controlador a "linked" y elimina el PIN
+ * Limpia el PIN temporal del controlador una vez consumido.
  *
  * @param {string} id UUID del Controlador
  * @returns El Controlador actualizado
  */
-export async function setAsLinked(id) {
+export async function clearPin(id) {
   return await prisma.controller.update({
     where: { controllerId: id },
     data: {
       pin: null,
-      status: CONTROLLER_STATUS.LINKED,
     },
   });
 }
