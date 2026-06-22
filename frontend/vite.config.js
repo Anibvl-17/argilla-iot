@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@components": path.resolve(__dirname, "./src/components"),
+      "@constants": path.resolve(__dirname, "./src/constants"),
       "@services": path.resolve(__dirname, "./src/services"),
       "@context": path.resolve(__dirname, "./src/context"),
       "@helpers": path.resolve(__dirname, "./src/helpers"),
