@@ -233,9 +233,9 @@ export default function AdminControllers() {
       </div>
 
       {/* Tabla */}
-      {controllers.length > 0 ? (
-        !loading && (
-          <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
+      <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
+        {controllers.length > 0 ? (
+          !loading && (
             <table className="w-full text-sm text-left min-w-10">
               <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
                 <tr>
@@ -394,17 +394,17 @@ export default function AdminControllers() {
                 )}
               </tbody>
             </table>
-          </div>
-        )
-      ) : (
-        <div className="text-neutral-400 text-sm p-4 flex flex-row items-center gap-2 justify-center">
-          No hay controladores registrados. Haz click en{" "}
-          <span className="px-5 py-2.5 rounded-lg font-medium border border-dashed border-neutral-400">
-            Añadir nuevo controlador
-          </span>{" "}
-          para registrar controladores.
-        </div>
-      )}
+          )
+        ) : (
+          <p className="text-neutral-400 text-sm/relaxed p-4 text-center">
+            No hay controladores registrados. <br/>Haz click en el botón{" "}
+            <span className="rounded-lg font-medium">
+              Añadir nuevo controlador
+            </span>{" "}
+            para registrar un controlador.
+          </p>
+        )}
+      </div>
 
       <Modal
         isOpen={isModalOpen}

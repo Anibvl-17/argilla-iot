@@ -304,186 +304,199 @@ export default function AdminKilns() {
 
       {/* Contenedor de la Tabla */}
       <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
-        {!loading && (
-          <table className="w-full text-sm text-left min-w-10">
-            {/* Títulos de Columna */}
-            <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
-              <tr>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  ID
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  Propietario
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  Controlador
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
-                  Estado
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center ">
-                  Litros
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
-                  Datos eléctricos
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-
-            {/* Cuerpo de la Tabla */}
-            <tbody className="divide-y divide-neutral-800/60">
-              {filteredKilns.length > 0 ? (
-                filteredKilns.map((kiln) => (
-                  <tr
-                    key={kiln.kilnId}
-                    className="hover:bg-neutral-900/30 transition-colors"
+        {kilns.length > 0 ? (
+          !loading && (
+            <table className="w-full text-sm text-left min-w-10">
+              {/* Títulos de Columna */}
+              <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
+                <tr>
+                  <th scope="col" className="px-6 py-4 font-medium">
+                    ID
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium">
+                    Propietario
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium">
+                    Controlador
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                    Estado
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-4 font-medium text-center "
                   >
-                    {/* Columna ID */}
-                    <td className="text-base px-6 py-5 font-mono text-neutral-400">
-                      {kiln.kilnId}
-                    </td>
+                    Litros
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                    Datos eléctricos
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
 
-                    {/* Columna Propietario */}
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        {kiln.user ? (
-                          <>
-                            <span className="font-semibold text-neutral-100 text-base">
-                              {kiln.user.name}
+              {/* Cuerpo de la Tabla */}
+              <tbody className="divide-y divide-neutral-800/60">
+                {filteredKilns.length > 0 ? (
+                  filteredKilns.map((kiln) => (
+                    <tr
+                      key={kiln.kilnId}
+                      className="hover:bg-neutral-900/30 transition-colors"
+                    >
+                      {/* Columna ID */}
+                      <td className="text-base px-6 py-5 font-mono text-neutral-400">
+                        {kiln.kilnId}
+                      </td>
+
+                      {/* Columna Propietario */}
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          {kiln.user ? (
+                            <>
+                              <span className="font-semibold text-neutral-100 text-base">
+                                {kiln.user.name}
+                              </span>
+                              <span className="text-sm text-neutral-400 mt-0.5">
+                                {kiln.user.email}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-sm text-neutral-400/70 italic">
+                              Sin propietario
                             </span>
-                            <span className="text-sm text-neutral-400 mt-0.5">
-                              {kiln.user.email}
-                            </span>
-                          </>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Columna ID Controlador */}
+                      <td className="px-6 py-5 text-sm">
+                        {kiln.controllerId ? (
+                          <span
+                            onClick={() => {
+                              navigator.clipboard.writeText(kiln.controllerId);
+                              toast.success("¡ID copiada!");
+                            }}
+                            title={"Copiar id: " + kiln.controllerId}
+                            className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline hover:cursor-pointer"
+                          >
+                            ...{kiln.controllerId.slice(-6)}
+                          </span>
                         ) : (
-                          <span className="text-sm text-neutral-400/70 italic">
-                            Sin propietario
+                          <span className="text-neutral-400/70 italic">
+                            No vinculado
                           </span>
                         )}
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Columna ID Controlador */}
-                    <td className="px-6 py-5 text-sm">
-                      {kiln.controllerId ? (
-                        <span
-                          onClick={() => {
-                            navigator.clipboard.writeText(kiln.controllerId);
-                            toast.success("¡ID copiada!");
-                          }}
-                          title={"Copiar id: " + kiln.controllerId}
-                          className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline hover:cursor-pointer"
-                        >
-                          ...{kiln.controllerId.slice(-6)}
+                      {/* Columna Estado badge */}
+                      <td className="px-6 py-5 text-center">
+                        <AdminStatusBadge status={kiln.status} />
+                      </td>
+
+                      {/* Columna Litros */}
+                      <td className="px-6 py-5 text-center text-neutral-400">
+                        {kiln.liters} litros
+                      </td>
+
+                      {/* Columna Voltaje Amperaje */}
+                      <td className="px-6 py-5 text-center text-neutral-400">
+                        <span className="font-mono">
+                          {kiln.amps}A - {kiln.volts}V
+                        </span>{" "}
+                        <br />
+                        <span className="text-neutral-400/70">
+                          {kiln.phases === 1 ? "Monofásico" : "Trifásico"}{" "}
                         </span>
-                      ) : (
-                        <span className="text-neutral-400/70 italic">
-                          No vinculado
-                        </span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Columna Estado badge */}
-                    <td className="px-6 py-5 text-center">
-                      <AdminStatusBadge status={kiln.status} />
-                    </td>
+                      {/* Columna: Botones de Acción */}
+                      <td className="px-6 py-5 text-center text-lg">
+                        <div className="flex justify-center gap-2">
+                          {/* Enlazar/Desenlazar usuario */}
+                          {kiln.user ? (
+                            <button
+                              onClick={() => {
+                                setIsAlertOpen(true);
+                              }}
+                              className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                              title="Desenlazar usuario"
+                            >
+                              <LuUserRoundMinus />
+                            </button>
+                          ) : (
+                            <button
+                              className="p-2 rounded-lg text-neutral-400 hover:text-green-300 hover:bg-green-300/10 transition-colors hover:cursor-pointer"
+                              title="Enlazar usuario"
+                            >
+                              <LuUserRoundPlus />
+                            </button>
+                          )}
 
-                    {/* Columna Litros */}
-                    <td className="px-6 py-5 text-center text-neutral-400">
-                      {kiln.liters} litros
-                    </td>
+                          {/* Enlazar/Desenlazar controlador */}
+                          {kiln.controller ? (
+                            <button
+                              className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                              title="Desenlazar controlador"
+                            >
+                              <LuUnlink />
+                            </button>
+                          ) : (
+                            <button
+                              className="p-2 rounded-lg text-neutral-400 hover:text-green-300 hover:bg-green-300/10 transition-colors hover:cursor-pointer"
+                              title="Enlazar controlador"
+                            >
+                              <LuLink />
+                            </button>
+                          )}
 
-                    {/* Columna Voltaje Amperaje */}
-                    <td className="px-6 py-5 text-center text-neutral-400">
-                      <span className="font-mono">
-                        {kiln.amps}A - {kiln.volts}V
-                      </span>{" "}
-                      <br />
-                      <span className="text-neutral-400/70">
-                        {kiln.phases === 1 ? "Monofásico" : "Trifásico"}{" "}
-                      </span>
-                    </td>
+                          {/* Editar datos */}
+                          <button
+                            onClick={() => openEditModal(kiln)}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
+                            title="Editar datos"
+                          >
+                            <LuPencil />
+                          </button>
 
-                    {/* Columna: Botones de Acción */}
-                    <td className="px-6 py-5 text-center text-lg">
-                      <div className="flex justify-center gap-2">
-                        {/* Enlazar/Desenlazar usuario */}
-                        {kiln.user ? (
+                          {/* Eliminar */}
                           <button
                             onClick={() => {
+                              setSelectedKiln(kiln);
                               setIsAlertOpen(true);
                             }}
                             className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                            title="Desenlazar usuario"
+                            title="Eliminar horno"
                           >
-                            <LuUserRoundMinus />
+                            <LuTrash2 />
                           </button>
-                        ) : (
-                          <button
-                            className="p-2 rounded-lg text-neutral-400 hover:text-green-300 hover:bg-green-300/10 transition-colors hover:cursor-pointer"
-                            title="Enlazar usuario"
-                          >
-                            <LuUserRoundPlus />
-                          </button>
-                        )}
-
-                        {/* Enlazar/Desenlazar controlador */}
-                        {kiln.controller ? (
-                          <button
-                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                            title="Desenlazar controlador"
-                          >
-                            <LuUnlink />
-                          </button>
-                        ) : (
-                          <button
-                            className="p-2 rounded-lg text-neutral-400 hover:text-green-300 hover:bg-green-300/10 transition-colors hover:cursor-pointer"
-                            title="Enlazar controlador"
-                          >
-                            <LuLink />
-                          </button>
-                        )}
-
-                        {/* Editar datos */}
-                        <button
-                          onClick={() => openEditModal(kiln)}
-                          className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
-                          title="Editar datos"
-                        >
-                          <LuPencil />
-                        </button>
-
-                        {/* Eliminar */}
-                        <button
-                          onClick={() => {
-                            setSelectedKiln(kiln);
-                            setIsAlertOpen(true);
-                          }}
-                          className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                          title="Eliminar horno"
-                        >
-                          <LuTrash2 />
-                        </button>
-                      </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      className="px-6 py-12 text-center text-neutral-500"
+                    >
+                      No se encontraron hornos que coincidan con la búsqueda "
+                      {searchTerm}".
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="px-6 py-12 text-center text-neutral-500"
-                  >
-                    No se encontraron hornos que coincidan con la búsqueda "
-                    {searchTerm}".
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          )
+        ) : (
+          <p className="text-neutral-400 text-sm/relaxed p-4 text-center">
+            No hay hornos registrados. <br/>Haz click en el botón{" "}
+            <span className="rounded-lg font-medium">
+              Añadir Nuevo horno
+            </span>{" "}
+            para registrar un horno.
+          </p>
         )}
       </div>
 
