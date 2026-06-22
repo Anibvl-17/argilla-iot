@@ -10,6 +10,7 @@ import AdminKilns from "@pages/AdminKilns";
 import AdminControllers from "@pages/AdminControllers";
 import AdminUsers from "@pages/AdminUsers";
 import { AdminHome } from "@pages/AdminHome";
+import AuthLayout from "./layouts/AuthLayout";
 
 const router = createBrowserRouter([
   {
@@ -19,7 +20,13 @@ const router = createBrowserRouter([
     children: [
       {
         path: "auth",
-        element: <Login />,
+        element: <AuthLayout />,
+        children: [
+          {
+            index: true,
+            element: <Login />
+          }
+        ]
       },
       {
         path: "/",
@@ -35,6 +42,7 @@ const router = createBrowserRouter([
           },
           {
             path: "kilns",
+            element: <Home />
           },
           {
             path: "profile",

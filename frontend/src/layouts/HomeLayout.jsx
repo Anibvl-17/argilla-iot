@@ -3,7 +3,6 @@ import { useAuth } from "@context/AuthContext";
 import { logout } from "@services/auth.service";
 import { SidebarItem } from "@components/SidebarItem";
 import argillaIcon from "@assets/argilla-icon-light.png";
-import { Toaster } from "sonner";
 
 export default function HomeLayout() {
   const { user, setUser } = useAuth();
@@ -11,7 +10,6 @@ export default function HomeLayout() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
-      <Toaster theme="dark"/>
 
       {/* Sidebar */}
       <aside className="w-64 bg-[#141414] border-r border-neutral-800 flex flex-col">
