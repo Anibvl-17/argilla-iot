@@ -110,7 +110,9 @@ export async function clearPin(id) {
 }
 
 export async function getAllControllers() {
-  const controllers = await prisma.controller.findMany({ include: { kiln: true } });
+  const controllers = await prisma.controller.findMany({
+    include: { kiln: { include: { user: true } } },
+  });
 
   return decorateControllers(controllers);
 }
