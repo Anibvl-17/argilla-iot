@@ -1,5 +1,5 @@
 import { useAuth } from "@context/AuthContext";
-import { ROLE_LABELS, ROLES } from "../constants/user.constants";
+import { ROLES } from "../constants/user.constants";
 import { Navigate } from "react-router-dom";
 
 // ==========================================

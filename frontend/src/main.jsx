@@ -3,13 +3,13 @@ import ProtectedRoute from "@components/ProtectedRoute";
 import ReactDOM from "react-dom/client";
 import Login from "@pages/Login";
 import Root from "@pages/Root";
-import HomeLayout from "@components/HomeLayout";
+import HomeLayout from "@layouts/HomeLayout";
 import Home from "@pages/Home";
 import "./index.css";
 import AdminKilns from "@pages/AdminKilns";
 import AdminControllers from "@pages/AdminControllers";
 import AdminUsers from "@pages/AdminUsers";
-import { AdminHome } from "./pages/AdminHome";
+import { AdminHome } from "@pages/AdminHome";
 
 const router = createBrowserRouter([
   {

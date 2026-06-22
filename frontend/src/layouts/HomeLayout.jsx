@@ -1,7 +1,7 @@
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { logout } from "@services/auth.service";
-import { SidebarItem } from "./SidebarItem";
+import { SidebarItem } from "@components/SidebarItem";
 import argillaIcon from "@assets/argilla-icon-light.png";
 import { Toaster } from "sonner";
 
