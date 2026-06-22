@@ -7,6 +7,7 @@ import { deleteUser } from "../services/user.service";
 import AlertDialog from "../components/AlertDialog";
 import { toast } from "sonner";
 import { Badge } from "../components/Badge";
+import { useAuth } from "@context/AuthContext";
 
 const userFields = [
   {
@@ -61,6 +62,7 @@ export default function AdminUsers() {
   const [modalError, setModalError] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
+  const { user: sessionUser } = useAuth();
 
   const filteredUsers = users.filter((user) => {
     const searchLowercase = searchTerm.toLowerCase();
@@ -144,6 +146,8 @@ export default function AdminUsers() {
       if (response.success) {
         toast.success("Usuario eliminado exitosamente.");
         fetchUsers();
+      } else {
+        toast.error(response.message);
       }
     } catch (error) {
       toast.error("Error al eliminar usuario", error.message);
@@ -294,16 +298,18 @@ export default function AdminUsers() {
                         >
                           <LuPencil />
                         </button>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsAlertOpen(true);
-                          }}
-                          className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                          title="Eliminar usuario"
-                        >
-                          <LuTrash2 />
-                        </button>
+                        {sessionUser.id !== user.userId && (
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsAlertOpen(true);
+                            }}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                            title="Eliminar usuario"
+                          >
+                            <LuTrash2 />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
