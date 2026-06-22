@@ -9,10 +9,8 @@ import { createUser } from "../services/user.service.js";
 export async function loginUser(req, res) {
   try {
     const { body } = req;
-
-    // TODO: Validar datos
-
     const data = await login(body.email, body.password);
+
     handleSuccess(res, 200, "Inicio de sesión exitoso", data);
   } catch (error) {
     handleErrorClient(res, 401, "Error al iniciar sesión", error.message);
@@ -22,11 +20,8 @@ export async function loginUser(req, res) {
 export async function registerUser(req, res) {
   try {
     const { body } = req;
-
-    // TODO: Validar datos
-
     const newUser = await createUser(body);
-    delete newUser.password;
+
     handleSuccess(res, 201, "Usuario registrado exitosamente", newUser);
   } catch (error) {
     if (error.code === "P2002") {
@@ -39,7 +34,7 @@ export async function registerUser(req, res) {
 
 export async function logout(req, res) {
   try {
-    res.clearCookie("jwt", { httpOnly: true });
+    res.clearCookie("jwt-auth");
     handleSuccess(res, 200, "Sesión cerrada exitosamente");
   } catch (error) {
     handleErrorServer(res, 500, "Error al cerrar sesión", error.message);
