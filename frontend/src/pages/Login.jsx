@@ -37,7 +37,7 @@ const Login = () => {
   if (authLoading) return null;
 
   if (user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e) => {
