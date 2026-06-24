@@ -283,7 +283,7 @@ export default function AdminKilns() {
           />
         </div>
 
-        {/* Opcional: Botón de filtros extra */}
+        {/* Botón de filtros */}
         <button className="w-full sm:w-auto px-4 py-2.5 bg-[#0a0a0a] border border-neutral-700 rounded-lg text-sm text-neutral-300 hover:text-white hover:border-neutral-500 transition-colors flex items-center justify-center gap-2">
           <svg
             className="w-4 h-4"
@@ -396,8 +396,8 @@ export default function AdminKilns() {
                       </td>
 
                       {/* Columna Litros */}
-                      <td className="px-6 py-5 text-center text-neutral-400">
-                        {kiln.liters} litros
+                      <td className="px-6 py-5 text-lg text-center font-mono text-neutral-400">
+                        {kiln.liters} 
                       </td>
 
                       {/* Columna Voltaje Amperaje */}

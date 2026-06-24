@@ -49,6 +49,12 @@ const normalizeControllerFormData = (formData) => ({
   switchAmps: Number(formData.switchAmps),
 });
 
+const LinkStatusStyle = {
+  [CONTROLLER_LINK_STATUS.UNLINKED]: "default",
+  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN]: "success",
+  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER]: "success",
+}
+
 export default function AdminControllers() {
   const [loading, setLoading] = useState(false);
   const [controllers, setControllers] = useState([]);
@@ -68,7 +74,7 @@ export default function AdminControllers() {
     try {
       setLoading(true);
       const result = await getAllControllers();
-      setControllers(result.data || []);
+      setControllers(result.data || []);      
     } catch (error) {
       console.error(error);
     } finally {
@@ -174,17 +180,19 @@ export default function AdminControllers() {
         </div>
         <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
           <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
-            Asignados a Hornos
+            Asignados a Horno
           </p>
-          <p className="text-3xl font-bold text-green-400">
+          <p className="text-3xl font-bold text-sky-300/90">
             {controllers.filter((c) => c.kiln).length}
           </p>
         </div>
         <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
           <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
-            Fuera de servicio
+            Asignados a Horno y Usuario
           </p>
-          <p className="text-3xl font-bold text-yellow-500">---</p>
+          <p className="text-3xl font-bold text-green-400/90">
+            {controllers.filter((c) => c.kiln?.user).length}
+          </p>
         </div>
       </div>
 
@@ -313,12 +321,7 @@ export default function AdminControllers() {
                       {/* Estado vinculación */}
                       <td className="px-6 py-5 font-mono text-xs">
                         <Badge
-                          style={
-                            controller.linkStatus ===
-                            CONTROLLER_LINK_STATUS.UNLINKED
-                              ? "default"
-                              : "success"
-                          }
+                          style={LinkStatusStyle[controller.linkStatus]}
                           text={
                             CONTROLLER_LINK_STATUS_LABELS[
                               controller.linkStatus
