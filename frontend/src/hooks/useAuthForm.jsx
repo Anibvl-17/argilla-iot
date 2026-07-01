@@ -16,7 +16,7 @@ const useAuthForm = () => {
       }
 
       setError(message);
-      console.log(error);
+      console.error(error);
     }
   };
 

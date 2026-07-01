@@ -8,7 +8,6 @@ export default function Home() {
   if (user.role === ROLES.ADMIN) {
     return <Navigate to={"/admin"} replace />;
   }
-  console.log(user);
 
   return (
     <div className="flex flex-col h-full text-white">

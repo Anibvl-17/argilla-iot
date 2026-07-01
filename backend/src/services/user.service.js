@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
-import { ROLES } from "../constants/roles.constants.js";
+import { ROLES } from "../constants/user.constants.js";
 
 export async function createUser(data) {
   const hashedPassword = await bcrypt.hash(data.password, 10);

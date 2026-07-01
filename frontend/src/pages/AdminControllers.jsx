@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "@components/Modal";
 import {
   createController,
@@ -6,15 +6,30 @@ import {
   getAllControllers,
   updateController,
 } from "@services/controller.service";
-import { CONTROLLER_LINK_STATUS_LABELS } from "@constants/controller.constants";
-import { LuLink, LuPencil, LuTrash2, LuUnlink } from "react-icons/lu";
-import { toast } from "sonner";
-import AlertDialog from "../components/AlertDialog";
-import { Badge } from "../components/Badge";
+import {
+  LuLink,
+  LuPencil,
+  LuRectangleEllipsis,
+  LuTrash2,
+  LuTriangleAlert,
+  LuUnlink,
+  LuUserRoundPen,
+  LuUserRoundPlus,
+} from "react-icons/lu";
 import {
   CONTROLLER_LINK_STATUS,
   SWITCH_LABELS,
 } from "../constants/controller.constants";
+import { getAllUsers } from "@services/user.service";
+import { toast } from "sonner";
+import { Badge } from "@components/Badge";
+import { CONTROLLER_LINK_STATUS_LABELS } from "@constants/controller.constants";
+import {
+  generateControllerPin,
+  linkUserToController,
+  unlinkUserFromController,
+} from "../services/controller.service";
+import AlertDialog from "../components/AlertDialog";
 
 const controllerFields = [
   {
@@ -34,6 +49,8 @@ const controllerFields = [
   },
 ];
 
+const linkUserFields = [{ name: "userId", label: "Usuario", type: "custom" }];
+
 const buildModalErrorMessage = (response) => {
   const details = response?.data?.errorDetails;
 
@@ -51,19 +68,29 @@ const normalizeControllerFormData = (formData) => ({
 
 const LinkStatusStyle = {
   [CONTROLLER_LINK_STATUS.UNLINKED]: "default",
-  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN]: "success",
+  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN]: "info",
+  [CONTROLLER_LINK_STATUS.LINKED_TO_USER]: "info",
   [CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER]: "success",
-}
+};
+
+const normalizeSearchTerm = (value) => value.trim().toLowerCase();
 
 export default function AdminControllers() {
   const [loading, setLoading] = useState(false);
   const [controllers, setControllers] = useState([]);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLinkUserModalOpen, setIsLinkUserModalOpen] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [selectedController, setSelectedController] = useState(null);
+  const [selectedUserToLink, setSelectedUserToLink] = useState(null);
+  const [linkUserError, setLinkUserError] = useState(null);
+  const [linkUserSearchTerm, setLinkUserSearchTerm] = useState("");
+  const [linkPin, setLinkPin] = useState(undefined);
+  const linkUserSearchRef = useRef(null);
 
   const filteredControllers = controllers.filter((controller) => {
     const searchLowercase = searchTerm.toLowerCase();
@@ -74,7 +101,7 @@ export default function AdminControllers() {
     try {
       setLoading(true);
       const result = await getAllControllers();
-      setControllers(result.data || []);      
+      setControllers(result.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -101,9 +128,31 @@ export default function AdminControllers() {
     setIsModalOpen(true);
   };
 
+  const openLinkUserModal = (controller) => {
+    setSelectedController(controller);
+    setLinkUserError(null);
+    setLinkUserSearchTerm("");
+    setSelectedUserToLink(null);
+    //setIsLinkControllerModalOpen(false);
+    setIsAlertOpen(false);
+    setIsLinkUserModalOpen(true);
+
+    if (users.length === 0 && !loading) {
+      fetchUsers();
+    }
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setModalError(null);
+    setSelectedController(null);
+  };
+
+  const closeLinkUserModal = () => {
+    setIsLinkUserModalOpen(false);
+    setLinkUserError(null);
+    setLinkUserSearchTerm("");
+    setSelectedUserToLink(null);
     setSelectedController(null);
   };
 
@@ -136,6 +185,96 @@ export default function AdminControllers() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const result = await getAllUsers();
+      setUsers(result.data || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLinkUserSubmit = async ({ userId }) => {
+    if (!selectedController) {
+      setLinkUserError("Selecciona un horno antes de enlazar un usuario.");
+      return;
+    }
+
+    if (
+      !selectedUserToLink ||
+      String(selectedUserToLink.userId) !== String(userId)
+    ) {
+      setLinkUserError("Selecciona un usuario de la lista para continuar.");
+      return;
+    }
+
+    if (parseInt(selectedController?.userId) === parseInt(userId)) {
+      setLinkUserError(
+        "El controlador ya está vinculado al usuario seleccionado",
+      );
+      return;
+    }
+
+    try {
+      const response = await linkUserToController(
+        selectedController.controllerId.slice(-6),
+        parseInt(userId),
+        parseInt(linkPin),
+      );
+      if (response.success) {
+        toast.success(
+          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId}.`,
+        );
+        fetchControllers();
+        fetchUsers();
+      } else {
+        throw new Error("Error al vincular usuario");
+      }
+    } catch (error) {
+      toast.error("Error al vincular usuario", { description: error.message });
+    } finally {
+      closeLinkUserModal();
+    }
+  };
+
+  const handleUnlinkUser = async () => {
+    if (!selectedController?.userId) {
+      setLinkUserError("El horno no tiene un usuario vinculado.");
+      return;
+    }
+
+    try {
+      const response = await unlinkUserFromController(
+        selectedController.controllerId,
+        parseInt(selectedController.userId),
+      );
+
+      if (response.success) {
+        toast.success(
+          `Usuario desvinculado del controlador ID ${selectedController.controllerId}.`,
+        );
+        fetchControllers();
+        fetchUsers();
+        closeLinkUserModal();
+        return;
+      }
+
+      throw new Error(response.message);
+    } catch (error) {
+      toast.error(
+        "Error al desvincular usuario",
+        error.errorDetails
+          ? {
+              description: error,
+            }
+          : null,
+      );
+    }
+  };
+
   const confirmDelete = async () => {
     setLoading(true);
     try {
@@ -154,6 +293,27 @@ export default function AdminControllers() {
     }
   };
 
+  const filteredUsersForLink = users
+    .filter((user) => {
+      if (user.userId === selectedController?.user?.userId) return false;
+      if (user.userId === selectedUserToLink?.userId) return false;
+
+      const search = normalizeSearchTerm(linkUserSearchTerm);
+
+      if (!search) {
+        return false;
+      }
+
+      return (
+        String(user.userId).toLowerCase().includes(search) ||
+        user.name.toLowerCase().includes(search) ||
+        user.email.toLowerCase().includes(search)
+      );
+    })
+    .slice(0, 8);
+
+  const selectedControllerHasOwner = selectedController?.user ? true : false;
+
   return (
     <div className="space-y-6 text-white">
       <div className="flex justify-between items-center">
@@ -171,7 +331,7 @@ export default function AdminControllers() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
           <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
             Total Controladores
@@ -182,8 +342,16 @@ export default function AdminControllers() {
           <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
             Asignados a Horno
           </p>
-          <p className="text-3xl font-bold text-sky-300/90">
+          <p className="text-3xl font-bold text-blue-400/90">
             {controllers.filter((c) => c.kiln).length}
+          </p>
+        </div>
+        <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
+          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+            Asignados a Usuario
+          </p>
+          <p className="text-3xl font-bold text-blue-400/90">
+            {controllers.filter((c) => c.user).length}
           </p>
         </div>
         <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
@@ -244,7 +412,7 @@ export default function AdminControllers() {
       <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
         {controllers.length > 0 ? (
           !loading && (
-            <table className="w-full text-sm text-left min-w-10">
+            <table className="w-full text-left min-w-10">
               <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
                 <tr>
                   <th
@@ -254,7 +422,7 @@ export default function AdminControllers() {
                     ID
                   </th>
                   <th scope="col" className="px-6 py-4 font-medium">
-                    ID Horno / Propietario
+                    Propietario / Horno asignado
                   </th>
                   <th scope="col" className="px-6 py-4 font-medium">
                     Estado de vinculación
@@ -264,6 +432,9 @@ export default function AdminControllers() {
                   </th>
                   <th scope="col" className="px-6 py-4 font-medium text-center">
                     Tipo de Switch
+                  </th>
+                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                    PIN activo
                   </th>
                   <th scope="col" className="px-6 py-4 font-medium text-center">
                     Acciones
@@ -296,23 +467,21 @@ export default function AdminControllers() {
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
                           {controller.kiln ? (
-                            <>
-                              <span className="font-semibold text-neutral-300 text-base">
-                                {controller.kiln.kilnId}
-                              </span>
-                              {controller.kiln.user ? (
-                                <span className="text-sm text-neutral-400 mt-0.5">
-                                  {controller.kiln.user.name}
-                                </span>
-                              ) : (
-                                <span className="text-neutral-400/70 italic">
-                                  Sin propietario
-                                </span>
-                              )}
-                            </>
+                            <span className="font-semibold text-neutral-100 text-base">
+                              Horno ID {controller.kiln?.kilnId}
+                            </span>
                           ) : (
-                            <span className="text-neutral-400/70 italic">
+                            <span className="text-sm text-neutral-400/70 italic">
                               Sin horno asignado
+                            </span>
+                          )}
+                          {controller.user ? (
+                            <span className="text-sm text-neutral-400">
+                              {controller.user.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-neutral-400/70 italic">
+                              Sin propietario
                             </span>
                           )}
                         </div>
@@ -332,7 +501,7 @@ export default function AdminControllers() {
 
                       {/* Amperaje switch */}
                       <td className="px-6 py-5 text-center font-mono text-neutral-400">
-                        {controller.switchAmps} A
+                        {controller.switchAmps}
                       </td>
 
                       {/* Tipo switch */}
@@ -345,24 +514,61 @@ export default function AdminControllers() {
                         </span>
                       </td>
 
-                      {/* Botones de acción */}
+                      {/* PIN activo */}
+                      <td className="px-6 py-5 text-center font-mono text-neutral-400">
+                        {controller.pin || "Inactivo"}
+                      </td>
+
+                      {/* Botones de Acción */}
                       <td className="px-6 py-5 text-center text-lg">
                         <div className="flex justify-center gap-2">
-                          {controller.kiln ? (
-                            <button
-                              className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                              title="Desenlazar horno"
-                            >
-                              <LuUnlink />
-                            </button>
-                          ) : (
-                            <button
-                              className="p-2 rounded-lg text-neutral-400 hover:text-green-300 hover:bg-green-300/10 transition-colors hover:cursor-pointer"
-                              title="Enlazar horno  "
-                            >
-                              <LuLink />
-                            </button>
-                          )}
+                          {/* Generar pin */}
+                          <button
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              await generateControllerPin(
+                                controller.controllerId,
+                              );
+                              fetchControllers();
+                            }}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-green-400 hover:bg-green-400/10 transition-colors hover:cursor-pointer"
+                          >
+                            <LuRectangleEllipsis />
+                          </button>
+
+                          {/* Enlazar/Desenlazar usuario */}
+                          <button
+                            onClick={() => openLinkUserModal(controller)}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-green-400 hover:bg-green-400/10 transition-colors hover:cursor-pointer"
+                            title={
+                              controller.user
+                                ? "Cambiar usuario"
+                                : "Asignar usuario"
+                            }
+                          >
+                            {controller.user ? (
+                              <LuUserRoundPen />
+                            ) : (
+                              <LuUserRoundPlus />
+                            )}
+                          </button>
+
+                          {/* Enlazar/Desenlazar controlador */}
+                          {/*
+                          <button
+                            onClick={() => openLinkControllerModal(kiln)}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                            title={
+                              kiln.controller
+                                ? "Cambiar controlador"
+                                : "Asignar controlador"
+                            }
+                          >
+                            {kiln.controller ? <LuUnlink /> : <LuLink />}
+                          </button>
+                           */}
+
+                          {/* Editar datos */}
                           <button
                             onClick={() => openEditModal(controller)}
                             className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
@@ -370,6 +576,8 @@ export default function AdminControllers() {
                           >
                             <LuPencil />
                           </button>
+
+                          {/* Eliminar */}
                           <button
                             onClick={() => {
                               setSelectedController(controller);
@@ -400,7 +608,8 @@ export default function AdminControllers() {
           )
         ) : (
           <p className="text-neutral-400 text-sm/relaxed p-4 text-center">
-            No hay controladores registrados. <br/>Haz click en el botón{" "}
+            No hay controladores registrados. <br />
+            Haz click en el botón{" "}
             <span className="rounded-lg font-medium">
               Añadir nuevo controlador
             </span>{" "}
@@ -426,6 +635,175 @@ export default function AdminControllers() {
         error={modalError}
         loading={loading}
         onClearError={() => setModalError(null)}
+      />
+
+      <Modal
+        isOpen={isLinkUserModalOpen}
+        onClose={closeLinkUserModal}
+        title={
+          (selectedControllerHasOwner
+            ? "Cambiar usuario "
+            : "Asignar usuario ") +
+          "a Controlador ID " +
+          `...${selectedController?.controllerId.slice(-6)}`
+        }
+        fields={linkUserFields}
+        submitLabel={
+          selectedControllerHasOwner ? "Cambiar usuario" : "Asignar usuario"
+        }
+        onSubmit={handleLinkUserSubmit}
+        error={linkUserError}
+        loading={false}
+        onClearError={() => setLinkUserError(null)}
+        renderContent={({ setFormData, onClearError }) => {
+          return (
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-1.5">
+                <div className="relative" ref={linkUserSearchRef}>
+                  <label className="text-sm font-medium text-neutral-400 ml-1">
+                    Busca por nombre, correo electrónico o ID de usuario
+                  </label>
+                  <input
+                    type="text"
+                    value={linkUserSearchTerm}
+                    placeholder="ID, nombre o correo del usuario..."
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setLinkUserSearchTerm(value);
+                      setFormData((prev) => ({ ...prev, userId: "" }));
+
+                      if (linkUserError) {
+                        onClearError();
+                      }
+                    }}
+                    className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                  />
+
+                  {linkUserSearchTerm.trim() && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-2xl">
+                      {loading ? (
+                        <div className="px-4 py-3 text-sm text-neutral-500">
+                          Cargando usuarios...
+                        </div>
+                      ) : filteredUsersForLink.length > 0 ? (
+                        filteredUsersForLink.map((user) => {
+                          const isSelected =
+                            selectedUserToLink?.userId === user.userId;
+
+                          const isOwner =
+                            selectedControllerHasOwner &&
+                            selectedController?.user?.userId === user.userId;
+
+                          if (isSelected || isOwner) return;
+
+                          return (
+                            <button
+                              key={user.userId}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected || isOwner) {
+                                  return false;
+                                }
+
+                                setSelectedUserToLink(user);
+                                setLinkUserSearchTerm("");
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  userId: String(user.userId),
+                                }));
+                                onClearError();
+                              }}
+                              className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
+                            >
+                              <span className="text-sm font-medium text-white">
+                                {user.name}
+                              </span>
+                              <span className="text-xs text-neutral-400">
+                                ID {user.userId} · {user.email}
+                              </span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-neutral-500">
+                          No se encontraron usuarios con ese criterio.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <label className="text-sm font-medium text-neutral-400 ml-1">
+                    Ingresa el PIN del controlador
+                  </label>
+                  <input
+                    type="number"
+                    value={linkPin}
+                    placeholder="123456..."
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setLinkPin(parseInt(value));
+                      setFormData((prev) => ({ ...prev, pin: "" }));
+
+                      if (linkUserError) {
+                        onClearError();
+                      }
+                    }}
+                    required
+                    className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                  />
+                </div>
+              </div>
+              {selectedController?.user && (
+                <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
+                  <div>
+                    <p className="text-sm text-neutral-300">
+                      Propietario actual
+                    </p>
+                    <p className="mt-1 text-base">
+                      {selectedController?.user?.name} -{" "}
+                      {selectedController?.user?.email}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUnlinkUser}
+                    className="inline-flex items-center rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
+                  >
+                    Desvincular usuario
+                  </button>
+                </div>
+              )}
+
+              {selectedUserToLink && (
+                <>
+                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-300">
+                        Nuevo propietario
+                      </p>
+                      <p className="mt-1">
+                        {selectedUserToLink.name} - {selectedUserToLink.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUserToLink(null)}
+                      className="inline-flex items-center rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
+                    >
+                      Quitar selección
+                    </button>
+                  </div>
+                  {selectedControllerHasOwner && (
+                    <span className="text-red-300 flex flex-row items-center justify-center gap-2">
+                      <LuTriangleAlert className="text-xl" />
+                      El propietario actual será desvinculado
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        }}
       />
 
       <AlertDialog

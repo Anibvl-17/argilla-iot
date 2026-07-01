@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ROLES } from "../constants/roles.constants.js";
+import { ROLES } from "../constants/user.constants.js";
 
 export const createUserValidation = z.object({
   name: z

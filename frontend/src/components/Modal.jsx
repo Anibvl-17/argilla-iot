@@ -11,6 +11,7 @@ export default function Modal({
   error = null,
   loading = false,
   onClearError = () => {},
+  renderContent = null,
 }) {
   const [formData, setFormData] = useState({});
 
@@ -46,10 +47,13 @@ export default function Modal({
 
   return (
     // Backdrop (Fondo oscuro borroso)
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       {/* Contenedor del Modal */}
       <div
-        className="bg-[#141414] border border-neutral-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="bg-[#141414] border-2 border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()} // Evita que clics dentro del modal lo cierren
       >
         {/* Cabecera */}
@@ -77,7 +81,7 @@ export default function Modal({
         </div>
 
         {/* Formulario Dinámico */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-8">
           {error && (
             <div className="mb-5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
               <svg
@@ -98,48 +102,57 @@ export default function Modal({
           )}
 
           <div className="space-y-4">
-            {fields.map((field) => (
-              <div key={field.name} className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-neutral-400 ml-1">
-                  {field.label}
-                </label>
+            {renderContent ? (
+              renderContent({
+                formData,
+                setFormData,
+                handleChange,
+                onClearError,
+                error,
+              })
+            ) : (
+              fields.map((field) => (
+                <div key={field.name} className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-neutral-400 ml-1">
+                    {field.label}
+                  </label>
 
-                {field.type === "select" ? (
-                  // Input tipo Select
-                  <select
-                    name={field.name}
-                    value={formData[field.name] || ""}
-                    onChange={handleChange}
-                    required={field.required !== false}
-                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
-                  >
-                    <option value="" disabled>
-                      Selecciona una opción
-                    </option>
-                    {field.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                  {field.type === "select" ? (
+                    <select
+                      name={field.name}
+                      value={formData[field.name] || ""}
+                      onChange={handleChange}
+                      required={field.required !== false}
+                      className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
+                    >
+                      <option value="" disabled>
+                        Selecciona una opción
                       </option>
-                    ))}
-                  </select>
-                ) : (
-                  // Inputs regulares (text, number, email, password)
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    placeholder={field.placeholder || ""}
-                    value={formData[field.name] || ""}
-                    onChange={handleChange}
-                    required={field.required !== false}
-                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors"
-                  />
-                )}
-              </div>
-            ))}
+                      {field.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.type}
+                      name={field.name}
+                      placeholder={field.placeholder || ""}
+                      value={formData[field.name] || ""}
+                      onChange={handleChange}
+                      required={field.required !== false}
+                      {...(field.inputProps || {})}
+                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                    />
+                  )}
+                </div>
+              ))
+            )}
           </div>
 
           {/* Botones de acción */}
-          <div className="mt-8 flex gap-3">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SWITCH_TYPES } from "../constants/switches.constants.js";
+import { SWITCH_TYPES } from "../constants/controller.constants.js";
 
 export const createControllerValidation = z
   .object({
@@ -25,5 +25,22 @@ export const editControllerValidation = z
       .number("El amperaje debe ser un número positivo")
       .positive("El amperaje debe ser un número positivo")
       .optional(),
+  })
+  .strict();
+
+export const linkUserValidation = z
+  .object({
+    userId: z.int("Debe incluir ID de usuario de válida"),
+    partialControllerId: z
+      .string("Debe incluir ID de controlador válida")
+      .min(6, "El ID de controlador debe tener 6 caracteres")
+      .max(6, "El ID de controlador debe tener 6 caracteres"),
+    pin: z.int("Debe incluir PIN válido"),
+  })
+  .strict();
+
+export const unlinkUserValidation = z
+  .object({
+    userId: z.int("Debe incluir ID de usuario de válida"),
   })
   .strict();

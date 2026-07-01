@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateJWT } from "../middlewares/authentication.middleware.js";
 import { verifyRoles } from "../middlewares/authorization.middleware.js";
-import { ROLES } from "../constants/roles.constants.js";
+import { ROLES } from "../constants/user.constants.js";
 import {
   addUser,
   editProfile,
