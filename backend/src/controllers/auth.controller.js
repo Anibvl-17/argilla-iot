@@ -3,8 +3,7 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/response.handler.js";
-import { login } from "../services/auth.service.js";
-import { createUser } from "../services/user.service.js";
+import { login, register } from "../services/auth.service.js";
 
 export async function loginUser(req, res) {
   try {
@@ -20,7 +19,7 @@ export async function loginUser(req, res) {
 export async function registerUser(req, res) {
   try {
     const { body } = req;
-    const newUser = await createUser(body);
+    const newUser = await register(body);
 
     handleSuccess(res, 201, "Usuario registrado exitosamente", newUser);
   } catch (error) {

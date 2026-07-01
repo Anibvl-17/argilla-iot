@@ -1,22 +1,22 @@
 import { useState } from "react";
 
-const useLogin = () => {
+const useAuthForm = () => {
   const [error, setError] = useState("");
 
   const errorData = (error) => {
     let message;
 
     if (error) {
-      if (error.data.errorDetails?.lenght > 1) {
+      if (error.data?.errorDetails?.lenght > 1) {
         message = error.data.errorDetails[0];
-      } else if (error.data.errorDetails) {
+      } else if (error.data?.errorDetails) {
         message = error.data.errorDetails;
       } else {
         message = error.message;
       }
 
       setError(message);
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -31,4 +31,4 @@ const useLogin = () => {
   };
 };
 
-export default useLogin;
+export default useAuthForm;

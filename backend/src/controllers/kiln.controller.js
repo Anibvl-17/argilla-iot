@@ -12,6 +12,7 @@ import {
   remove,
   unlinkControllerFromKiln,
   unlinkUserFromKiln,
+  getAllKilns as getAllKilnsRequest,
 } from "../services/kiln.service.js";
 
 export async function addKiln(req, res) {
@@ -119,30 +120,28 @@ export async function unlinkController(req, res) {
   }
 }
 
+/**
+ * Endpoint de administrador para enlazar un horno a un usuario. Utilizado en
+ * casos donde el horno existe sin controlador
+ * @returns HTTP 400: falta ID de horno o ID de usuario, HTTP 200: vinculo
+ *          exitoso
+ */
 export async function linkUser(req, res) {
   try {
-    const userId = req.user.id;
-    const { partialControllerId, pin } = req.body;
+    const { kilnId } = req.params;
+    const { userId } = req.body;
 
-    if (!partialControllerId) {
-      return handleErrorClient(res, 400, "El ID es requerido");
+    if (!kilnId) {
+      return handleErrorClient(res, 400, "El ID del horno es requerido");
     }
 
-    if (!pin) {
-      return handleErrorClient(res, 400, "El PIN es requerido");
-    }
-
-    const linkedKiln = await linkUserToKiln(userId, partialControllerId, pin);
-
-    if (!linkedKiln) {
-      return handleSuccess(res, 200, "Usuario ya posee horno");
-    }
+    const claimedKiln = await linkUserToKiln(parseInt(kilnId), parseInt(userId));
 
     return handleSuccess(
       res,
       200,
       "Usuario vinculado exitosamente",
-      linkedKiln,
+      claimedKiln,
     );
   } catch (error) {
     return handleErrorServer(
@@ -156,16 +155,12 @@ export async function linkUser(req, res) {
 
 export async function unlinkUser(req, res) {
   try {
-    const userId = req.user.id;
     const { kilnId } = req.params;
+    const { userId } = req.body;
 
-    await unlinkUserFromKiln(userId, parseInt(kilnId));
+    await unlinkUserFromKiln(parseInt(userId), parseInt(kilnId));
 
-    return handleSuccess(
-      res,
-      200,
-      "Usuario desvinculado exitosamente",
-    );
+    return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
   } catch (error) {
     return handleErrorServer(
       res,
@@ -214,6 +209,25 @@ export async function removeKiln(req, res) {
       res,
       500,
       "Error al eliminar horno",
+      error.message,
+    );
+  }
+}
+
+export async function getAllKilns(req, res) {
+  try {
+    const kilns = await getAllKilnsRequest();
+
+    if (kilns && kilns.length === 0) {
+      return handleSuccess(res, 204, "No hay hornos registrados", kilns);
+    }
+
+    return handleSuccess(res, 200, "Hornos obtenidos exitosamente", kilns);
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener todos los hornos",
       error.message,
     );
   }

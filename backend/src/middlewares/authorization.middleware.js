@@ -6,7 +6,7 @@ import {
   handleErrorServer,
 } from "../handlers/response.handler.js";
 import { JWT_SECRET } from "../config/configEnv.js";
-import { ROLE_NAMES } from "../constants/roles.constants.js";
+import { ROLE_NAMES } from "../constants/user.constants.js";
 
 /**
  * Middleware que controla el acceso basado en roles.

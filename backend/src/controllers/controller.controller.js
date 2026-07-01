@@ -8,6 +8,9 @@ import {
   edit,
   generatePin,
   remove,
+  getAllControllers as getAllControllersRequest,
+  linkControllerToUser,
+  unlinkUserFromController as unlinkUserFromControllerRequest
 } from "../services/controller.service.js";
 
 /**
@@ -109,5 +112,78 @@ export async function generateControllerPin(req, res) {
     }
 
     return handleErrorServer(res, 500, "Error al generar pin", error.message);
+  }
+}
+
+export async function getAllControllers(req, res) {
+  try {
+    const controllers = await getAllControllersRequest();
+
+    if (controllers && controllers.length === 0) {
+      return handleSuccess(res, 204, "No hay controladores registrados", []);
+    }
+
+    return handleSuccess(
+      res,
+      200,
+      "Controladores obtenidos exitosamente",
+      controllers,
+    );
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener todos los controladores",
+      error.message,
+    );
+  }
+}
+
+/**
+ * Endpoint para enlazar un controlador a un usuario.
+ * @returns HTTP 400: falta ID, HTTP 200: vinculo
+ *          exitoso
+ */
+export async function linkUserToController(req, res) {
+  try {
+    const { partialControllerId, userId, pin } = req.body;
+
+    const claimedController = await linkControllerToUser(
+      partialControllerId,
+      parseInt(userId),
+      parseInt(pin),
+    );
+
+    return handleSuccess(
+      res,
+      200,
+      "Usuario vinculado exitosamente",
+      claimedController,
+    );
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al vincular usuario",
+      error.message,
+    );
+  }
+}
+
+export async function unlinkUserFromController(req, res) {
+  try {
+    const { controllerId } = req.params;
+    const { userId } = req.body;
+
+    await unlinkUserFromControllerRequest(parseInt(userId), controllerId);
+
+    return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al desvincular usuario",
+      error.message,
+    );
   }
 }

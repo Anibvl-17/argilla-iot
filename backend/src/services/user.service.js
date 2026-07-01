@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
+import { ROLES } from "../constants/user.constants.js";
 
 export async function createUser(data) {
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -9,6 +10,7 @@ export async function createUser(data) {
       email: data.email,
       password: hashedPassword,
       name: data.name,
+      role: data.role ?? ROLES.USER,
     },
   });
 
@@ -42,4 +44,8 @@ export async function findUserByEmail(email) {
 
 export async function findUserById(userId) {
   return await prisma.user.findUnique({ where: { userId } });
+}
+
+export async function getAllUsers() {
+  return await prisma.user.findMany({ omit: { password: true } });
 }

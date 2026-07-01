@@ -1,0 +1,21 @@
+export const CONTROLLER_LINK_STATUS = {
+  UNLINKED: "UNLINKED",
+  LINKED_TO_KILN: "LINKED_TO_KILN",
+  LINKED_TO_USER: "LINKED_TO_USER",
+  LINKED_TO_KILN_AND_USER: "LINKED_TO_KILN_AND_USER",
+};
+
+export const CONTROLLER_OPERATION_STATUS = {
+  ON: "ON",
+  OFF: "OFF"
+}
+
+export const SWITCH_TYPES = {
+  CONTACTOR: "CONTACTOR",
+  SSR: "SSR",
+};
+
+export const SWITCH_NAMES = {
+  [SWITCH_TYPES.CONTACTOR]: "Contactor",
+  [SWITCH_TYPES.SSR]: "Relé de Estado Sólido",
+};

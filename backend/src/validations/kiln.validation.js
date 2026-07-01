@@ -47,15 +47,24 @@ export const editKilnValidation = z
   })
   .strict();
 
-export const linkValidation = z
+export const linkUserValidation = z
   .object({
-    partialControllerId: z
-      .string("Debe incluir el ID de tipo texto")
-      .trim()
-      .length(6, "El ID del controlador debe ser exactamente 6 caracteres"),
-    pin: z
-      .number("El PIN debe ser un número positivo")
-      .min(100000, "El PIN esta fuera del rango permitido")
-      .max(999999, "El PIN esta fuera del rango permitido"),
+    userId: z.int("Debe incluir ID de tipo número"),
+  })
+  .strict();
+
+export const linkControllerValidation = z.object({
+  partialControllerId: z
+    .string("Debe incluir el ID de tipo texto")
+    .trim()
+    .length(6, "El ID del controlador debe ser exactamente 6 caracteres"),
+  pin: z
+    .number("El PIN debe ser un número positivo")
+    .min(100000, "El PIN esta fuera del rango permitido"),
+});
+
+export const unlinkUserValidation = z
+  .object({
+    userId: z.int("Debe incluir ID de usuario de válida"),
   })
   .strict();

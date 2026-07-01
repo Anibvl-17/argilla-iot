@@ -1,27 +1,17 @@
-import { Link } from "react-router-dom";
-import { logout } from "@services/auth.service";
 import { useAuth } from "@context/AuthContext";
+import { ROLES } from "../constants/user.constants";
+import { Navigate } from "react-router-dom";
 
-const Home = () => {
-  const { setUser } = useAuth();
+export default function Home() {
+  const { user } = useAuth();
+
+  if (user.role === ROLES.ADMIN) {
+    return <Navigate to={"/admin"} replace />;
+  }
 
   return (
-    <div className="p-12">
-      <h1>Home :)</h1>
-      <Link
-        className="underline"
-        to={{
-          pathname: "/",
-        }}
-        onClick={async () => {
-          await logout();
-          setUser(null);
-        }}
-      >
-        Cerrar sesión
-      </Link>
+    <div className="flex flex-col h-full text-white">
+      <h1>Home</h1>
     </div>
   );
-};
-
-export default Home;
+}

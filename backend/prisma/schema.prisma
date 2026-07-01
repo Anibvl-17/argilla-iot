@@ -17,24 +17,38 @@ enum SwitchTypes {
   CONTACTOR
 }
 
-model User {
-  userId   Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  name     String
-  role     Role   @default(USER)
+enum CtrlOperativeStatus {
+  ON
+  OFF
+}
 
-  // Un usuario puede tener muchos hornos
+model User {
+  userId    Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+
+  // Un usuario puede tener cero o varios hornos
   kilns Kiln[]
+
+  // Un usuario puede tener cero o varios controladores
+  controllers Controller[]
 }
 
 // Hardware físico (ESP32)
 model Controller {
-  controllerId String  @id @default(uuid())
-  pin          Int? // PIN temporal para vinculación
-  status       String  @default("WAITING")
-  switchType   SwitchTypes @default(CONTACTOR)
-  switchAmps   Int @default(20)
+  controllerId    String              @id @default(uuid())
+  operationStatus String              @default("OFF")
+  pin             Int? // PIN temporal para vinculación
+  operativeStatus CtrlOperativeStatus @default(OFF)
+  switchType      SwitchTypes         @default(CONTACTOR)
+  switchAmps      Int                 @default(20)
+
+  // Controlador instalado en el horno
+  userId Int?
+  user   User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
 
   // Un controlador maneja un horno a la vez
   kiln Kiln?
@@ -55,7 +69,7 @@ model Kiln {
 
   // Controlador instalado en el horno
   controllerId String?     @unique
-  controller   Controller? @relation(fields: [controllerId], references: [controllerId])
+  controller   Controller? @relation(fields: [controllerId], references: [controllerId], onDelete: SetNull)
 
   // Historial térmico (asociado al horno, si se cambia controlador no pasa nada)
   telemetry Telemetry[]

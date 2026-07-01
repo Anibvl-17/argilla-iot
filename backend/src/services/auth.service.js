@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { findUserByEmail } from "./user.service.js";
+import { createUser, findUserByEmail } from "./user.service.js";
 
 export async function login(email, password) {
   const user = await findUserByEmail(email);
@@ -25,4 +25,11 @@ export async function login(email, password) {
 
   delete user.password;
   return { user, token };
+}
+
+export async function register(data) {
+  // Evita el paso de rol al registrarse.
+  const { name, email, password } = data;
+
+  return createUser({ name, email, password });
 }
