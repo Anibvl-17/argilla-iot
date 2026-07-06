@@ -72,13 +72,99 @@ export async function getAllKilns() {
   });
 }
 
+const controllerSelection = {
+  controllerId: true,
+  temp: true,
+  operativeStatus: true,
+  switchType: true,
+  switchAmps: true,
+};
+
+function presentController(controller) {
+  if (!controller) return null;
+
+  const { controllerId, ...safeController } = controller;
+  return {
+    ...safeController,
+    controllerCode: controllerId.slice(-6),
+  };
+}
+
+function presentKiln(kiln) {
+  return {
+    ...kiln,
+    controller: presentController(kiln.controller),
+  };
+}
+
 export async function getKilnsByUserId(userId) {
-  return await prisma.kiln.findMany({
-    where: { userId },
-    include: {
-      controller: true,
+  const [kilns, unlinkedControllers] = await prisma.$transaction([
+    prisma.kiln.findMany({
+      where: { userId },
+      select: {
+        kilnId: true,
+        name: true,
+        liters: true,
+        phases: true,
+        volts: true,
+        amps: true,
+        controller: { select: controllerSelection },
+      },
+      orderBy: { kilnId: "asc" },
+    }),
+    prisma.controller.findMany({
+      where: { userId, kiln: null },
+      select: controllerSelection,
+      orderBy: { controllerId: "asc" },
+    }),
+  ]);
+
+  return {
+    kilns: kilns.map(presentKiln),
+    unlinkedControllers: unlinkedControllers.map(presentController),
+  };
+}
+
+export async function getUserKilnById(userId, kilnId) {
+  const kiln = await prisma.kiln.findFirst({
+    where: { kilnId, userId },
+    select: {
+      kilnId: true,
+      name: true,
+      liters: true,
+      phases: true,
+      volts: true,
+      amps: true,
+      controller: { select: controllerSelection },
     },
   });
+
+  return kiln ? presentKiln(kiln) : null;
+}
+
+export async function renameUserKiln(userId, kilnId, name) {
+  const ownedKiln = await prisma.kiln.findFirst({
+    where: { kilnId, userId },
+    select: { kilnId: true },
+  });
+
+  if (!ownedKiln) return null;
+
+  const kiln = await prisma.kiln.update({
+    where: { kilnId },
+    data: { name },
+    select: {
+      kilnId: true,
+      name: true,
+      liters: true,
+      phases: true,
+      volts: true,
+      amps: true,
+      controller: { select: controllerSelection },
+    },
+  });
+
+  return presentKiln(kiln);
 }
 
 /**

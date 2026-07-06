@@ -4,6 +4,8 @@ import {
   editKiln,
   getAllKilns,
   getUserKilns,
+  getUserKiln,
+  renameOwnedKiln,
   linkController,
   linkUser,
   removeKiln,
@@ -20,6 +22,7 @@ import {
   linkUserValidation,
   linkControllerValidation,
   unlinkUserValidation,
+  renameUserKilnValidation,
 } from "../validations/kiln.validation.js";
 
 const router = Router();
@@ -27,6 +30,12 @@ const router = Router();
 router.use(authenticateJWT);
 
 router.get("/my-kilns", getUserKilns);
+router.get("/my-kilns/:kilnId", getUserKiln);
+router.patch(
+  "/my-kilns/:kilnId/name",
+  validateSchema(renameUserKilnValidation),
+  renameOwnedKiln,
+);
 
 router.post(
   "/:kilnId/link",
