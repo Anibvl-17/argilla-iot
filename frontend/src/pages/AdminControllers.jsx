@@ -7,12 +7,10 @@ import {
   updateController,
 } from "@services/controller.service";
 import {
-  LuLink,
   LuPencil,
   LuRectangleEllipsis,
   LuTrash2,
   LuTriangleAlert,
-  LuUnlink,
   LuUserRoundPen,
   LuUserRoundPlus,
 } from "react-icons/lu";

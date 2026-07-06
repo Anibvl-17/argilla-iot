@@ -888,7 +888,6 @@ export default function AdminKilns() {
                     </div>
                   )}
                 </div>
-                
               </div>
               {selectedKiln?.user && (
                 <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
@@ -931,7 +930,7 @@ export default function AdminKilns() {
                   </div>
                   {selectedKilnHasOwner && (
                     <span className="text-red-300 flex flex-row items-center justify-center gap-2">
-                      <LuTriangleAlert className="text-xl"/>
+                      <LuTriangleAlert className="text-xl" />
                       El propietario actual será desvinculado
                     </span>
                   )}
