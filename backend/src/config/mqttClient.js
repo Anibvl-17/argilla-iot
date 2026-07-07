@@ -1,6 +1,9 @@
 import mqtt from "mqtt";
 import { updateControllerTelemetry } from "../services/controller.service.js";
-import { emitControllerTelemetry } from "../realtime/socket.js";
+import {
+  emitAdminSummary,
+  emitControllerTelemetry,
+} from "../realtime/socket.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
 const MQTT_USER = process.env.MQTT_USER || "";
@@ -56,6 +59,9 @@ export function connectMqtt() {
         operativeStatus: controller.operativeStatus,
         temp: controller.temp,
       });
+      if (data.operativeStatus) {
+        void emitAdminSummary();
+      }
     } catch (error) {
       console.error(`[MQTT] Error procesando ${topic}:`, error.message);
     }

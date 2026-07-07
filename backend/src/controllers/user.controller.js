@@ -11,12 +11,14 @@ import {
   updateUser,
   getAllUsers as getAllUsersRequest,
 } from "../services/user.service.js";
+import { emitAdminSummary } from "../realtime/socket.js";
 
 export async function addUser(req, res) {
   try {
     const { body } = req;
 
     const newUser = await createUser(body);
+    void emitAdminSummary();
 
     return handleSuccess(res, 201, "Usuario creado exitosamente", newUser);
   } catch (error) {
@@ -137,6 +139,7 @@ export async function removeUser(req, res) {
     }
 
     await deleteUser(parseInt(userId));
+    void emitAdminSummary();
 
     return handleSuccess(res, 200, "Usuario eliminado exitosamente");
   } catch (error) {

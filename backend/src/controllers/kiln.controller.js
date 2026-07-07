@@ -16,12 +16,14 @@ import {
   unlinkUserFromKiln,
   getAllKilns as getAllKilnsRequest,
 } from "../services/kiln.service.js";
+import { emitAdminSummary } from "../realtime/socket.js";
 
 export async function addKiln(req, res) {
   try {
     const kilnData = req.body;
 
     const newKiln = await createKiln(kilnData);
+    void emitAdminSummary();
 
     return handleSuccess(res, 201, "Horno creado exitosamente", newKiln);
   } catch (error) {
@@ -117,6 +119,7 @@ export async function linkController(req, res) {
       partialControllerId,
       pin,
     );
+    void emitAdminSummary();
 
     return handleSuccess(
       res,
@@ -143,6 +146,8 @@ export async function unlinkController(req, res) {
     if (!updatedKiln) {
       return handleSuccess(res, 200, "Horno no tiene controlador vinculado");
     }
+
+    void emitAdminSummary();
 
     return handleSuccess(
       res,
@@ -176,6 +181,7 @@ export async function linkUser(req, res) {
     }
 
     const claimedKiln = await linkUserToKiln(parseInt(kilnId), parseInt(userId));
+    void emitAdminSummary();
 
     return handleSuccess(
       res,
@@ -199,6 +205,7 @@ export async function unlinkUser(req, res) {
     const { userId } = req.body;
 
     await unlinkUserFromKiln(parseInt(userId), parseInt(kilnId));
+    void emitAdminSummary();
 
     return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
   } catch (error) {
@@ -242,6 +249,8 @@ export async function removeKiln(req, res) {
     if (!isRemoved) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
+
+    void emitAdminSummary();
 
     return handleSuccess(res, 200, "Horno eliminado exitosamente");
   } catch (error) {

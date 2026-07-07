@@ -12,6 +12,7 @@ import {
   linkControllerToUser,
   unlinkUserFromController as unlinkUserFromControllerRequest
 } from "../services/controller.service.js";
+import { emitAdminSummary } from "../realtime/socket.js";
 
 /**
  * Endpoint para crear un controlador lógico
@@ -23,6 +24,7 @@ export async function createController(req, res) {
     const { body } = req;
 
     const controller = await create(body);
+    void emitAdminSummary();
 
     return handleSuccess(
       res,
@@ -76,6 +78,8 @@ export async function removeController(req, res) {
     if (!isRemoved) {
       return handleErrorClient(res, 404, "Controlador no encontrado");
     }
+
+    void emitAdminSummary();
 
     return handleSuccess(res, 200, "Controlador eliminado exitosamente");
   } catch (error) {
@@ -153,6 +157,7 @@ export async function linkUserToController(req, res) {
       parseInt(userId),
       parseInt(pin),
     );
+    void emitAdminSummary();
 
     return handleSuccess(
       res,
@@ -176,6 +181,7 @@ export async function unlinkUserFromController(req, res) {
     const { userId } = req.body;
 
     await unlinkUserFromControllerRequest(parseInt(userId), controllerId);
+    void emitAdminSummary();
 
     return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
   } catch (error) {
