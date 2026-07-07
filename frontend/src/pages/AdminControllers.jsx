@@ -357,7 +357,7 @@ export default function AdminControllers() {
             Asignados a Horno y Usuario
           </p>
           <p className="text-3xl font-bold text-green-400/90">
-            {controllers.filter((c) => c.kiln?.user).length}
+            {controllers.filter((c) => c.kiln && c.user).length}
           </p>
         </div>
       </div>
