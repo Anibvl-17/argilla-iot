@@ -50,9 +50,6 @@ const router = createBrowserRouter([
             element: <KilnDetails />
           },
           {
-            path: "profile",
-          },
-          {
             path: "admin",
             element: (
               <ProtectedRoute allowedRoles="ADMIN">

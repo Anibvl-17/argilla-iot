@@ -46,6 +46,49 @@ export async function findUserById(userId) {
   return await prisma.user.findUnique({ where: { userId } });
 }
 
+export async function getUserProfile(userId) {
+  return await prisma.user.findUnique({
+    where: { userId },
+    select: {
+      userId: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function changeUserPassword(userId, currentPassword, newPassword) {
+  const user = await prisma.user.findUnique({ where: { userId } });
+
+  if (!user) {
+    const error = new Error("Usuario no encontrado");
+    error.code = "P2025";
+    throw error;
+  }
+
+  const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+  if (!passwordMatches) {
+    const error = new Error("La contraseña actual es incorrecta");
+    error.code = "INVALID_CURRENT_PASSWORD";
+    throw error;
+  }
+
+  const password = await bcrypt.hash(newPassword, 10);
+  return await prisma.user.update({
+    where: { userId },
+    data: { password },
+    select: {
+      userId: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+}
+
 export async function getAllUsers() {
   return await prisma.user.findMany({ omit: { password: true } });
 }

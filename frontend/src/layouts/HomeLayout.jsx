@@ -1,16 +1,18 @@
-import { Link, Outlet } from "react-router-dom";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
-import { logout } from "@services/auth.service";
 import { SidebarItem } from "@components/SidebarItem";
+import ProfileModal from "@components/ProfileModal";
 import argillaIcon from "@assets/argilla-icon-light.png";
+import { LuUser } from "react-icons/lu";
 
 export default function HomeLayout() {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userRole = user.role;
 
   return (
     <div className="flex h-screen flex-col bg-[#0a0a0a] text-white font-sans overflow-hidden md:flex-row">
-
       {/* Sidebar */}
       <aside className="flex w-full shrink-0 flex-row border-b border-neutral-800 bg-[#141414] md:w-64 md:flex-col md:border-b-0 md:border-r">
         {/* Logo*/}
@@ -42,19 +44,6 @@ export default function HomeLayout() {
             </>
           )}
         </nav>
-
-        {/* Footer */}
-        <div className="hidden border-t border-neutral-800 p-4 md:block">
-          <Link
-            to="/profile"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center text-white">
-              {user.name[0]}
-            </div>
-            <span>Mi Perfil</span>
-          </Link>
-        </div>
       </aside>
 
       {/* Vista central */}
@@ -65,19 +54,19 @@ export default function HomeLayout() {
               "Panel Administrativo"
             ) : (
               <>
-                Hola, <span className="text-red-500 text-shadow-sm">{user.name}</span>
+                Hola,{" "}
+                <span className="text-red-500 text-shadow-sm">{user.name}</span>
               </>
             )}
           </h2>
-          <Link
-            onClick={async () => {
-              await logout();
-              setUser(null);
-            }}
-            className="text-sm rounded-md border bg-neutral-900 border-neutral-700/80 px-4 py-2 hover:bg-neutral-800 transition-colors"
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen(true)}
+            className="flex items-center gap-2 rounded-md border border-neutral-700/80 bg-neutral-900 px-3 py-2 text-sm transition-colors hover:bg-neutral-800 sm:px-4 hover:cursor-pointer"
           >
-            Cerrar Sesión
-          </Link>
+            <LuUser className="text-lg"/>
+            <span className="hidden sm:inline">Mi perfil</span>
+          </button>
         </header>
 
         {/* Area de contenido */}
@@ -85,6 +74,9 @@ export default function HomeLayout() {
           <Outlet />
         </div>
       </main>
+      {isProfileOpen && (
+        <ProfileModal onClose={() => setIsProfileOpen(false)} />
+      )}
     </div>
   );
 }

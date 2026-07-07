@@ -16,15 +16,12 @@ export const createUserValidation = z.object({
 
 export const updateProfileValidation = z
   .object({
-    name: z
+    currentPassword: z
       .string()
-      .min(2, "El nombre debe tener al menos 2 caracteres")
-      .optional(),
-    email: z.email("Debe ser un correo electrónico válido").optional(),
-    password: z
+      .min(6, "La contraseña actual debe tener al menos 6 caracteres"),
+    newPassword: z
       .string()
-      .min(6, "La contraseña debe tener mínimo 6 caracteres")
-      .optional(),
+      .min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
   })
   .strict();
 
