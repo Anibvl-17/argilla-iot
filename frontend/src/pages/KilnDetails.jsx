@@ -99,7 +99,7 @@ export default function KilnDetails() {
     <div className="mx-auto w-full max-w-7xl">
       <Link
         to="/kilns"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-neutral-400 transition-colors hover:text-white"
+        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition-colors hover:text-white"
       >
         <LuArrowLeft /> Volver a mis hornos
       </Link>

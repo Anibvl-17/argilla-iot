@@ -504,7 +504,7 @@ export default function AdminKilns() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Hornos</h1>
-          <p className="text-neutral-400 mt-1 text-sm">
+          <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los hornos de la plataforma.
           </p>
         </div>
@@ -618,7 +618,7 @@ export default function AdminKilns() {
                       className="hover:bg-neutral-900/30 transition-colors"
                     >
                       {/* Columna ID */}
-                      <td className="text-base px-6 py-5 font-mono text-neutral-400">
+                      <td className="text-base px-6 py-5 font-mono text-neutral-300">
                         {kiln.kilnId}
                       </td>
 
@@ -630,7 +630,7 @@ export default function AdminKilns() {
                               <span className="font-semibold text-neutral-100 text-base">
                                 {kiln.user.name}
                               </span>
-                              <span className="text-sm text-neutral-400 mt-0.5">
+                              <span className="text-sm font-medium text-neutral-400 mt-0.5">
                                 {kiln.user.email}
                               </span>
                             </>
@@ -668,7 +668,7 @@ export default function AdminKilns() {
                       </td>
 
                       {/* Columna Litros */}
-                      <td className="px-6 py-5 text-lg text-center font-mono text-neutral-400">
+                      <td className="px-6 py-5 text-base text-center font-mono text-neutral-400">
                         {kiln.liters}
                       </td>
 
@@ -856,7 +856,7 @@ export default function AdminKilns() {
                               <span className="text-sm font-medium text-white">
                                 {user.name}
                               </span>
-                              <span className="text-xs text-neutral-400">
+                              <span className="text-xs font-bold text-neutral-400">
                                 ID {user.userId} · {user.email}
                               </span>
                             </button>
@@ -962,7 +962,7 @@ export default function AdminKilns() {
 
             <div className="space-y-4">
               {selectedKiln?.controllerId && (
-                <p className="text-sm text-neutral-400">
+                <p className="text-sm text-neutral-300">
                   Para enlazar un nuevo controlador primero desvincula el
                   actual.
                 </p>
@@ -1007,7 +1007,7 @@ export default function AdminKilns() {
         onConfirm={confirmDelete}
         title="¿Eliminar horno?"
         CustomMessage={() => (
-          <p className="text-neutral-400">
+          <p className="text-neutral-300">
             El horno{" "}
             <span className="font-bold">
               {selectedKiln?.kilnId} - "{selectedKiln?.name}"

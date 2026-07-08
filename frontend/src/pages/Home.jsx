@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
+  LuBox,
   LuFlame,
   LuGauge,
   LuMoveRight,
@@ -20,10 +21,12 @@ function applyTelemetry(controller, telemetry) {
 }
 
 function Temperature({ value }) {
-  return (
-    <span className="text-sm text-neutral-400">
-      {value == null ? "Temperatura no disponible" : `${value.toFixed(1)} °C`}
+  return value == null ? (
+    <span className="text-sm italic text-neutral-400">
+      Temperatura no disponible
     </span>
+  ) : (
+    <span className="text-sm text-neutral-300">{value.toFixed(1)} °C</span>
   );
 }
 
@@ -89,7 +92,7 @@ export default function Home() {
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             Mis hornos
           </h1>
-          <p className="mt-2 text-neutral-400">
+          <p className="mt-2 text-neutral-300">
             Revisa el estado y la información principal de tus hornos.
           </p>
         </div>
@@ -125,8 +128,8 @@ export default function Home() {
                 <h2 className="mt-5 truncate text-xl font-semibold">
                   {kiln.name}
                 </h2>
-                <div className="mt-3 flex items-center gap-2 text-neutral-400">
-                  <LuGauge />
+                <div className="mt-3 flex items-center gap-2 text-neutral-300">
+                  <LuBox />
                   <span>{kiln.liters} litros</span>
                 </div>
                 <div className="mt-1">

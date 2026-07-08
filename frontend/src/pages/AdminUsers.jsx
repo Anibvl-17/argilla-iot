@@ -163,7 +163,7 @@ export default function AdminUsers() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
-          <p className="text-neutral-400 mt-1 text-sm">
+          <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los usuarios de la plataforma.
           </p>
         </div>
@@ -214,24 +214,24 @@ export default function AdminUsers() {
       <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
         {!loading && (
           <table className="w-full text-sm text-left min-w-10">
-            <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
+            <thead className="text-xs font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
               <tr>
-                <th scope="col" className="px-6 py-4 font-medium">
+                <th scope="col" className="px-6 py-4">
                   ID
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium">
+                <th scope="col" className="px-6 py-4">
                   Email
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium">
+                <th scope="col" className="px-6 py-4">
                   Nombre
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
+                <th scope="col" className="px-6 py-4 text-center">
                   Rol
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
+                <th scope="col" className="px-6 py-4 text-center">
                   Fecha de registro
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium text-center">
+                <th scope="col" className="px-6 py-4 text-center">
                   Acciones
                 </th>
               </tr>
@@ -245,17 +245,17 @@ export default function AdminUsers() {
                     className="hover:bg-neutral-900/30 transition-colors"
                   >
                     {/* ID */}
-                    <td className="px-6 py-5 font-mono text-neutral-400">
+                    <td className="px-6 py-5 text-base font-mono text-neutral-200">
                       {user.userId}
                     </td>
 
                     {/* Email */}
-                    <td className="px-6 py-5 font-mono text-neutral-400">
+                    <td className="px-6 py-5 text-neutral-300">
                       {user.email}
                     </td>
 
                     {/* Nombre */}
-                    <td className="px-6 py-5 font-mono text-neutral-400">
+                    <td className="px-6 py-5 text-neutral-300">
                       {user.name}
                     </td>
 
@@ -267,7 +267,7 @@ export default function AdminUsers() {
                     </td>
 
                     {/* Fecha creación */}
-                    <td className="px-6 py-5 text-center text-neutral-400">
+                    <td className="px-6 py-5 text-center text-neutral-300">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
 
@@ -338,7 +338,7 @@ export default function AdminUsers() {
         onConfirm={confirmDelete}
         title="¿Eliminar usuario?"
         CustomMessage={() => (
-          <p className="text-neutral-400">
+          <p className="text-neutral-300">
             El usuario{" "}
             <span className="font-bold">
               {selectedUser?.userId} - "{selectedUser?.name}"

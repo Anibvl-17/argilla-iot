@@ -161,7 +161,7 @@ export default function ProfileModal({ onClose }) {
               <form onSubmit={handleSubmit} className="mt-4 pt-2 space-y-4">
                 <h4 className="font-semibold text-white">Cambiar contraseña</h4>
 
-                <label className="block text-sm text-neutral-400">
+                <label className="block font-medium text-sm text-neutral-400">
                   Contraseña actual
                   <input
                     autoComplete="current-password"
@@ -175,7 +175,7 @@ export default function ProfileModal({ onClose }) {
                   />
                 </label>
 
-                <label className="block text-sm text-neutral-400">
+                <label className="block font-medium text-sm text-neutral-400">
                   Nueva contraseña
                   <input
                     autoComplete="new-password"

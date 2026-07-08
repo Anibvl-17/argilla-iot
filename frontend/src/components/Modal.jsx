@@ -113,7 +113,7 @@ export default function Modal({
             ) : (
               fields.map((field) => (
                 <div key={field.name} className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-neutral-400 ml-1">
+                  <label className="text-sm font-medium text-neutral-300 ml-1">
                     {field.label}
                   </label>
 

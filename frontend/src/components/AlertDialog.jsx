@@ -102,7 +102,7 @@ export default function AlertDialog({
             <CustomMessage className="mb-8" />
           </span>
         ) : (
-          <p className="text-sm text-neutral-400 mb-8 leading-relaxed">
+          <p className="text-sm text-neutral-300 mb-8 leading-relaxed">
             {message}
           </p>
         )}

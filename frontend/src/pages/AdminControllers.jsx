@@ -317,7 +317,7 @@ export default function AdminControllers() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Controladores</h1>
-          <p className="text-neutral-400 mt-1 text-sm">
+          <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los controladores de la plataforma.
           </p>
         </div>
@@ -457,7 +457,7 @@ export default function AdminControllers() {
                             </span>
                           )}
                           {controller.user ? (
-                            <span className="text-sm text-neutral-400">
+                            <span className="text-sm text-neutral-300">
                               {controller.user.name}
                             </span>
                           ) : (
@@ -481,7 +481,7 @@ export default function AdminControllers() {
                       </td>
 
                       {/* Amperaje switch */}
-                      <td className="px-6 py-5 text-center font-mono text-neutral-400">
+                      <td className="px-6 py-5 text-center font-mono text-neutral-300">
                         {controller.switchAmps}
                       </td>
 
@@ -588,7 +588,7 @@ export default function AdminControllers() {
             </table>
           )
         ) : (
-          <p className="text-neutral-400 text-sm/relaxed p-4 text-center">
+          <p className="text-neutral-300 text-sm/relaxed p-4 text-center">
             No hay controladores registrados. <br />
             Haz click en el botón{" "}
             <span className="rounded-lg font-medium">
@@ -699,7 +699,7 @@ export default function AdminControllers() {
                               <span className="text-sm font-medium text-white">
                                 {user.name}
                               </span>
-                              <span className="text-xs text-neutral-400">
+                              <span className="text-xs font-bold text-neutral-400">
                                 ID {user.userId} · {user.email}
                               </span>
                             </button>
@@ -796,7 +796,7 @@ export default function AdminControllers() {
         onConfirm={confirmDelete}
         title="¿Eliminar controlador?"
         CustomMessage={() => (
-          <p className="text-neutral-400">
+          <p className="text-neutral-300">
             El controlador{" "}
             <span
               title={selectedController?.controllerId}
