@@ -14,7 +14,7 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 function Detail({ label, value }) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
-      <dt className="text-sm text-neutral-500">{label}</dt>
+      <dt className="text-sm font-medium text-neutral-400">{label}</dt>
       <dd className="mt-1 font-medium text-neutral-100">{value}</dd>
     </div>
   );
@@ -185,7 +185,7 @@ export default function KilnDetails() {
           </div>
           <div>
             <h2 className="text-lg font-semibold">Controlador</h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm font-medium text-neutral-400">
               Información técnica y estado actual
             </p>
           </div>
@@ -215,7 +215,7 @@ export default function KilnDetails() {
             />
           </dl>
         ) : (
-          <div className="mt-5 rounded-xl border border-dashed border-neutral-700 p-8 text-center text-neutral-500">
+          <div className="mt-5 rounded-xl border border-dashed border-neutral-700 p-8 text-center font-medium text-neutral-500">
             Este horno no tiene un controlador vinculado.
           </div>
         )}

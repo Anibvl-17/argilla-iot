@@ -39,7 +39,7 @@ const AdminStatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-tight sm:px-3 sm:py-1 sm:text-xs ${styles[status]}`}
+      className={`inline-flex rounded-full border px-1.5 py-1.5 text-[10px] font-medium leading-tight sm:px-2 sm:py-2 sm:text-xs ${styles[status]}`}
     >
       {labels[status]}
     </span>
@@ -523,13 +523,13 @@ export default function AdminKilns() {
       <div>
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Total Hornos
             </p>
             <p className="text-xl font-bold sm:text-3xl">{kilns.length}</p>
           </div>
           <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Sin Controlador
             </p>
             <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
@@ -537,7 +537,7 @@ export default function AdminKilns() {
             </p>
           </div>
           <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Sin Propietario
             </p>
             <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
@@ -771,7 +771,7 @@ export default function AdminKilns() {
                         <td colSpan="7" className="px-3 py-3">
                           <dl className="grid grid-cols-2 gap-3 text-xs">
                             <div>
-                              <dt className="text-neutral-500">Controlador</dt>
+                              <dt className="font-bold text-neutral-400">Controlador</dt>
                               <dd className="mt-1 break-all font-mono text-neutral-200">
                                 {kiln.controllerId
                                   ? `...${kiln.controllerId.slice(-6)}`
@@ -779,15 +779,15 @@ export default function AdminKilns() {
                               </dd>
                             </div>
                             <div>
-                              <dt className="text-neutral-500">Capacidad</dt>
+                              <dt className="font-bold text-neutral-400">Capacidad</dt>
                               <dd className="mt-1 text-neutral-200">
                                 {kiln.liters} litros
                               </dd>
                             </div>
                             <div className="col-span-2">
-                              <dt className="text-neutral-500">Datos eléctricos</dt>
+                              <dt className="font-bold text-neutral-400">Datos eléctricos</dt>
                               <dd className="mt-1 text-neutral-200">
-                                {kiln.amps}A · {kiln.volts}V ·{" "}
+                                <span className="font-mono">{kiln.amps}A / {kiln.volts}V {" "}</span>
                                 {kiln.phases === 1 ? "Monofásico" : "Trifásico"}
                               </dd>
                             </div>

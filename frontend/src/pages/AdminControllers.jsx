@@ -331,13 +331,13 @@ export default function AdminControllers() {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Total Controladores
           </p>
           <p className="text-xl font-bold sm:text-3xl">{controllers.length}</p>
         </div>
         <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Horno
           </p>
           <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
@@ -345,7 +345,7 @@ export default function AdminControllers() {
           </p>
         </div>
         <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Usuario
           </p>
           <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
@@ -353,7 +353,7 @@ export default function AdminControllers() {
           </p>
         </div>
         <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Horno y Usuario
           </p>
           <p className="text-xl font-bold text-green-400/90 sm:text-3xl">
