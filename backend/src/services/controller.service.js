@@ -113,6 +113,19 @@ export async function clearPin(id) {
   });
 }
 
+export async function updateControllerTelemetry(controllerId, data) {
+  return await prisma.controller.update({
+    where: { controllerId },
+    data,
+    select: {
+      controllerId: true,
+      userId: true,
+      operativeStatus: true,
+      temp: true,
+    },
+  });
+}
+
 export async function getAllControllers() {
   const controllers = await prisma.controller.findMany({
     include: { kiln: true, user: true },

@@ -4,7 +4,8 @@ export const SidebarItem = ({ path, title }) => {
   const location = useLocation();
   let isActive = (path) => location.pathname === path;
 
-  if (path === "/admin" && location.pathname === "/") isActive = () => true;
+  if ((path === "/admin" || path === "/kilns") && location.pathname === "/")
+    isActive = () => true;
 
   return (
     <Link

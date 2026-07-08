@@ -41,6 +41,7 @@ model User {
 model Controller {
   controllerId    String              @id @default(uuid())
   operationStatus String              @default("OFF")
+  temp            Float?
   pin             Int? // PIN temporal para vinculación
   operativeStatus CtrlOperativeStatus @default(OFF)
   switchType      SwitchTypes         @default(CONTACTOR)

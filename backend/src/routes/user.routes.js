@@ -7,6 +7,7 @@ import {
   editProfile,
   editUser,
   getAllUsers,
+  getProfile,
   removeUser,
 } from "../controllers/user.controller.js";
 import { validateSchema } from "../middlewares/validator.middleware.js";
@@ -20,6 +21,7 @@ const router = Router();
 
 router.use(authenticateJWT);
 
+router.get("/me", getProfile);
 router.patch("/me", validateSchema(updateProfileValidation), editProfile);
 
 router.use(verifyRoles([ROLES.ADMIN]));

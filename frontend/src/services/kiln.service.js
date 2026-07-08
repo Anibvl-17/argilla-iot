@@ -1,5 +1,42 @@
 import axios from "./root.service.js";
 
+function serviceError(error, fallback) {
+  return {
+    success: false,
+    message: error.response?.data?.message || fallback,
+    data: error.response?.data,
+  };
+}
+
+export async function getMyKilns() {
+  try {
+    const response = await axios.get("/kiln/my-kilns");
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar tus equipos");
+  }
+}
+
+export async function getMyKiln(kilnId) {
+  try {
+    const response = await axios.get(`/kiln/my-kilns/${kilnId}`);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar el horno");
+  }
+}
+
+export async function renameMyKiln(kilnId, name) {
+  try {
+    const response = await axios.patch(`/kiln/my-kilns/${kilnId}/name`, {
+      name,
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible actualizar el nombre");
+  }
+}
+
 export async function getAllKilns() {
   try {
     const response = await axios.get("/kiln/all");

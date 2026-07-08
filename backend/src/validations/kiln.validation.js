@@ -68,3 +68,13 @@ export const unlinkUserValidation = z
     userId: z.int("Debe incluir ID de usuario de válida"),
   })
   .strict();
+
+export const renameUserKilnValidation = z
+  .object({
+    name: z
+      .string("El nombre debe ser de tipo texto")
+      .trim()
+      .min(2, "El nombre debe tener al menos 2 caracteres")
+      .max(80, "El nombre no puede superar los 80 caracteres"),
+  })
+  .strict();

@@ -1,5 +1,36 @@
 import axios from "./root.service";
 
+export async function getProfile() {
+  try {
+    const response = await axios.get("/user/me");
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    console.error("Error al obtener el perfil", error.response?.data);
+    return {
+      success: false,
+      message:
+        error.response?.data?.message || "Error al conectar con el servidor",
+    };
+  }
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  try {
+    const response = await axios.patch("/user/me", {
+      currentPassword,
+      newPassword,
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    console.error("Error al cambiar la contraseña", error.response?.data);
+    return {
+      success: false,
+      message:
+        error.response?.data?.message || "Error al conectar con el servidor",
+    };
+  }
+}
+
 export async function getAllUsers() {
   try {
     const response = await axios.get("/user/all");

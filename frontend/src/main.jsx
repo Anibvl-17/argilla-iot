@@ -11,6 +11,7 @@ import AdminControllers from "@pages/AdminControllers";
 import AdminUsers from "@pages/AdminUsers";
 import { AdminHome } from "@pages/AdminHome";
 import AuthLayout from "./layouts/AuthLayout";
+import KilnDetails from "@pages/KilnDetails";
 
 const router = createBrowserRouter([
   {
@@ -45,7 +46,8 @@ const router = createBrowserRouter([
             element: <Home />
           },
           {
-            path: "profile",
+            path: "kilns/:kilnId",
+            element: <KilnDetails />
           },
           {
             path: "admin",
