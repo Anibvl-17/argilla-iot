@@ -28,11 +28,11 @@ const AuthLayout = () => {
   const bottomSquares = useMemo(() => renderDecorativeSquares("bottom"), []);
 
   return (
-    <main className="min-h-screen flex w-full font-sans">
+    <main className="flex min-h-dvh w-full min-w-0 overflow-x-hidden font-sans">
       {/* Columna izquierda */}
-      <section className="w-full lg:w-1/2 bg-[#0a0a0a] text-white flex flex-col relative py-8 px-8 sm:px-16 md:px-24 not-lg:bg-linear-to-b not-lg:from-red-700/30 not-lg:to-30% not-lg:to-[#0a0a0a]">
+      <section className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-[#0a0a0a] px-4 py-5 text-white not-lg:bg-linear-to-b not-lg:from-red-700/30 not-lg:to-30% not-lg:to-[#0a0a0a] sm:px-10 sm:py-8 md:px-16 lg:w-1/2 lg:px-12 xl:px-24">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-16 lg:mb-0 lg:absolute lg:top-8 lg:left-12">
+        <div className="mb-8 flex shrink-0 items-center gap-3 sm:mb-12 lg:mb-4 2xl:absolute 2xl:left-12 2xl:top-8">
           <div className="not-lg:hidden w-10 h-10 rounded-full flex items-center justify-center">
             <img src={argillaIcon} />
           </div>
@@ -42,9 +42,9 @@ const AuthLayout = () => {
         </div>
 
         {/* Contenedor formulario */}
-        <div className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto">
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-2 sm:py-4">
           {mode === "login" ? <Login /> : <Register setMode={setMode} />}
-          <p className="text text-neutral-400 text-center mt-8">
+          <p className="mt-6 text-center text-neutral-400 sm:mt-8">
             {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
             <button
               onClick={() =>
@@ -59,7 +59,7 @@ const AuthLayout = () => {
       </section>
 
       {/* Columna derecha, visible en pantallas grandes */}
-      <section className="hidden lg:flex lg:w-1/2 bg-[#450a0a] relative items-center justify-center overflow-hidden">
+      <section className="relative hidden overflow-hidden bg-[#450a0a] lg:flex lg:w-1/2 lg:items-center lg:justify-center [@media(max-height:699px)]:hidden">
         {/* Decoraciones superior derecho */}
         <div className="absolute top-0 right-0 p-12 flex flex-wrap gap-3 w-48 justify-end opacity-40">
           {topSquares}

@@ -159,17 +159,17 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="space-y-6 text-white">
-      <div className="flex justify-between items-center">
+    <div className="min-w-0 space-y-6 text-white">
+      <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Usuarios</h1>
           <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los usuarios de la plataforma.
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="w-full rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:w-auto"
         >
           Añadir Nuevo Usuario
         </button>
@@ -211,27 +211,27 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
+      <div className="max-h-[65dvh] overflow-auto rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
         {!loading && (
-          <table className="w-full text-sm text-left min-w-10">
-            <thead className="text-xs font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
+          <table className="w-full min-w-105 text-left text-xs sm:min-w-170 sm:text-sm">
+            <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs font-bold uppercase tracking-wider text-neutral-500">
               <tr>
-                <th scope="col" className="px-6 py-4">
+                <th scope="col" className="hidden px-3 py-3 sm:table-cell sm:px-6 sm:py-4">
                   ID
                 </th>
-                <th scope="col" className="px-6 py-4">
+                <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
                   Email
                 </th>
-                <th scope="col" className="px-6 py-4">
+                <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
                   Nombre
                 </th>
-                <th scope="col" className="px-6 py-4 text-center">
+                <th scope="col" className="px-3 py-3 text-center sm:px-6 sm:py-4">
                   Rol
                 </th>
-                <th scope="col" className="px-6 py-4 text-center">
+                <th scope="col" className="hidden px-3 py-3 text-center md:table-cell sm:px-6 sm:py-4">
                   Fecha de registro
                 </th>
-                <th scope="col" className="px-6 py-4 text-center">
+                <th scope="col" className="px-3 py-3 text-center sm:px-6 sm:py-4">
                   Acciones
                 </th>
               </tr>
@@ -245,34 +245,34 @@ export default function AdminUsers() {
                     className="hover:bg-neutral-900/30 transition-colors"
                   >
                     {/* ID */}
-                    <td className="px-6 py-5 text-base font-mono text-neutral-200">
+                    <td className="hidden px-3 py-4 font-mono text-neutral-200 sm:table-cell sm:px-6 sm:py-5 sm:text-base">
                       {user.userId}
                     </td>
 
                     {/* Email */}
-                    <td className="px-6 py-5 text-neutral-300">
+                    <td className="max-w-36 break-all px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
                       {user.email}
                     </td>
 
                     {/* Nombre */}
-                    <td className="px-6 py-5 text-neutral-300">
+                    <td className="max-w-28 wrap-break-word px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
                       {user.name}
                     </td>
 
                     {/* Rol */}
-                    <td className="px-6 py-5">
+                    <td className="px-3 py-4 sm:px-6 sm:py-5">
                       <span className="flex items-center justify-center">
                         <Badge style="default" text={ROLE_LABELS[user.role]} />
                       </span>
                     </td>
 
                     {/* Fecha creación */}
-                    <td className="px-6 py-5 text-center text-neutral-300">
+                    <td className="hidden px-3 py-4 text-center text-neutral-300 md:table-cell sm:px-6 sm:py-5">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
 
                     {/* Botones de acción */}
-                    <td className="px-6 py-5 text-center text-lg">
+                    <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => openEditModal(user)}

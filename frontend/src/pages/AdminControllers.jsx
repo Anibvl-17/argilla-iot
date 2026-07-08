@@ -313,50 +313,50 @@ export default function AdminControllers() {
   const selectedControllerHasOwner = selectedController?.user ? true : false;
 
   return (
-    <div className="space-y-6 text-white">
-      <div className="flex justify-between items-center">
+    <div className="min-w-0 space-y-6 text-white">
+      <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Controladores</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Controladores</h1>
           <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los controladores de la plataforma.
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="w-full rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:w-auto"
         >
           Añadir Nuevo Controlador
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
+          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Total Controladores
           </p>
-          <p className="text-3xl font-bold">{controllers.length}</p>
+          <p className="text-xl font-bold sm:text-3xl">{controllers.length}</p>
         </div>
-        <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
+          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Horno
           </p>
-          <p className="text-3xl font-bold text-blue-400/90">
+          <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
             {controllers.filter((c) => c.kiln).length}
           </p>
         </div>
-        <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
+          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Usuario
           </p>
-          <p className="text-3xl font-bold text-blue-400/90">
+          <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
             {controllers.filter((c) => c.user).length}
           </p>
         </div>
-        <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
+          <p className="mb-1 text-[10px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
             Asignados a Horno y Usuario
           </p>
-          <p className="text-3xl font-bold text-green-400/90">
+          <p className="text-xl font-bold text-green-400/90 sm:text-3xl">
             {controllers.filter((c) => c.kiln && c.user).length}
           </p>
         </div>
@@ -390,34 +390,34 @@ export default function AdminControllers() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
+      <div className="max-h-[65dvh] overflow-auto rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
         {controllers.length > 0 ? (
           !loading && (
-            <table className="w-full text-left min-w-10">
-              <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
+            <table className="w-full min-w-110 text-left text-xs sm:min-w-205 sm:text-sm">
+              <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
                 <tr>
                   <th
                     scope="col"
-                    className="flex flex-row items-end gap-2 px-6 py-4 font-medium"
+                    className="flex flex-row items-end gap-2 px-3 py-3 font-medium sm:px-6 sm:py-4"
                   >
                     ID
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium">
+                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
                     Propietario / Horno asignado
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium">
+                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
                     Estado de vinculación
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4">
                     Amperaje del Switch
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4">
                     Tipo de Switch
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4">
                     PIN activo
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4">
                     Acciones
                   </th>
                 </tr>
@@ -438,14 +438,14 @@ export default function AdminControllers() {
                           );
                           toast.success("¡ID copiada!");
                         }}
-                        className="px-6 py-5 text-base font-mono text-red-400 hover:underline hover:cursor-pointer"
+                        className="px-3 py-4 font-mono text-red-400 hover:cursor-pointer hover:underline sm:px-6 sm:py-5 sm:text-base"
                         title={"Copiar ID: " + controller.controllerId}
                       >
                         ...{controller.controllerId.slice(-6)}
                       </td>
 
                       {/* Horno asignado */}
-                      <td className="px-6 py-5">
+                      <td className="max-w-36 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
                         <div className="flex flex-col">
                           {controller.kiln ? (
                             <span className="font-semibold text-neutral-100 text-base">
@@ -469,7 +469,7 @@ export default function AdminControllers() {
                       </td>
 
                       {/* Estado vinculación */}
-                      <td className="px-6 py-5 font-mono text-xs">
+                      <td className="px-3 py-4 font-mono text-xs sm:px-6 sm:py-5">
                         <Badge
                           style={LinkStatusStyle[controller.linkStatus]}
                           text={
@@ -481,12 +481,12 @@ export default function AdminControllers() {
                       </td>
 
                       {/* Amperaje switch */}
-                      <td className="px-6 py-5 text-center font-mono text-neutral-300">
+                      <td className="hidden px-3 py-4 text-center font-mono text-neutral-300 md:table-cell sm:px-6 sm:py-5">
                         {controller.switchAmps}
                       </td>
 
                       {/* Tipo switch */}
-                      <td className="px-6 py-5 text-center justify-center">
+                      <td className="hidden px-3 py-4 text-center md:table-cell sm:px-6 sm:py-5">
                         <span className="flex items-center justify-center">
                           <Badge
                             style="default"
@@ -496,12 +496,12 @@ export default function AdminControllers() {
                       </td>
 
                       {/* PIN activo */}
-                      <td className="px-6 py-5 text-center font-mono text-neutral-400">
+                      <td className="hidden px-3 py-4 text-center font-mono text-neutral-400 md:table-cell sm:px-6 sm:py-5">
                         {controller.pin || "Inactivo"}
                       </td>
 
                       {/* Botones de Acción */}
-                      <td className="px-6 py-5 text-center text-lg">
+                      <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
                         <div className="flex justify-center gap-2">
                           {/* Generar pin */}
                           <button

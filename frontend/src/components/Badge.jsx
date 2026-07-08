@@ -15,7 +15,7 @@ export const Badge = ({ style = "default", text, customStyle = null }) => {
     <div
       className={
         customStyle || (defaultStyles[style] +
-        " px-2.5 py-1 rounded-md border truncate max-w-max text-sm")
+        " max-w-max truncate rounded-md border px-1.5 py-0.5 text-[10px] leading-tight sm:px-2.5 sm:py-1 sm:text-sm")
       }
     >
       {text}

@@ -48,17 +48,17 @@ export default function Modal({
   return (
     // Backdrop (Fondo oscuro borroso)
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
       onClick={onClose}
     >
       {/* Contenedor del Modal */}
       <div
-        className="bg-[#141414] border-2 border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-200"
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-2 border-neutral-800 bg-[#141414] shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:max-h-[calc(100dvh-2rem)]"
         onClick={(e) => e.stopPropagation()} // Evita que clics dentro del modal lo cierren
       >
         {/* Cabecera */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800/60 bg-[#0a0a0a]/50">
-          <h3 className="text-xl font-bold text-white tracking-tight">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-800/60 bg-[#0a0a0a]/50 px-4 py-3 sm:px-6 sm:py-4">
+          <h3 className="min-w-0 text-lg font-bold tracking-tight text-white sm:text-xl">
             {title}
           </h3>
           <button
@@ -81,7 +81,7 @@ export default function Modal({
         </div>
 
         {/* Formulario Dinámico */}
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-8">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-5 overflow-y-auto p-4 sm:gap-8 sm:p-6">
           {error && (
             <div className="mb-5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
               <svg
@@ -152,7 +152,7 @@ export default function Modal({
           </div>
 
           {/* Botones de acción */}
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 min-[360px]:flex-row">
             <button
               type="button"
               onClick={onClose}

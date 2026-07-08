@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Modal from "@components/Modal";
 import {
   getAllKilns,
@@ -12,6 +12,8 @@ import {
 import { getAllUsers } from "@services/user.service";
 import {
   LuLink,
+  LuEye,
+  LuEyeOff,
   LuPencil,
   LuTrash2,
   LuTriangleAlert,
@@ -37,7 +39,7 @@ const AdminStatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`px-3 py-1 text-xs font-medium rounded-full border ${styles[status]}`}
+      className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-tight sm:px-3 sm:py-1 sm:text-xs ${styles[status]}`}
     >
       {labels[status]}
     </span>
@@ -140,6 +142,7 @@ export default function AdminKilns() {
   const [linkControllerError, setLinkControllerError] = useState(null);
   const [linkUserSearchTerm, setLinkUserSearchTerm] = useState("");
   const [selectedUserToLink, setSelectedUserToLink] = useState(null);
+  const [expandedKilnId, setExpandedKilnId] = useState(null);
   const linkUserSearchRef = useRef(null);
 
   const filteredKilns = kilns.filter((kiln) => {
@@ -499,18 +502,18 @@ export default function AdminKilns() {
   const selectedKilnHasOwner = selectedKiln?.user ? true : false;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="min-w-0 space-y-6 text-white">
       {/* Cabecera */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Hornos</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Hornos</h1>
           <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los hornos de la plataforma.
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="w-full rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:w-auto"
         >
           Añadir Nuevo Horno
         </button>
@@ -518,26 +521,26 @@ export default function AdminKilns() {
 
       {/* Cards de Resumen */}
       <div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
+            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Total Hornos
             </p>
-            <p className="text-3xl font-bold">{kilns.length}</p>
+            <p className="text-xl font-bold sm:text-3xl">{kilns.length}</p>
           </div>
-          <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
+            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Sin Controlador
             </p>
-            <p className="text-3xl font-bold text-neutral-300">
+            <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
               {kilns.filter((k) => !k.controller).length}
             </p>
           </div>
-          <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
+            <p className="mb-1 text-[9px] font-medium uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Sin Propietario
             </p>
-            <p className="text-3xl font-bold text-neutral-300">
+            <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
               {kilns.filter((k) => !k.user).length}
             </p>
           </div>
@@ -575,35 +578,35 @@ export default function AdminKilns() {
       </div>
 
       {/* Contenedor de la Tabla */}
-      <div className="bg-[#141414] border border-neutral-800 rounded-2xl overflow-x-auto shadow-2xl">
+      <div className="max-h-[65dvh] overflow-auto rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
         {kilns.length > 0 ? (
           !loading && (
-            <table className="w-full text-sm text-left min-w-10">
+            <table className="w-full min-w-105 text-left text-xs sm:min-w-190 sm:text-sm">
               {/* Títulos de Columna */}
-              <thead className="text-xs text-neutral-500 uppercase tracking-wider border-b border-neutral-800 bg-[#0a0a0a]">
+              <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
                 <tr>
-                  <th scope="col" className="px-6 py-4 font-medium">
+                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
                     ID
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium">
+                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
                     Propietario
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium">
+                  <th scope="col" className="hidden px-3 py-3 font-medium sm:table-cell sm:px-6 sm:py-4">
                     Controlador
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4">
                     Estado
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 font-medium text-center "
+                    className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
                   >
                     Litros
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4">
                     Datos eléctricos
                   </th>
-                  <th scope="col" className="px-6 py-4 font-medium text-center">
+                  <th scope="col" className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4">
                     Acciones
                   </th>
                 </tr>
@@ -613,17 +616,17 @@ export default function AdminKilns() {
               <tbody className="divide-y divide-neutral-800/60">
                 {filteredKilns.length > 0 ? (
                   filteredKilns.map((kiln) => (
+                    <Fragment key={kiln.kilnId}>
                     <tr
-                      key={kiln.kilnId}
                       className="hover:bg-neutral-900/30 transition-colors"
                     >
                       {/* Columna ID */}
-                      <td className="text-base px-6 py-5 font-mono text-neutral-300">
+                      <td className="px-3 py-4 font-mono text-neutral-300 sm:px-6 sm:py-5 sm:text-base">
                         {kiln.kilnId}
                       </td>
 
                       {/* Columna Propietario */}
-                      <td className="px-6 py-5">
+                      <td className="max-w-32 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
                         <div className="flex flex-col">
                           {kiln.user ? (
                             <>
@@ -643,7 +646,7 @@ export default function AdminKilns() {
                       </td>
 
                       {/* Columna ID Controlador */}
-                      <td className="px-6 py-5 text-sm">
+                      <td className="hidden px-3 py-4 text-sm sm:table-cell sm:px-6 sm:py-5">
                         {kiln.controllerId ? (
                           <span
                             onClick={() => {
@@ -663,17 +666,17 @@ export default function AdminKilns() {
                       </td>
 
                       {/* Columna Estado badge */}
-                      <td className="px-6 py-5 text-center">
+                      <td className="px-3 py-4 text-center sm:px-6 sm:py-5">
                         <AdminStatusBadge status={kiln.status} />
                       </td>
 
                       {/* Columna Litros */}
-                      <td className="px-6 py-5 text-base text-center font-mono text-neutral-400">
+                      <td className="hidden px-3 py-4 text-center font-mono text-neutral-400 md:table-cell sm:px-6 sm:py-5 sm:text-base">
                         {kiln.liters}
                       </td>
 
                       {/* Columna Voltaje Amperaje */}
-                      <td className="px-6 py-5 text-center text-neutral-400">
+                      <td className="hidden px-3 py-4 text-center text-neutral-400 md:table-cell sm:px-6 sm:py-5">
                         <span className="font-mono">
                           {kiln.amps}A - {kiln.volts}V
                         </span>{" "}
@@ -684,12 +687,38 @@ export default function AdminKilns() {
                       </td>
 
                       {/* Botones de Acción */}
-                      <td className="px-6 py-5 text-center text-lg">
-                        <div className="flex justify-center gap-2">
+                      <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
+                        <div className="flex justify-center gap-0.5 sm:gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedKilnId((current) =>
+                                current === kiln.kilnId ? null : kiln.kilnId,
+                              )
+                            }
+                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white md:hidden"
+                            title={
+                              expandedKilnId === kiln.kilnId
+                                ? "Ocultar detalles"
+                                : "Ver detalles"
+                            }
+                            aria-label={
+                              expandedKilnId === kiln.kilnId
+                                ? `Ocultar detalles del horno ${kiln.kilnId}`
+                                : `Ver detalles del horno ${kiln.kilnId}`
+                            }
+                            aria-expanded={expandedKilnId === kiln.kilnId}
+                          >
+                            {expandedKilnId === kiln.kilnId ? (
+                              <LuEyeOff />
+                            ) : (
+                              <LuEye />
+                            )}
+                          </button>
                           {/* Enlazar/Desenlazar usuario */}
                           <button
                             onClick={() => openLinkUserModal(kiln)}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-green-400 hover:bg-green-400/10 transition-colors hover:cursor-pointer"
+                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-green-400/10 hover:text-green-400 sm:p-2"
                             title={
                               kiln.user ? "Cambiar usuario" : "Asignar usuario"
                             }
@@ -704,7 +733,7 @@ export default function AdminKilns() {
                           {/* Enlazar/Desenlazar controlador */}
                           <button
                             onClick={() => openLinkControllerModal(kiln)}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
                             title={
                               kiln.controller
                                 ? "Cambiar controlador"
@@ -717,7 +746,7 @@ export default function AdminKilns() {
                           {/* Editar datos */}
                           <button
                             onClick={() => openEditModal(kiln)}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
+                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2"
                             title="Editar datos"
                           >
                             <LuPencil />
@@ -729,7 +758,7 @@ export default function AdminKilns() {
                               setSelectedKiln(kiln);
                               setIsAlertOpen(true);
                             }}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
                             title="Eliminar horno"
                           >
                             <LuTrash2 />
@@ -737,6 +766,36 @@ export default function AdminKilns() {
                         </div>
                       </td>
                     </tr>
+                    {expandedKilnId === kiln.kilnId && (
+                      <tr className="bg-neutral-950/60 md:hidden">
+                        <td colSpan="7" className="px-3 py-3">
+                          <dl className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <dt className="text-neutral-500">Controlador</dt>
+                              <dd className="mt-1 break-all font-mono text-neutral-200">
+                                {kiln.controllerId
+                                  ? `...${kiln.controllerId.slice(-6)}`
+                                  : "No vinculado"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-neutral-500">Capacidad</dt>
+                              <dd className="mt-1 text-neutral-200">
+                                {kiln.liters} litros
+                              </dd>
+                            </div>
+                            <div className="col-span-2">
+                              <dt className="text-neutral-500">Datos eléctricos</dt>
+                              <dd className="mt-1 text-neutral-200">
+                                {kiln.amps}A · {kiln.volts}V ·{" "}
+                                {kiln.phases === 1 ? "Monofásico" : "Trifásico"}
+                              </dd>
+                            </div>
+                          </dl>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))
                 ) : (
                   <tr>

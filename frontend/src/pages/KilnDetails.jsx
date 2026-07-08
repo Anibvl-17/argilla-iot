@@ -103,14 +103,14 @@ export default function KilnDetails() {
       >
         <LuArrowLeft /> Volver a mis hornos
       </Link>
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+      <div className="flex min-w-0 flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-500">
             Detalle del horno
           </p>
           {editing ? (
             <form onSubmit={handleRename} className="mt-2 max-w-xl">
-              <div className="flex gap-2">
+              <div className="flex min-w-0 flex-wrap gap-2 min-[400px]:flex-nowrap">
                 <input
                   autoFocus
                   value={name}
@@ -148,8 +148,8 @@ export default function KilnDetails() {
               )}
             </form>
           ) : (
-            <div className="mt-2 flex items-center gap-3">
-              <h1 className="truncate text-3xl font-semibold tracking-tight">
+            <div className="mt-2 flex min-w-0 items-center gap-2 sm:gap-3">
+              <h1 className="min-w-0 wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl">
                 {kiln.name}
               </h1>
               <button
@@ -165,7 +165,7 @@ export default function KilnDetails() {
         <ControllerStatus controller={controller} />
       </div>
 
-      <section className="mt-8 rounded-2xl border border-neutral-800 bg-[#141414] p-6">
+      <section className="mt-8 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-6">
         <h2 className="text-lg font-semibold">Información del horno</h2>
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Detail label="Capacidad" value={`${kiln.liters} litros`} />
@@ -178,7 +178,7 @@ export default function KilnDetails() {
         </dl>
       </section>
 
-      <section className="mt-5 rounded-2xl border border-neutral-800 bg-[#141414] p-6">
+      <section className="mt-5 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-950/50 text-red-500">
             <LuCircuitBoard />

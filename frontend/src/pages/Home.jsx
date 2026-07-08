@@ -3,7 +3,6 @@ import { Link, Navigate } from "react-router-dom";
 import {
   LuBox,
   LuFlame,
-  LuGauge,
   LuMoveRight,
   LuPower,
   LuRadio,
@@ -86,10 +85,10 @@ export default function Home() {
     data.kilns.length > 0 || data.unlinkedControllers.length > 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-7 sm:gap-10">
       <section>
         <div className="mb-6">
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
             Mis hornos
           </h1>
           <p className="mt-2 text-neutral-300">
@@ -98,7 +97,7 @@ export default function Home() {
         </div>
 
         {!hasEquipment ? (
-          <div className="rounded-2xl border border-dashed border-neutral-700 bg-neutral-900/30 px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-neutral-700 bg-neutral-900/30 px-4 py-10 text-center sm:px-6 sm:py-16">
             <LuFlame className="mx-auto mb-4 text-4xl text-neutral-600" />
             <h2 className="text-lg font-medium">
               Aún no tienes hornos vinculados
@@ -117,7 +116,7 @@ export default function Home() {
             {data.kilns.map((kiln) => (
               <article
                 key={kiln.kilnId}
-                className="flex min-h-72 flex-col rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-xl shadow-black/10 transition-colors hover:border-neutral-700"
+                className="flex min-h-64 min-w-0 flex-col rounded-2xl border border-neutral-800 bg-[#141414] p-4 shadow-xl shadow-black/10 transition-colors hover:border-neutral-700 sm:min-h-72 sm:p-6"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950/50 text-xl text-red-500">
@@ -135,7 +134,7 @@ export default function Home() {
                 <div className="mt-1">
                   <Temperature value={kiln.controller?.temp} />
                 </div>
-                <div className="mt-auto flex gap-3 pt-6">
+                <div className="mt-auto flex flex-col gap-3 pt-6 min-[380px]:flex-row">
                   <button
                     disabled
                     title="Disponible próximamente"
@@ -169,7 +168,7 @@ export default function Home() {
             {data.unlinkedControllers.map((controller) => (
               <article
                 key={controller.controllerCode}
-                className="rounded-2xl border border-neutral-800 bg-[#141414] p-5"
+                className="min-w-0 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-5"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 font-medium">

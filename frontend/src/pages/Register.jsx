@@ -56,14 +56,14 @@ const Register = ({ setMode }) => {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-4xl/relaxed font-bold mb-2">¡Hola!</h1>
-        <p className="text-lg text-neutral-400">
+      <div className="mb-5 sm:mb-8">
+        <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">¡Hola!</h1>
+        <p className="text-base text-neutral-400 sm:text-lg">
           Ingresa tus datos para crear tu cuenta
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:gap-5">
         {error && <p className="text-sm text-yellow-500/80">{error}</p>}
 
         {/* Input email */}

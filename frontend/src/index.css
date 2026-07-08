@@ -5,6 +5,14 @@ html {
   color: #F0F0F0;
 }
 
+html,
+body,
 #root {
-  height: 100vh;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
 }

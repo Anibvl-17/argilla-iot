@@ -87,7 +87,7 @@ export default function ProfileModal({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -96,10 +96,10 @@ export default function ProfileModal({ onClose }) {
       <section
         aria-labelledby="profile-modal-title"
         aria-modal="true"
-        className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-neutral-800 bg-[#141414] shadow-2xl"
+        className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-neutral-800 bg-[#141414] shadow-2xl sm:max-h-[calc(100dvh-2rem)]"
         role="dialog"
       >
-        <header className="sticky top-0 flex items-center justify-between border-b border-neutral-800/60 bg-[#0a0a0a] px-5 py-4 sm:px-6">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-800/60 bg-[#0a0a0a] px-4 py-3 sm:px-6 sm:py-4">
           <h3 id="profile-modal-title" className="text-xl font-bold text-white">
             Mi perfil
           </h3>
@@ -122,7 +122,7 @@ export default function ProfileModal({ onClose }) {
           </button>
         </header>
 
-        <div className="p-5 sm:p-6">
+        <div className="p-4 sm:p-6">
           {loadingProfile && (
             <p className="py-8 text-center text-sm text-neutral-400">
               Cargando perfil...

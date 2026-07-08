@@ -79,11 +79,11 @@ export default function AlertDialog({
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
       onClick={!isLoading ? onClose : undefined} // No permite cerrar si está cargando
     >
       <div
-        className="bg-[#141414] border border-neutral-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col items-center text-center"
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-sm flex-col items-center overflow-y-auto rounded-2xl border border-neutral-800 bg-[#141414] p-4 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ícono superior */}
@@ -108,7 +108,7 @@ export default function AlertDialog({
         )}
 
         {/* Botones */}
-        <div className="flex w-full gap-3">
+        <div className="flex w-full flex-col gap-3 min-[360px]:flex-row">
           <button
             onClick={onClose}
             disabled={isLoading}
