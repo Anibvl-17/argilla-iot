@@ -13,20 +13,25 @@ import { useAdminSummaryRealtime } from "@hooks/useAdminSummaryRealtime";
 
 function Metric({
   icon: Icon,
-  label,
   value,
-  tone = "text-white",
+  valueDescription,
   isLastChild = false,
+  tone = "text-neutral-200",
 }) {
   return (
-    <div className={"p-4 " + (!isLastChild && "border-b border-neutral-800")}>
-      <div className="flex items-center gap-2 text-neutral-500">
-        <Icon className="h-4 w-4" aria-hidden="true" />
-        <span className="text-xs font-medium uppercase tracking-wider">
-          {label}
-        </span>
-      </div>
-      <p className={`mt-2 text-3xl font-bold ${tone}`}>{value}</p>
+    <div
+      className={
+        "p-4 flex flex-row items-center justify-start gap-2 " +
+        (!isLastChild && "border-b border-neutral-800")
+      }
+    >
+      <Icon className={tone + " h-4 w-4"} aria-hidden="true" />
+      <p className="mb-1 text-2xl text-neutral-200">
+        <span className="mb-1 text-2xl font-bold text-neutral-200">
+          {value}
+        </span>{" "}
+        {valueDescription}
+      </p>
     </div>
   );
 }
@@ -41,7 +46,7 @@ function TotalStat({ icon: Icon, label, value, to }) {
         <Icon className="text-2xl" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-medium uppercase tracking-wider text-neutral-500">
+        <span className="block truncate text-xs font-medium uppercase tracking-wider text-neutral-400">
           {label}
         </span>
         <span className="mt-0.5 block text-2xl font-bold text-white">
@@ -70,7 +75,7 @@ function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
 
       <Link
         to={to}
-        className="flex items-center justify-end gap-3 border-t border-neutral-800 px-5 py-4 text-sm font-medium text-neutral-400 transition-colors hover:bg-neutral-900/60 hover:text-white"
+        className="mt-4 flex items-center justify-end gap-3 border-t border-neutral-800 px-5 py-4 text-sm font-medium text-neutral-400 transition-colors hover:bg-neutral-900/60 hover:text-white"
       >
         {linkLabel}
         <LuArrowRight className="text-base" aria-hidden="true" />
@@ -215,13 +220,15 @@ export const AdminHome = () => {
                 icon={LuLink}
                 label="Vinculados"
                 value={summary.kilns.linked}
-                tone="text-blue-400"
+                valueDescription="vinculados"
+                tone={summary.kilns.linked > 0 ? "text-blue-400" : "text-amber-400"}
               />
               <Metric
                 icon={LuPower}
                 label="En funcionamiento"
                 value={summary.kilns.operational}
-                tone="text-green-400"
+                valueDescription="en funcionamiento"
+                tone={summary.kilns.operational > 0 ? "text-green-400" : "text-amber-400"}
                 isLastChild
               />
             </>
@@ -239,13 +246,15 @@ export const AdminHome = () => {
                 icon={LuLink}
                 label="Vinculados"
                 value={summary.controllers.linked}
-                tone="text-blue-400"
+                valueDescription="vinculados"
+                tone={summary.controllers.linked > 0 ? "text-blue-400" : "text-amber-400"}
               />
               <Metric
                 icon={LuPower}
                 label="En funcionamiento"
                 value={summary.controllers.operational}
-                tone="text-green-400"
+                valueDescription="en funcionamiento"
+                tone={summary.controllers.operational > 0 ? "text-green-400" : "text-amber-400"}
                 isLastChild
               />
             </>
@@ -260,7 +269,7 @@ function PageHeading() {
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">Resumen</h1>
-      <p className="mt-1 text-sm text-neutral-400">
+      <p className="mt-1 text-sm text-neutral-300">
         Estado general de los equipos y usuarios de la plataforma.
       </p>
     </div>
