@@ -16,10 +16,9 @@ import {
   LuEyeOff,
   LuPencil,
   LuTrash2,
-  LuTriangleAlert,
   LuUnlink,
-  LuUserRoundPen,
   LuUserRoundPlus,
+  LuUserRoundMinus,
 } from "react-icons/lu";
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
@@ -354,7 +353,9 @@ export default function AdminKilns() {
         fetchKilns();
         fetchUsers();
       } else {
-        throw new Error("Error al vincular usuario");
+        throw new Error(
+          buildModalErrorMessage(response) || "Error al vincular usuario",
+        );
       }
     } catch (error) {
       toast.error("Error al vincular usuario", { description: error.message });
@@ -499,14 +500,17 @@ export default function AdminKilns() {
     })
     .slice(0, 8);
 
-  const selectedKilnHasOwner = selectedKiln?.user ? true : false;
+  const selectedKilnHasOwner = Boolean(selectedKiln?.user);
+  const selectedKilnHasController = Boolean(selectedKiln?.controllerId);
 
   return (
     <div className="min-w-0 space-y-6 text-white">
       {/* Cabecera */}
       <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Hornos</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Hornos
+          </h1>
           <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los hornos de la plataforma.
           </p>
@@ -585,16 +589,28 @@ export default function AdminKilns() {
               {/* Títulos de Columna */}
               <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
                 <tr>
-                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="px-3 py-3 font-medium sm:px-6 sm:py-4"
+                  >
                     ID
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="px-3 py-3 font-medium sm:px-6 sm:py-4"
+                  >
                     Propietario
                   </th>
-                  <th scope="col" className="hidden px-3 py-3 font-medium sm:table-cell sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 font-medium sm:table-cell sm:px-6 sm:py-4"
+                  >
                     Controlador
                   </th>
-                  <th scope="col" className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4"
+                  >
                     Estado
                   </th>
                   <th
@@ -603,10 +619,16 @@ export default function AdminKilns() {
                   >
                     Litros
                   </th>
-                  <th scope="col" className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
+                  >
                     Datos eléctricos
                   </th>
-                  <th scope="col" className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4">
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4"
+                  >
                     Acciones
                   </th>
                 </tr>
@@ -617,184 +639,208 @@ export default function AdminKilns() {
                 {filteredKilns.length > 0 ? (
                   filteredKilns.map((kiln) => (
                     <Fragment key={kiln.kilnId}>
-                    <tr
-                      className="hover:bg-neutral-900/30 transition-colors"
-                    >
-                      {/* Columna ID */}
-                      <td className="px-3 py-4 font-mono text-neutral-300 sm:px-6 sm:py-5 sm:text-base">
-                        {kiln.kilnId}
-                      </td>
+                      <tr className="hover:bg-neutral-900/30 transition-colors">
+                        {/* Columna ID */}
+                        <td className="px-3 py-4 font-mono text-neutral-300 sm:px-6 sm:py-5 sm:text-base">
+                          {kiln.kilnId}
+                        </td>
 
-                      {/* Columna Propietario */}
-                      <td className="max-w-32 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
-                        <div className="flex flex-col">
-                          {kiln.user ? (
-                            <>
-                              <span className="font-semibold text-neutral-100 text-base">
-                                {kiln.user.name}
+                        {/* Columna Propietario */}
+                        <td className="max-w-32 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
+                          <div className="flex flex-col">
+                            {kiln.user ? (
+                              <>
+                                <span className="font-semibold text-neutral-100 text-base">
+                                  {kiln.user.name}
+                                </span>
+                                <span className="text-sm font-medium text-neutral-400 mt-0.5">
+                                  {kiln.user.email}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-sm text-neutral-400/70 italic">
+                                Sin propietario
                               </span>
-                              <span className="text-sm font-medium text-neutral-400 mt-0.5">
-                                {kiln.user.email}
-                              </span>
-                            </>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Columna ID Controlador */}
+                        <td className="hidden px-3 py-4 text-sm sm:table-cell sm:px-6 sm:py-5">
+                          {kiln.controllerId ? (
+                            <span
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  kiln.controllerId,
+                                );
+                                toast.success("¡ID copiada!");
+                              }}
+                              title={"Copiar id: " + kiln.controllerId}
+                              className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline hover:cursor-pointer"
+                            >
+                              ...{kiln.controllerId.slice(-6)}
+                            </span>
                           ) : (
-                            <span className="text-sm text-neutral-400/70 italic">
-                              Sin propietario
+                            <span className="text-neutral-400/70 italic">
+                              No vinculado
                             </span>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Columna ID Controlador */}
-                      <td className="hidden px-3 py-4 text-sm sm:table-cell sm:px-6 sm:py-5">
-                        {kiln.controllerId ? (
-                          <span
-                            onClick={() => {
-                              navigator.clipboard.writeText(kiln.controllerId);
-                              toast.success("¡ID copiada!");
-                            }}
-                            title={"Copiar id: " + kiln.controllerId}
-                            className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline hover:cursor-pointer"
-                          >
-                            ...{kiln.controllerId.slice(-6)}
+                        {/* Columna Estado badge */}
+                        <td className="px-3 py-4 text-center sm:px-6 sm:py-5">
+                          <AdminStatusBadge status={kiln.status} />
+                        </td>
+
+                        {/* Columna Litros */}
+                        <td className="hidden px-3 py-4 text-center font-mono text-neutral-400 md:table-cell sm:px-6 sm:py-5 sm:text-base">
+                          {kiln.liters}
+                        </td>
+
+                        {/* Columna Voltaje Amperaje */}
+                        <td className="hidden px-3 py-4 text-center text-neutral-400 md:table-cell sm:px-6 sm:py-5">
+                          <span className="font-mono">
+                            {kiln.amps}A - {kiln.volts}V
+                          </span>{" "}
+                          <br />
+                          <span className="text-neutral-400/70">
+                            {kiln.phases === 1
+                              ? "Monofásico"
+                              : "Trifásico"}{" "}
                           </span>
-                        ) : (
-                          <span className="text-neutral-400/70 italic">
-                            No vinculado
-                          </span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Columna Estado badge */}
-                      <td className="px-3 py-4 text-center sm:px-6 sm:py-5">
-                        <AdminStatusBadge status={kiln.status} />
-                      </td>
+                        {/* Botones de Acción */}
+                        <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
+                          <div className="flex justify-center gap-0.5 sm:gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedKilnId((current) =>
+                                  current === kiln.kilnId ? null : kiln.kilnId,
+                                )
+                              }
+                              className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white md:hidden"
+                              title={
+                                expandedKilnId === kiln.kilnId
+                                  ? "Ocultar detalles"
+                                  : "Ver detalles"
+                              }
+                              aria-label={
+                                expandedKilnId === kiln.kilnId
+                                  ? `Ocultar detalles del horno ${kiln.kilnId}`
+                                  : `Ver detalles del horno ${kiln.kilnId}`
+                              }
+                              aria-expanded={expandedKilnId === kiln.kilnId}
+                            >
+                              {expandedKilnId === kiln.kilnId ? (
+                                <LuEyeOff />
+                              ) : (
+                                <LuEye />
+                              )}
+                            </button>
+                            {/* Enlazar/Desenlazar usuario */}
+                            <button
+                              onClick={() => openLinkUserModal(kiln)}
+                              className={
+                                "p-2 rounded-lg text-neutral-400 transition-colors hover:cursor-pointer" +
+                                (kiln.user
+                                  ? " hover:text-red-400 hover:bg-red-400/10"
+                                  : " hover:text-green-400 hover:bg-green-400/10")
+                              }
+                              title={
+                                kiln.user
+                                  ? "Desvincular usuario"
+                                  : "Asignar usuario"
+                              }
+                            >
+                              {kiln.user ? (
+                                <LuUserRoundMinus />
+                              ) : (
+                                <LuUserRoundPlus />
+                              )}
+                            </button>
 
-                      {/* Columna Litros */}
-                      <td className="hidden px-3 py-4 text-center font-mono text-neutral-400 md:table-cell sm:px-6 sm:py-5 sm:text-base">
-                        {kiln.liters}
-                      </td>
+                            {/* Enlazar/Desenlazar controlador */}
+                            <button
+                              onClick={() => openLinkControllerModal(kiln)}
+                              className={
+                                "p-2 rounded-lg text-neutral-400 transition-colors hover:cursor-pointer" +
+                                (kiln.controller
+                                  ? " hover:text-red-400 hover:bg-red-400/10"
+                                  : " hover:text-green-400 hover:bg-green-400/10")
+                              }
+                              title={
+                                kiln.controller
+                                  ? "Desvincular controlador"
+                                  : "Asignar controlador"
+                              }
+                            >
+                              {kiln.controller ? <LuUnlink /> : <LuLink />}
+                            </button>
 
-                      {/* Columna Voltaje Amperaje */}
-                      <td className="hidden px-3 py-4 text-center text-neutral-400 md:table-cell sm:px-6 sm:py-5">
-                        <span className="font-mono">
-                          {kiln.amps}A - {kiln.volts}V
-                        </span>{" "}
-                        <br />
-                        <span className="text-neutral-400/70">
-                          {kiln.phases === 1 ? "Monofásico" : "Trifásico"}{" "}
-                        </span>
-                      </td>
+                            {/* Editar datos */}
+                            <button
+                              onClick={() => openEditModal(kiln)}
+                              className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2"
+                              title="Editar datos"
+                            >
+                              <LuPencil />
+                            </button>
 
-                      {/* Botones de Acción */}
-                      <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
-                        <div className="flex justify-center gap-0.5 sm:gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedKilnId((current) =>
-                                current === kiln.kilnId ? null : kiln.kilnId,
-                              )
-                            }
-                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white md:hidden"
-                            title={
-                              expandedKilnId === kiln.kilnId
-                                ? "Ocultar detalles"
-                                : "Ver detalles"
-                            }
-                            aria-label={
-                              expandedKilnId === kiln.kilnId
-                                ? `Ocultar detalles del horno ${kiln.kilnId}`
-                                : `Ver detalles del horno ${kiln.kilnId}`
-                            }
-                            aria-expanded={expandedKilnId === kiln.kilnId}
-                          >
-                            {expandedKilnId === kiln.kilnId ? (
-                              <LuEyeOff />
-                            ) : (
-                              <LuEye />
-                            )}
-                          </button>
-                          {/* Enlazar/Desenlazar usuario */}
-                          <button
-                            onClick={() => openLinkUserModal(kiln)}
-                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-green-400/10 hover:text-green-400 sm:p-2"
-                            title={
-                              kiln.user ? "Cambiar usuario" : "Asignar usuario"
-                            }
-                          >
-                            {kiln.user ? (
-                              <LuUserRoundPen />
-                            ) : (
-                              <LuUserRoundPlus />
-                            )}
-                          </button>
-
-                          {/* Enlazar/Desenlazar controlador */}
-                          <button
-                            onClick={() => openLinkControllerModal(kiln)}
-                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
-                            title={
-                              kiln.controller
-                                ? "Cambiar controlador"
-                                : "Asignar controlador"
-                            }
-                          >
-                            {kiln.controller ? <LuUnlink /> : <LuLink />}
-                          </button>
-
-                          {/* Editar datos */}
-                          <button
-                            onClick={() => openEditModal(kiln)}
-                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2"
-                            title="Editar datos"
-                          >
-                            <LuPencil />
-                          </button>
-
-                          {/* Eliminar */}
-                          <button
-                            onClick={() => {
-                              setSelectedKiln(kiln);
-                              setIsAlertOpen(true);
-                            }}
-                            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
-                            title="Eliminar horno"
-                          >
-                            <LuTrash2 />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedKilnId === kiln.kilnId && (
-                      <tr className="bg-neutral-950/60 md:hidden">
-                        <td colSpan="7" className="px-3 py-3">
-                          <dl className="grid grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <dt className="font-bold text-neutral-400">Controlador</dt>
-                              <dd className="mt-1 break-all font-mono text-neutral-200">
-                                {kiln.controllerId
-                                  ? `...${kiln.controllerId.slice(-6)}`
-                                  : "No vinculado"}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="font-bold text-neutral-400">Capacidad</dt>
-                              <dd className="mt-1 text-neutral-200">
-                                {kiln.liters} litros
-                              </dd>
-                            </div>
-                            <div className="col-span-2">
-                              <dt className="font-bold text-neutral-400">Datos eléctricos</dt>
-                              <dd className="mt-1 text-neutral-200">
-                                <span className="font-mono">{kiln.amps}A / {kiln.volts}V {" "}</span>
-                                {kiln.phases === 1 ? "Monofásico" : "Trifásico"}
-                              </dd>
-                            </div>
-                          </dl>
+                            {/* Eliminar */}
+                            <button
+                              onClick={() => {
+                                setSelectedKiln(kiln);
+                                setIsAlertOpen(true);
+                              }}
+                              className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
+                              title="Eliminar horno"
+                            >
+                              <LuTrash2 />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    )}
+                      {expandedKilnId === kiln.kilnId && (
+                        <tr className="bg-neutral-950/60 md:hidden">
+                          <td colSpan="7" className="px-3 py-3">
+                            <dl className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <dt className="font-bold text-neutral-400">
+                                  Controlador
+                                </dt>
+                                <dd className="mt-1 break-all font-mono text-neutral-200">
+                                  {kiln.controllerId
+                                    ? `...${kiln.controllerId.slice(-6)}`
+                                    : "No vinculado"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="font-bold text-neutral-400">
+                                  Capacidad
+                                </dt>
+                                <dd className="mt-1 text-neutral-200">
+                                  {kiln.liters} litros
+                                </dd>
+                              </div>
+                              <div className="col-span-2">
+                                <dt className="font-bold text-neutral-400">
+                                  Datos eléctricos
+                                </dt>
+                                <dd className="mt-1 text-neutral-200">
+                                  <span className="font-mono">
+                                    {kiln.amps}A / {kiln.volts}V{" "}
+                                  </span>
+                                  {kiln.phases === 1
+                                    ? "Monofásico"
+                                    : "Trifásico"}
+                                </dd>
+                              </div>
+                            </dl>
+                          </td>
+                        </tr>
+                      )}
                     </Fragment>
                   ))
                 ) : (
@@ -840,117 +886,128 @@ export default function AdminKilns() {
         isOpen={isLinkUserModalOpen}
         onClose={closeLinkUserModal}
         title={
-          (selectedKilnHasOwner ? "Cambiar usuario " : "Asignar usuario ") +
-          "a Horno ID " +
+          (selectedKilnHasOwner
+            ? "Desvincular usuario de "
+            : "Asignar usuario a ") +
+          "Horno ID " +
           selectedKiln?.kilnId
         }
         fields={linkUserFields}
         submitLabel={
-          selectedKilnHasOwner ? "Cambiar usuario" : "Asignar usuario"
+          selectedKilnHasOwner ? "Desvincular usuario" : "Asignar usuario"
         }
-        onSubmit={handleLinkUserSubmit}
+        onSubmit={
+          selectedKilnHasOwner ? handleUnlinkUser : handleLinkUserSubmit
+        }
         error={linkUserError}
         loading={false}
         onClearError={() => setLinkUserError(null)}
         renderContent={({ setFormData, onClearError }) => {
           return (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-1.5">
-                <div className="relative" ref={linkUserSearchRef}>
-                  <label className="text-sm font-medium text-neutral-400 ml-1">
-                    Busca por nombre, correo electrónico o ID de usuario
-                  </label>
-                  <input
-                    type="text"
-                    value={linkUserSearchTerm}
-                    placeholder="ID, nombre o correo del usuario..."
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setLinkUserSearchTerm(value);
-                      setFormData((prev) => ({ ...prev, userId: "" }));
+              {!selectedKilnHasOwner && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative" ref={linkUserSearchRef}>
+                    <label className="text-sm font-medium text-neutral-400 ml-1">
+                      Busca por nombre, correo electrónico o ID de usuario
+                    </label>
+                    <input
+                      type="text"
+                      value={linkUserSearchTerm}
+                      placeholder="ID, nombre o correo del usuario..."
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setLinkUserSearchTerm(value);
+                        setFormData((prev) => ({ ...prev, userId: "" }));
 
-                      if (linkUserError) {
-                        onClearError();
-                      }
-                    }}
-                    className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
-                  />
+                        if (linkUserError) {
+                          onClearError();
+                        }
+                      }}
+                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                    />
 
-                  {linkUserSearchTerm.trim() && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-2xl">
-                      {loading ? (
-                        <div className="px-4 py-3 text-sm text-neutral-500">
-                          Cargando usuarios...
-                        </div>
-                      ) : filteredUsersForLink.length > 0 ? (
-                        filteredUsersForLink.map((user) => {
-                          const isSelected =
-                            selectedUserToLink?.userId === user.userId;
+                    {linkUserSearchTerm.trim() && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-2xl">
+                        {loading ? (
+                          <div className="px-4 py-3 text-sm text-neutral-500">
+                            Cargando usuarios...
+                          </div>
+                        ) : filteredUsersForLink.length > 0 ? (
+                          filteredUsersForLink.map((user) => {
+                            const isSelected =
+                              selectedUserToLink?.userId === user.userId;
 
-                          const isOwner =
-                            selectedKilnHasOwner &&
-                            selectedKiln?.user?.userId === user.userId;
+                            const isOwner =
+                              selectedKilnHasOwner &&
+                              selectedKiln?.user?.userId === user.userId;
 
-                          if (isSelected || isOwner) return;
+                            if (isSelected || isOwner) return;
 
-                          return (
-                            <button
-                              key={user.userId}
-                              type="button"
-                              onClick={() => {
-                                if (isSelected || isOwner) {
-                                  return false;
-                                }
+                            return (
+                              <button
+                                key={user.userId}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected || isOwner) {
+                                    return false;
+                                  }
 
-                                setSelectedUserToLink(user);
-                                setLinkUserSearchTerm("");
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  userId: String(user.userId),
-                                }));
-                                onClearError();
-                              }}
-                              className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
-                            >
-                              <span className="text-sm font-medium text-white">
-                                {user.name}
-                              </span>
-                              <span className="text-xs font-bold text-neutral-400">
-                                ID {user.userId} · {user.email}
-                              </span>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className="px-4 py-3 text-sm text-neutral-500">
-                          No se encontraron usuarios con ese criterio.
-                        </div>
-                      )}
-                    </div>
-                  )}
+                                  setSelectedUserToLink(user);
+                                  setLinkUserSearchTerm("");
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    userId: String(user.userId),
+                                  }));
+                                  onClearError();
+                                }}
+                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
+                              >
+                                <span className="text-sm font-medium text-white">
+                                  {user.name}
+                                </span>
+                                <span className="text-xs font-bold text-neutral-400">
+                                  ID {user.userId} · {user.email}
+                                </span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-neutral-500">
+                            No se encontraron usuarios con ese criterio.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              {!selectedKilnHasOwner && selectedKiln?.controller && (
+                <p className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300">
+                  Si el controlador asociado está libre, también se vinculará a
+                  este propietario.
+                </p>
+              )}
               {selectedKiln?.user && (
-                <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                  <div>
+                <div className="flex flex-col gap-4">
+                  <p className="text-neutral-300 text-pretty">
+                    {selectedKiln?.controller
+                      ? "El usuario será desvinculado del horno y del controlador asociado."
+                      : "El usuario será desvinculado del horno."}
+                  </p>
+
+                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
                     <p className="text-sm text-neutral-300">
                       Propietario actual
                     </p>
-                    <p className="mt-1 text-base">
+                    <p className="text-base">
                       {selectedKiln?.user?.name} - {selectedKiln?.user?.email}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleUnlinkUser}
-                    className="inline-flex items-center rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
-                  >
-                    Desvincular usuario
-                  </button>
                 </div>
               )}
 
-              {selectedUserToLink && (
+              {!selectedKilnHasOwner && selectedUserToLink && (
                 <>
                   <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
                     <div>
@@ -969,12 +1026,6 @@ export default function AdminKilns() {
                       Quitar selección
                     </button>
                   </div>
-                  {selectedKilnHasOwner && (
-                    <span className="text-red-300 flex flex-row items-center justify-center gap-2">
-                      <LuTriangleAlert className="text-xl" />
-                      El propietario actual será desvinculado
-                    </span>
-                  )}
                 </>
               )}
             </div>
@@ -986,73 +1037,68 @@ export default function AdminKilns() {
         isOpen={isLinkControllerModalOpen}
         onClose={closeLinkControllerModal}
         title={
-          selectedKiln?.controllerId
-            ? "Cambiar Controlador"
+          selectedKilnHasController
+            ? `Desvincular controlador ...${selectedKiln.controllerId.slice(-6)}`
             : "Enlazar Controlador"
         }
         fields={linkControllerFields}
-        submitLabel="Enlazar controlador"
-        onSubmit={handleLinkControllerSubmit}
+        submitLabel={
+          selectedKilnHasController
+            ? "Desvincular controlador"
+            : "Enlazar controlador"
+        }
+        onSubmit={
+          selectedKilnHasController
+            ? handleUnlinkController
+            : handleLinkControllerSubmit
+        }
         error={linkControllerError}
         loading={false}
         onClearError={() => setLinkControllerError(null)}
         renderContent={({ formData, setFormData, onClearError }) => (
           <div className="space-y-6">
             {selectedKiln?.controllerId && (
-              <div className="rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-green-300">
-                    Controlador actualmente vinculado
-                  </p>
-                  <p className="mt-1 text-sm text-neutral-200 font-mono">
-                    ...{selectedKiln.controllerId.slice(-6)}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleUnlinkController}
-                  className="inline-flex items-center rounded-lg border border-red-900 bg-red-500/20 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
-                >
-                  Desvincular controlador
-                </button>
-              </div>
+              <p className="text-neutral-300 text-center">
+                El controlador será desvinculado del horno.
+              </p>
             )}
 
-            <div className="space-y-4">
-              {selectedKiln?.controllerId && (
-                <p className="text-sm text-neutral-300">
-                  Para enlazar un nuevo controlador primero desvincula el
-                  actual.
-                </p>
-              )}
+            {!selectedKilnHasController && (
+              <div className="space-y-4">
+                {selectedKiln?.user && (
+                  <p className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300">
+                    Si el controlador está libre, también se vinculará al
+                    propietario actual del horno.
+                  </p>
+                )}
 
-              {linkControllerFields.map((field) => (
-                <div key={field.name} className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-neutral-400 ml-1">
-                    {field.label}
-                  </label>
+                {linkControllerFields.map((field) => (
+                  <div key={field.name} className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-neutral-400 ml-1">
+                      {field.label}
+                    </label>
 
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    placeholder={field.placeholder || ""}
-                    value={formData[field.name] || ""}
-                    onChange={(e) => {
-                      const { name, value } = e.target;
-                      setFormData((prev) => ({ ...prev, [name]: value }));
+                    <input
+                      type={field.type}
+                      name={field.name}
+                      placeholder={field.placeholder || ""}
+                      value={formData[field.name] || ""}
+                      onChange={(e) => {
+                        const { name, value } = e.target;
+                        setFormData((prev) => ({ ...prev, [name]: value }));
 
-                      if (linkControllerError) {
-                        onClearError();
-                      }
-                    }}
-                    required={field.required !== false}
-                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors"
-                    {...(field.inputProps || {})}
-                  />
-                </div>
-              ))}
-            </div>
+                        if (linkControllerError) {
+                          onClearError();
+                        }
+                      }}
+                      required={field.required !== false}
+                      className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors"
+                      {...(field.inputProps || {})}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       />
