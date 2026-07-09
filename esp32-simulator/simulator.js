@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import mqtt from "mqtt";
 
+dotenv.config();
+
 // configuracion variables de entorno
 const config = {
   host: process.env.MQTT_HOST || 'localhost',
@@ -23,6 +25,7 @@ const TOPIC_STATUS = `controller/${config.deviceId}/status`;
 // estado simulado
 let currentTemp = config.tempStart;
 let relayState = 'OFF'; // Estado simulado del switch, controlado por comando ON/OFF
+let shuttingDown = false;
 
 // conexión al broker
 const brokerUrl = `${config.protocol}://${config.host}:${config.port}`;
@@ -167,3 +170,6 @@ function shutdown() {
   // Salvavidas también en el caso "conectado" por si el publish nunca confirma
   setTimeout(exitNow, 2000).unref();
 }
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
