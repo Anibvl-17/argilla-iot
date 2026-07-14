@@ -1,73 +1,40 @@
-x-app-environment: &app-environment
-  DATABASE_URL: postgresql://${POSTGRES_USER:-argilla}:${POSTGRES_PASSWORD:-argilla_local_password}@db:5432/${POSTGRES_DB:-argilla}?schema=public
-  JWT_SECRET: ${JWT_SECRET:-argilla-local-jwt-change-me}
-  MQTT_URL: mqtt://broker-mqtt:1883
-  MQTT_USER: ""
-  MQTT_PASS: ""
-  TELEMETRY_SAMPLE_SECONDS: ${TELEMETRY_SAMPLE_SECONDS:-30}
-
 services:
-  db:
-    image: postgres:16.14-alpine3.24
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-argilla}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-argilla_local_password}
-      POSTGRES_DB: ${POSTGRES_DB:-argilla}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  # Frontend servido por Nginx. Es el único punto de entrada HTTP público.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_URL: /api
+        VITE_SOCKET_URL: ""
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-argilla} -d ${POSTGRES_DB:-argilla}",
-        ]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 5s
     restart: unless-stopped
     networks:
-      - backend_network
+      - frontend_network
 
-  broker-mqtt:
-    build:
-      context: ./mosquitto
-      dockerfile: Dockerfile
-    ports:
-      - "${MQTT_PORT:-1883}:1883"
-    volumes:
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
-    restart: unless-stopped
-    networks:
-      - backend_network
-
-  init:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: tooling
-    command: ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js"]
-    environment:
-      <<: *app-environment
-      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Administrador Argilla}
-      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@argilla.test}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
-      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-Password123!}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
-    networks:
-      - backend_network
-
+  # API interna. Nginx reenvía /api, /health y /socket.io hacia este servicio.
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
       target: runtime
     environment:
-      <<: *app-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-argilla}:${POSTGRES_PASSWORD:-argilla_local_password}@db:5432/${POSTGRES_DB:-argilla}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-argilla-local-jwt-change-me}
+      MQTT_URL: mqtt://broker-mqtt:1883
+      MQTT_USER: ""
+      MQTT_PASS: ""
+      TELEMETRY_SAMPLE_SECONDS: ${TELEMETRY_SAMPLE_SECONDS:-30}
       PORT: 3000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       MQTT_COMMAND_TIMEOUT_MS: ${MQTT_COMMAND_TIMEOUT_MS:-6000}
@@ -93,6 +60,7 @@ services:
       - frontend_network
       - backend_network
 
+  # Simulador permanente de los controladores almacenados en PostgreSQL.
   simulator:
     build:
       context: ./backend
@@ -100,7 +68,10 @@ services:
       target: runtime
     command: ["npm", "run", "simulator"]
     environment:
-      <<: *app-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-argilla}:${POSTGRES_PASSWORD:-argilla_local_password}@db:5432/${POSTGRES_DB:-argilla}?schema=public
+      MQTT_URL: mqtt://broker-mqtt:1883
+      MQTT_USER: ""
+      MQTT_PASS: ""
       SIMULATOR_TEMP_INTERVAL_MS: ${SIMULATOR_TEMP_INTERVAL_MS:-5000}
       SIMULATOR_TEMP_MIN: ${SIMULATOR_TEMP_MIN:-20}
       SIMULATOR_TEMP_MAX: ${SIMULATOR_TEMP_MAX:-1240}
@@ -115,21 +86,80 @@ services:
     networks:
       - backend_network
 
-  frontend:
+  # Migraciones y datos demo. Debe finalizar correctamente antes de iniciar la API.
+  init:
     build:
-      context: ./frontend
+      context: ./backend
       dockerfile: Dockerfile
-      args:
-        VITE_BASE_URL: /api
-        VITE_SOCKET_URL: ""
-    ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      target: tooling
+    command: ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-argilla}:${POSTGRES_PASSWORD:-argilla_local_password}@db:5432/${POSTGRES_DB:-argilla}?schema=public
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Administrador Argilla}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@argilla.test}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-Password123!}
     depends_on:
-      backend:
+      db:
         condition: service_healthy
+    restart: "no"
+    networks:
+      - backend_network
+
+  # Broker MQTT local. El healthcheck se declara aquí porque depends_on lo exige.
+  broker-mqtt:
+    build:
+      context: ./mosquitto
+      dockerfile: Dockerfile
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mosquitto_pub",
+          "-h",
+          "127.0.0.1",
+          "-p",
+          "1883",
+          "-t",
+          "healthcheck",
+          "-m",
+          "ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
     networks:
-      - frontend_network
+      - backend_network
+
+  # PostgreSQL sólo está disponible para los servicios de backend.
+  db:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-argilla}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-argilla_local_password}
+      POSTGRES_DB: ${POSTGRES_DB:-argilla}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-argilla} -d ${POSTGRES_DB:-argilla}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - backend_network
 
 networks:
   frontend_network:
