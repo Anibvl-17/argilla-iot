@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { login } from "@services/auth.service";
 import useAuthForm from "@hooks/useAuthForm";
@@ -48,7 +48,9 @@ const Login = () => {
   return (
     <>
       <div className="mb-6 sm:mb-8">
-        <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">¡Hola!</h1>
+        <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">
+          ¡Hola!
+        </h1>
         <p className="text-base text-neutral-400 sm:text-lg">
           Ingresa tus credenciales para acceder
         </p>
@@ -65,7 +67,9 @@ const Login = () => {
             id="email"
             name="email"
             aria-invalid={hasFormError(error, "email") || undefined}
-            aria-describedby={hasFormError(error, "email") ? "email-error" : undefined}
+            aria-describedby={
+              hasFormError(error, "email") ? "email-error" : undefined
+            }
             placeholder="ejemplo@correo.com"
             onChange={(e) => {
               setEmail(e.target.value);
@@ -87,7 +91,9 @@ const Login = () => {
               id="password"
               name="password"
               aria-invalid={hasFormError(error, "password") || undefined}
-              aria-describedby={hasFormError(error, "password") ? "password-error" : undefined}
+              aria-describedby={
+                hasFormError(error, "password") ? "password-error" : undefined
+              }
               placeholder="••••••••"
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -117,12 +123,6 @@ const Login = () => {
             </button>
           </div>
           <FieldError error={error} field="password" id="password-error" />
-        </div>
-
-        <div className="text-center mt-1">
-          <Link className="text-sm text-neutral-400 py-3 underline hover:text-white transition-colors">
-            ¿Olvidaste tu contraseña?
-          </Link>
         </div>
 
         <FieldError error={error} />
