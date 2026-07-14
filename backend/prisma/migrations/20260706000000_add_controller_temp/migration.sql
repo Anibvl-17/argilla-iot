@@ -1,0 +1,1 @@
+ALTER TABLE "Controller" ADD COLUMN "temp" DOUBLE PRECISION;

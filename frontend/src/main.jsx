@@ -1,0 +1,96 @@
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import ProtectedRoute from "@components/ProtectedRoute";
+import ReactDOM from "react-dom/client";
+import Login from "@pages/Login";
+import Root from "@pages/Root";
+import HomeLayout from "@layouts/HomeLayout";
+import Home from "@pages/Home";
+import "./index.css";
+import AdminKilns from "@pages/AdminKilns";
+import AdminControllers from "@pages/AdminControllers";
+import AdminUsers from "@pages/AdminUsers";
+import { AdminHome } from "@pages/AdminHome";
+import AuthLayout from "./layouts/AuthLayout";
+import KilnDetails from "@pages/KilnDetails";
+import SimulatorPanel from "./pages/SimulatorPanel";
+import AdminKilnHistory from "@pages/AdminKilnHistory";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Root />,
+    // errorElement: <Error404 />
+    children: [
+      {
+        path: "auth",
+        element: <AuthLayout />,
+        children: [
+          {
+            index: true,
+            element: <Login />,
+          },
+        ],
+      },
+      {
+        path: "/",
+        element: (
+          <ProtectedRoute>
+            <HomeLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Home />,
+          },
+          {
+            path: "kilns",
+            element: <Home />,
+          },
+          {
+            path: "kilns/:kilnId",
+            element: <KilnDetails />,
+          },
+          {
+            path: "simulator",
+            element: <SimulatorPanel />,
+          },
+          {
+            path: "admin",
+            element: (
+              <ProtectedRoute allowedRoles="ADMIN">
+                <Outlet />
+              </ProtectedRoute>
+            ),
+            children: [
+              {
+                index: true,
+                element: <AdminHome />,
+              },
+              {
+                path: "kilns",
+                element: <AdminKilns />,
+              },
+              {
+                path: "kilns/:kilnId/history",
+                element: <AdminKilnHistory />,
+              },
+              {
+                path: "controllers",
+                element: <AdminControllers />,
+              },
+              {
+                path: "users",
+                element: <AdminUsers />,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <RouterProvider router={router} />,
+);

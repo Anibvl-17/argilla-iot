@@ -10,8 +10,9 @@ export const validateSchema = (schema) => (req, res, next) => {
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.issues.map(
-        (issue) => issue.message,
+      const errorMessages = error.issues.map((issue) => issue.message);
+      const errorFields = error.issues.map(
+        (issue) => issue.path?.[0] || null,
       );
 
       return handleErrorClient(
@@ -19,6 +20,8 @@ export const validateSchema = (schema) => (req, res, next) => {
         400,
         "Error de validación en los datos.",
         errorMessages,
+        error.issues[0]?.path?.[0] || null,
+        errorFields,
       );
     }
 

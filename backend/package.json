@@ -19,7 +19,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "prisma db seed",
+    "simulator": "node src/scripts/runSimulator.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -28,11 +31,14 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "mqtt": "^5.14.1",
     "morgan": "^1.10.1",
     "pg": "^8.21.0",
+    "socket.io": "^4.8.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "nodemon": "^3.1.14",
     "prisma": "^6.19.3"
   }
 }
