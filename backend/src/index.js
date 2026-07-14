@@ -6,6 +6,7 @@ import { FRONTEND_URL, PORT } from "./config/configEnv.js";
 import { routerApi } from "./routes/index.routes.js";
 import { connectMqtt } from "./config/mqttClient.js";
 import { initializeRealtime } from "./realtime/socket.js";
+import { prisma } from "./config/prisma.js";
 
 const app = express();
 const server = createServer(app);
@@ -16,6 +17,18 @@ app.use(cors({ credentials: true, origin: FRONTEND_URL }));
 
 app.get("/", (req, res) => {
   res.send("Hola mundo!");
+});
+
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({ status: "ok" });
+  } catch (error) {
+    return res.status(503).json({
+      status: "unavailable",
+      message: "Base de datos no disponible",
+    });
+  }
 });
 
 routerApi(app);

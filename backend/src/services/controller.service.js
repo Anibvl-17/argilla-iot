@@ -2,6 +2,16 @@ import { prisma } from "../config/prisma.js";
 import { CONTROLLER_LINK_STATUS } from "../constants/controller.constants.js";
 import crypto from "crypto";
 
+const parsedTelemetrySampleSeconds = Number.parseInt(
+  process.env.TELEMETRY_SAMPLE_SECONDS || "",
+  10,
+);
+const TELEMETRY_SAMPLE_SECONDS =
+  Number.isFinite(parsedTelemetrySampleSeconds) &&
+  parsedTelemetrySampleSeconds > 0
+    ? parsedTelemetrySampleSeconds
+    : 5;
+
 function getControllerLinkStatus(controller) {
   if (controller.kiln && controller.user) {
     return CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
@@ -47,6 +57,29 @@ export async function create(data) {
 }
 
 export async function edit(controllerId, data) {
+  const currentController = await prisma.controller.findUnique({
+    where: { controllerId },
+    include: { kiln: { select: { amps: true } } },
+  });
+
+  if (!currentController) {
+    const error = new Error("Controlador no encontrado");
+    error.code = "P2025";
+    throw error;
+  }
+
+  if (
+    currentController.kiln &&
+    data.switchAmps != null &&
+    data.switchAmps < currentController.kiln.amps
+  ) {
+    const error = new Error(
+      `El horno vinculado requiere al menos ${currentController.kiln.amps}A. Desvincula el controlador del horno antes de reducir su amperaje.`,
+    );
+    error.code = "INCOMPATIBLE_KILN_AMPERAGE";
+    throw error;
+  }
+
   const controller = await prisma.controller.update({
     where: { controllerId },
     data,
@@ -114,14 +147,92 @@ export async function clearPin(id) {
 }
 
 export async function updateControllerTelemetry(controllerId, data) {
+  return await prisma.$transaction(async (tx) => {
+    const controller = await tx.controller.update({
+      where: { controllerId },
+      data,
+      select: {
+        controllerId: true,
+        userId: true,
+        operativeStatus: true,
+        connectionStatus: true,
+        temp: true,
+      kiln: { select: { kilnId: true } },
+    },
+  });
+
+    let telemetrySaved = false;
+
+    if (data.temp != null && controller.kiln) {
+      const lastTelemetry = await tx.telemetry.findFirst({
+        where: { kilnId: controller.kiln.kilnId },
+        orderBy: { timestamp: "desc" },
+        select: { timestamp: true },
+      });
+      const elapsedSeconds = lastTelemetry
+        ? (Date.now() - lastTelemetry.timestamp.getTime()) / 1000
+        : Number.POSITIVE_INFINITY;
+
+      if (elapsedSeconds >= TELEMETRY_SAMPLE_SECONDS) {
+        await tx.telemetry.create({
+          data: {
+            kilnId: controller.kiln.kilnId,
+            temperature: data.temp,
+            switchState: controller.operativeStatus === "ON",
+          },
+        });
+        telemetrySaved = true;
+      }
+    }
+
+    return { ...controller, telemetrySaved };
+  });
+}
+
+export async function updateControllerConnectionStatus(
+  controllerId,
+  connectionStatus,
+) {
   return await prisma.controller.update({
     where: { controllerId },
-    data,
+    data: { connectionStatus },
     select: {
       controllerId: true,
       userId: true,
       operativeStatus: true,
+      connectionStatus: true,
       temp: true,
+      kiln: { select: { kilnId: true } },
+    },
+  });
+}
+
+export async function updateControllerOperativeStatus(
+  controllerId,
+  operativeStatus,
+) {
+  return await prisma.controller.update({
+    where: { controllerId },
+    data: { operativeStatus },
+    select: {
+      controllerId: true,
+      userId: true,
+      operativeStatus: true,
+      connectionStatus: true,
+      temp: true,
+      kiln: { select: { kilnId: true } },
+    },
+  });
+}
+
+export async function getControllerCommandTarget(controllerId) {
+  return await prisma.controller.findUnique({
+    where: { controllerId },
+    select: {
+      controllerId: true,
+      userId: true,
+      connectionStatus: true,
+      kiln: { select: { kilnId: true } },
     },
   });
 }
@@ -132,6 +243,92 @@ export async function getAllControllers() {
   });
 
   return decorateControllers(controllers);
+}
+
+export async function getControllersForUser(userId) {
+  const controllers = await prisma.controller.findMany({
+    where: { userId },
+    include: { kiln: true, user: true },
+  });
+
+  return decorateControllers(controllers);
+}
+
+export async function getControllersPage({
+  userId,
+  page = 1,
+  pageSize = 10,
+  search = "",
+  connectionStatus,
+  operativeStatus,
+  kilnStatus,
+} = {}) {
+  const safePage = Math.max(1, Number(page) || 1);
+  const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+  const normalizedSearch = String(search || "").trim();
+  const safeConnectionStatus = ["ONLINE", "OFFLINE"].includes(connectionStatus)
+    ? connectionStatus
+    : undefined;
+  const safeOperativeStatus = ["ON", "OFF"].includes(operativeStatus)
+    ? operativeStatus
+    : undefined;
+  const where = {
+    ...(userId != null ? { userId } : {}),
+    ...(normalizedSearch
+      ? {
+          controllerId: {
+            contains: normalizedSearch,
+            mode: "insensitive",
+          },
+        }
+      : {}),
+    ...(safeOperativeStatus
+      ? { connectionStatus: "ONLINE" }
+      : safeConnectionStatus
+        ? { connectionStatus: safeConnectionStatus }
+        : {}),
+    ...(safeOperativeStatus ? { operativeStatus: safeOperativeStatus } : {}),
+    ...(kilnStatus === "linked" ? { kiln: { isNot: null } } : {}),
+    ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
+  };
+  const scopeWhere = userId != null ? { userId } : {};
+
+  const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] =
+    await prisma.$transaction([
+      prisma.controller.findMany({
+        where,
+        include: { kiln: true, user: true },
+        orderBy: { controllerId: "asc" },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+      prisma.controller.count({ where }),
+      prisma.controller.count({ where: scopeWhere }),
+      prisma.controller.count({
+        where: { ...scopeWhere, kiln: { isNot: null } },
+      }),
+      prisma.controller.count({
+        where: { ...scopeWhere, user: { isNot: null } },
+      }),
+      prisma.controller.count({
+        where: {
+          ...scopeWhere,
+          kiln: { isNot: null },
+          user: { isNot: null },
+        },
+      }),
+    ]);
+
+  return {
+    items: decorateControllers(items),
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
+    summary: { total: scopeTotal, linkedToKiln, linkedToUser, fullyLinked },
+  };
 }
 
 /**

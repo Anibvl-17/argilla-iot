@@ -12,6 +12,8 @@ import AdminUsers from "@pages/AdminUsers";
 import { AdminHome } from "@pages/AdminHome";
 import AuthLayout from "./layouts/AuthLayout";
 import KilnDetails from "@pages/KilnDetails";
+import SimulatorPanel from "./pages/SimulatorPanel";
+import AdminKilnHistory from "@pages/AdminKilnHistory";
 
 const router = createBrowserRouter([
   {
@@ -25,9 +27,9 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Login />
-          }
-        ]
+            element: <Login />,
+          },
+        ],
       },
       {
         path: "/",
@@ -43,11 +45,15 @@ const router = createBrowserRouter([
           },
           {
             path: "kilns",
-            element: <Home />
+            element: <Home />,
           },
           {
             path: "kilns/:kilnId",
-            element: <KilnDetails />
+            element: <KilnDetails />,
+          },
+          {
+            path: "simulator",
+            element: <SimulatorPanel />,
           },
           {
             path: "admin",
@@ -59,19 +65,23 @@ const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <AdminHome />
+                element: <AdminHome />,
               },
               {
                 path: "kilns",
-                element: <AdminKilns />
+                element: <AdminKilns />,
+              },
+              {
+                path: "kilns/:kilnId/history",
+                element: <AdminKilnHistory />,
               },
               {
                 path: "controllers",
-                element: <AdminControllers />
+                element: <AdminControllers />,
               },
               {
                 path: "users",
-                element: <AdminUsers />
+                element: <AdminUsers />,
               },
             ],
           },

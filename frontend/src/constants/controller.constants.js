@@ -15,4 +15,22 @@ export const CONTROLLER_LINK_STATUS_LABELS = {
 export const SWITCH_LABELS = {
   CONTACTOR: "Contactor",
   SSR: "SSR"
+};
+
+export const CONTROLLER_OPERATION_LABELS = {
+  ON: "Encendido",
+  OFF: "Apagado",
+};
+
+export const CONTROLLER_CONNECTION_LABELS = {
+  ONLINE: "Conectado",
+  OFFLINE: "Desconectado",
+};
+
+export function getControllerOperationLabel(status) {
+  return CONTROLLER_OPERATION_LABELS[status] || "Apagado";
+}
+
+export function getControllerConnectionLabel(status) {
+  return CONTROLLER_CONNECTION_LABELS[status] || "Desconectado";
 }

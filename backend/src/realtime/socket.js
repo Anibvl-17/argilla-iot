@@ -43,6 +43,7 @@ export function emitControllerTelemetry(userId, telemetry) {
   if (userId) {
     io.to(`user:${userId}`).emit("controller:telemetry", telemetry);
   }
+  io.to("admins").emit("controller:telemetry", telemetry);
 }
 
 export async function emitAdminSummary() {

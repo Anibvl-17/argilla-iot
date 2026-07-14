@@ -3,6 +3,12 @@ import { toast } from "sonner";
 import { useAuth } from "@context/AuthContext";
 import { logout } from "@services/auth.service";
 import { changePassword, getProfile } from "@services/user.service";
+import FieldError from "./FieldError";
+import {
+  clearFormError,
+  hasFormError,
+  normalizeFormError,
+} from "../utils/formError";
 
 const emptyPasswords = {
   currentPassword: "",
@@ -16,7 +22,8 @@ export default function ProfileModal({ onClose }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingPassword, setSavingPassword] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [error, setError] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [passwordError, setPasswordError] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -27,7 +34,7 @@ export default function ProfileModal({ onClose }) {
       if (result.success) {
         setProfile(result.data);
       } else {
-        setError(result.message);
+        setProfileError(result.message);
       }
       setLoadingProfile(false);
     });
@@ -49,13 +56,13 @@ export default function ProfileModal({ onClose }) {
   const handlePasswordChange = (event) => {
     const { name, value } = event.target;
     setPasswords((current) => ({ ...current, [name]: value }));
-    if (error) setError("");
+    setPasswordError((current) => clearFormError(current, name));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSavingPassword(true);
-    setError("");
+    setPasswordError(null);
 
     const result = await changePassword(
       passwords.currentPassword,
@@ -64,7 +71,7 @@ export default function ProfileModal({ onClose }) {
 
     setSavingPassword(false);
     if (!result.success) {
-      setError(result.message);
+      setPasswordError(normalizeFormError(result));
       return;
     }
 
@@ -172,7 +179,10 @@ export default function ProfileModal({ onClose }) {
                     required
                     type="password"
                     value={passwords.currentPassword}
+                    aria-invalid={hasFormError(passwordError, "currentPassword") || undefined}
+                    aria-describedby={hasFormError(passwordError, "currentPassword") ? "current-password-error" : undefined}
                   />
+                  <FieldError error={passwordError} field="currentPassword" id="current-password-error" />
                 </label>
 
                 <label className="block font-medium text-sm text-neutral-400">
@@ -186,17 +196,13 @@ export default function ProfileModal({ onClose }) {
                     required
                     type="password"
                     value={passwords.newPassword}
+                    aria-invalid={hasFormError(passwordError, "newPassword") || undefined}
+                    aria-describedby={hasFormError(passwordError, "newPassword") ? "new-password-error" : undefined}
                   />
+                  <FieldError error={passwordError} field="newPassword" id="new-password-error" />
                 </label>
 
-                {error && (
-                  <p
-                    className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
-                    role="alert"
-                  >
-                    {error}
-                  </p>
-                )}
+                <FieldError error={passwordError} />
 
                 <button
                   type="submit"
@@ -209,12 +215,12 @@ export default function ProfileModal({ onClose }) {
             </>
           )}
 
-          {!loadingProfile && !profile && error && (
+          {!loadingProfile && !profile && profileError && (
             <p
               className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
               role="alert"
             >
-              {error}
+              {profileError}
             </p>
           )}
 

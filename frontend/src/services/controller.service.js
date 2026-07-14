@@ -1,8 +1,8 @@
 import axios from "./root.service.js";
 
-export async function getAllControllers() {
+export async function getAllControllers(params = {}) {
   try {
-    const response = await axios.get("/controller/all");
+    const response = await axios.get("/controller/all", { params });
     const controllers = response.data.data;
     return { success: true, data: controllers };
   } catch (error) {
@@ -49,6 +49,45 @@ export async function updateController(controllerId, data) {
   } catch (error) {
     console.error(
       "Error en el servicio controller -> updateController()",
+      error.response?.data,
+    );
+    return {
+      success: false,
+      message:
+        error.response?.data.message || "Error al conectar con el servidor",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function getAccessibleControllers(params = {}) {
+  try {
+    const response = await axios.get("/controller/accessible", { params });
+    const controllers = response.data.data;
+    return { success: true, data: controllers };
+  } catch (error) {
+    console.error(
+      "Error en el servicio controller -> getAccessibleControllers()",
+      error.response?.data,
+    );
+    return {
+      success: false,
+      message:
+        error.response?.data.message || "Error al conectar con el servidor",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function sendAdminControllerCommand(controllerId, command) {
+  try {
+    const response = await axios.post(`/controller/${controllerId}/command`, {
+      command,
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    console.error(
+      "Error en el servicio controller -> sendAdminControllerCommand()",
       error.response?.data,
     );
     return {
@@ -125,6 +164,24 @@ export async function generateControllerPin(controllerId) {
   } catch (error) {
     console.error(
       "Error en el servicio controller -> generateControllerPin()",
+      error.response?.data,
+    );
+    return {
+      success: false,
+      message:
+        error.response?.data.message || "Error al conectar con el servidor",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function clearControllerPin(controllerId) {
+  try {
+    const response = await axios.delete(`/controller/${controllerId}/pin`);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    console.error(
+      "Error en el servicio controller -> clearControllerPin()",
       error.response?.data,
     );
     return {

@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
+  clearControllerPin,
   createController,
   editController,
   generateControllerPin,
+  getAccessibleControllers,
   getAllControllers,
   removeController,
+  sendControllerCommand,
   linkUserToController,
   unlinkUserFromController
 } from "../controllers/controller.controller.js";
@@ -15,15 +18,27 @@ import { validateSchema } from "../middlewares/validator.middleware.js";
 import {
   createControllerValidation,
   editControllerValidation,
+  controllerCommandValidation,
   linkUserValidation,
   unlinkUserValidation,
 } from "../validations/controller.validation.js";
 
 const router = Router();
 
-router.patch("/:uuid/pin", generateControllerPin);
+router.use(authenticateJWT);
 
-router.use(authenticateJWT, verifyRoles([ROLES.ADMIN]));
+router.get("/accessible", getAccessibleControllers);
+
+router.patch("/:uuid/pin", generateControllerPin);
+router.delete("/:uuid/pin", clearControllerPin);
+
+router.post(
+  "/:controllerId/command",
+  validateSchema(controllerCommandValidation),
+  sendControllerCommand,
+);
+
+router.use(verifyRoles([ROLES.ADMIN]));
 
 router.get("/all", getAllControllers);
 router.post(

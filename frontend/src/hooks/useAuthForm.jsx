@@ -1,27 +1,20 @@
 import { useState } from "react";
+import { clearFormError, normalizeFormError } from "../utils/formError";
 
 const useAuthForm = () => {
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
-  const errorData = (error) => {
-    let message;
-
-    if (error) {
-      if (error.data?.errorDetails?.lenght > 1) {
-        message = error.data.errorDetails[0];
-      } else if (error.data?.errorDetails) {
-        message = error.data.errorDetails;
-      } else {
-        message = error.message;
-      }
-
-      setError(message);
-      console.error(error);
-    }
+  const errorData = (source, defaultField = null) => {
+    setError(normalizeFormError(source, defaultField));
   };
 
-  const handleInputChange = () => {
-    setError("");
+  const handleInputChange = (event) => {
+    const changedField = event?.target?.name;
+    if (!changedField) {
+      setError(null);
+      return;
+    }
+    setError((current) => clearFormError(current, changedField));
   };
 
   return {

@@ -10,6 +10,7 @@ export async function getProfile() {
       success: false,
       message:
         error.response?.data?.message || "Error al conectar con el servidor",
+      data: error.response?.data,
     };
   }
 }
@@ -27,13 +28,14 @@ export async function changePassword(currentPassword, newPassword) {
       success: false,
       message:
         error.response?.data?.message || "Error al conectar con el servidor",
+      data: error.response?.data,
     };
   }
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(params = {}) {
   try {
-    const response = await axios.get("/user/all");
+    const response = await axios.get("/user/all", { params });
     const users = response.data.data;
     return { success: true, data: users };
   } catch (error) {

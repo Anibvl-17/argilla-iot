@@ -9,7 +9,9 @@ export const createControllerValidation = z
     ),
     switchAmps: z
       .number("El amperaje debe ser un número positivo")
-      .positive("El amperaje debe ser un número positivo"),
+      .int("El amperaje debe ser un número entero")
+      .min(1, "Debe ingresar entre 1 a 500 A")
+      .max(500, "Debe ingresar entre 1 a 500 A"),
   })
   .strict();
 
@@ -23,7 +25,9 @@ export const editControllerValidation = z
       .optional(),
     switchAmps: z
       .number("El amperaje debe ser un número positivo")
-      .positive("El amperaje debe ser un número positivo")
+      .int("El amperaje debe ser un número entero")
+      .min(1, "Debe ingresar entre 1 a 500 A")
+      .max(500, "Debe ingresar entre 1 a 500 A")
       .optional(),
   })
   .strict();
@@ -35,12 +39,21 @@ export const linkUserValidation = z
       .string("Debe incluir ID de controlador válida")
       .min(6, "El ID de controlador debe tener 6 caracteres")
       .max(6, "El ID de controlador debe tener 6 caracteres"),
-    pin: z.int("Debe incluir PIN válido"),
+    pin: z
+      .int("Debe incluir PIN válido")
+      .min(100000, "El PIN esta fuera del rango permitido")
+      .max(999999, "El PIN esta fuera del rango permitido"),
   })
   .strict();
 
 export const unlinkUserValidation = z
   .object({
     userId: z.int("Debe incluir ID de usuario de válida"),
+  })
+  .strict();
+
+export const controllerCommandValidation = z
+  .object({
+    command: z.enum(["ON", "OFF"], "El comando debe ser ON u OFF"),
   })
   .strict();

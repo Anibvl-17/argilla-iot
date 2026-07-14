@@ -1,4 +1,5 @@
 import { Badge } from "@components/Badge";
+import { getControllerOperationLabel } from "@constants/controller.constants";
 
 export default function ControllerStatus({ controller }) {
   if (!controller) {
@@ -6,5 +7,10 @@ export default function ControllerStatus({ controller }) {
   }
 
   const isOn = controller.operativeStatus === "ON";
-  return <Badge style={isOn ? "success" : "default"} text={isOn ? "ON" : "OFF"} />;
+  return (
+    <Badge
+      style={isOn ? "success" : "default"}
+      text={getControllerOperationLabel(controller.operativeStatus)}
+    />
+  );
 }

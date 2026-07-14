@@ -8,10 +8,19 @@ export const handleSuccess = (res, statusCode, message, data = null) => {
   });
 };
 
-export const handleErrorClient = (res, statusCode, message, errorDetails = null) => {
+export const handleErrorClient = (
+  res,
+  statusCode,
+  message,
+  errorDetails = null,
+  errorField = null,
+  errorFields = null,
+) => {
   res.status(statusCode).json({
     message,
     errorDetails,
+    ...(errorField ? { errorField } : {}),
+    ...(Array.isArray(errorFields) ? { errorFields } : {}),
     status: "Client error",
   });
 };

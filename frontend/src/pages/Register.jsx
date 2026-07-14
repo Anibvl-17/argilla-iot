@@ -4,6 +4,8 @@ import { useAuth } from "@context/AuthContext";
 import useAuthForm from "@hooks/useAuthForm";
 import { register } from "@services/auth.service";
 import { toast } from "sonner";
+import FieldError from "@components/FieldError";
+import { hasFormError } from "../utils/formError";
 
 /**
  * @todo En pantallas height < 700 y width > 1024, hay problemas de diseño
@@ -32,7 +34,8 @@ const Register = ({ setMode }) => {
 
     try {
       if (password !== confirmPassword) {
-        throw Error("Las contraseñas no coinciden");
+        errorData("Las contraseñas no coinciden", "confirmPassword");
+        return;
       }
 
       const result = await register({ name, email, password });
@@ -64,21 +67,23 @@ const Register = ({ setMode }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:gap-5">
-        {error && <p className="text-sm text-yellow-500/80">{error}</p>}
-
         {/* Input email */}
         <div className="flex flex-col gap-1.5">
           <label className="text-neutral-300 font-medium ml-1">Nombre</label>
           <input
             type="text"
             id="name"
+            name="name"
+            aria-invalid={hasFormError(error, "name") || undefined}
+            aria-describedby={hasFormError(error, "name") ? "name-error" : undefined}
             placeholder="John Doe"
             onChange={(e) => {
               setName(e.target.value);
-              handleInputChange();
+              handleInputChange(e);
             }}
             className="bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
           />
+          <FieldError error={error} field="name" id="name-error" />
         </div>
 
         {/* Input email */}
@@ -89,13 +94,17 @@ const Register = ({ setMode }) => {
           <input
             type="email"
             id="email"
+            name="email"
+            aria-invalid={hasFormError(error, "email") || undefined}
+            aria-describedby={hasFormError(error, "email") ? "email-error" : undefined}
             placeholder="ejemplo@correo.com"
             onChange={(e) => {
               setEmail(e.target.value);
-              handleInputChange();
+              handleInputChange(e);
             }}
             className="bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
           />
+          <FieldError error={error} field="email" id="email-error" />
         </div>
 
         {/* Input contraseña */}
@@ -107,10 +116,13 @@ const Register = ({ setMode }) => {
             <input
               type="password"
               id="password"
+              name="password"
+              aria-invalid={hasFormError(error, "password") || undefined}
+              aria-describedby={hasFormError(error, "password") ? "password-error" : undefined}
               placeholder="••••••••"
               onChange={(e) => {
                 setPassword(e.target.value);
-                handleInputChange();
+                handleInputChange(e);
               }}
               className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
             />
@@ -135,6 +147,7 @@ const Register = ({ setMode }) => {
               </svg>
             </button>
           </div>
+          <FieldError error={error} field="password" id="password-error" />
         </div>
 
         {/* Confirmar contraseña */}
@@ -146,15 +159,21 @@ const Register = ({ setMode }) => {
             <input
               type="password"
               id="confirm-password"
+              name="confirmPassword"
+              aria-invalid={hasFormError(error, "confirmPassword") || undefined}
+              aria-describedby={hasFormError(error, "confirmPassword") ? "confirm-password-error" : undefined}
               placeholder="••••••••"
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
-                handleInputChange();
+                handleInputChange(e);
               }}
               className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
             />
           </div>
+          <FieldError error={error} field="confirmPassword" id="confirm-password-error" />
         </div>
+
+        <FieldError error={error} />
 
         <button
           type="submit"

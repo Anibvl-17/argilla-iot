@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import {
-  LuBox,
-  LuFlame,
-  LuMoveRight,
-  LuPower,
-  LuRadio,
-} from "react-icons/lu";
+import { LuBox, LuFlame, LuMoveRight, LuPower, LuRadio } from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
-import { getMyKilns } from "@services/kiln.service";
+import {
+  getMyKilns,
+  sendMyKilnControllerCommand,
+} from "@services/kiln.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import ControllerStatus from "@components/ControllerStatus";
 import { ROLES } from "../constants/user.constants";
+import { getControllerConnectionLabel } from "@constants/controller.constants";
 
 function applyTelemetry(controller, telemetry) {
   return controller?.controllerCode === telemetry.controllerCode
@@ -34,6 +32,7 @@ export default function Home() {
   const [data, setData] = useState({ kilns: [], unlinkedControllers: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [commandLoadingId, setCommandLoadingId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -61,6 +60,19 @@ export default function Home() {
   }, []);
 
   useControllerRealtime(handleTelemetry);
+
+  async function handleKilnCommand(kiln) {
+    if (!kiln.controller) return;
+
+    const command = kiln.controller.operativeStatus === "ON" ? "OFF" : "ON";
+    setCommandLoadingId(String(kiln.kilnId));
+    const result = await sendMyKilnControllerCommand(kiln.kilnId, command);
+    setCommandLoadingId("");
+
+    if (!result.success) {
+      setError(result.message);
+    }
+  }
 
   if (user.role === ROLES.ADMIN) return <Navigate to="/admin" replace />;
 
@@ -134,13 +146,38 @@ export default function Home() {
                 <div className="mt-1">
                   <Temperature value={kiln.controller?.temp} />
                 </div>
+                {kiln.controller && (
+                  <p className="mt-1 text-xs font-medium text-neutral-500">
+                    {getControllerConnectionLabel(
+                      kiln.controller.connectionStatus,
+                    )}
+                  </p>
+                )}
                 <div className="mt-auto flex flex-col gap-3 pt-6 min-[380px]:flex-row">
                   <button
-                    disabled
-                    title="Disponible próximamente"
-                    className="flex flex-1 cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-neutral-800 px-3 py-2.5 text-sm text-neutral-600"
+                    disabled={
+                      !kiln.controller ||
+                      kiln.controller.connectionStatus !== "ONLINE" ||
+                      commandLoadingId === String(kiln.kilnId)
+                    }
+                    onClick={() => handleKilnCommand(kiln)}
+                    title={
+                      kiln.controller?.connectionStatus === "OFFLINE"
+                        ? "Controlador desconectado"
+                        : kiln.controller
+                        ? kiln.controller.operativeStatus === "ON"
+                          ? "Apagar horno"
+                          : "Encender horno"
+                        : "Requiere controlador"
+                    }
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-200 transition-colors enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600"
                   >
-                    <LuPower /> Prender
+                    <LuPower />
+                    {commandLoadingId === String(kiln.kilnId)
+                      ? "Enviando..."
+                      : kiln.controller?.operativeStatus === "ON"
+                        ? "Apagar"
+                        : "Encender"}
                   </button>
                   <Link
                     to={`/kilns/${kiln.kilnId}`}
@@ -193,6 +230,14 @@ export default function Home() {
                   <div>
                     <dt className="text-neutral-500">Capacidad</dt>
                     <dd className="mt-1">{controller.switchAmps} A</dd>
+                  </div>
+                  <div>
+                    <dt className="text-neutral-500">Conexión</dt>
+                    <dd className="mt-1">
+                      {getControllerConnectionLabel(
+                        controller.connectionStatus,
+                      )}
+                    </dd>
                   </div>
                 </dl>
               </article>

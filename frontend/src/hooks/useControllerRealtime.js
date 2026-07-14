@@ -4,7 +4,10 @@ import { io } from "socket.io-client";
 
 function getSocketUrl() {
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
-  return new URL(import.meta.env.VITE_BASE_URL).origin;
+  return new URL(
+    import.meta.env.VITE_BASE_URL || "/api",
+    window.location.origin,
+  ).origin;
 }
 
 export function useControllerRealtime(onTelemetry) {

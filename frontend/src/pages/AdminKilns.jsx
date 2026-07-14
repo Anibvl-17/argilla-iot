@@ -1,5 +1,8 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import Modal from "@components/Modal";
+import FloatingDropdown from "@components/FloatingDropdown";
+import Pagination from "@components/Pagination";
 import {
   getAllKilns,
   createKiln,
@@ -14,7 +17,9 @@ import {
   LuLink,
   LuEye,
   LuEyeOff,
+  LuHistory,
   LuPencil,
+  LuPower,
   LuTrash2,
   LuUnlink,
   LuUserRoundPlus,
@@ -23,26 +28,29 @@ import {
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
 import { linkUser } from "@services/kiln.service";
+import { Badge } from "@components/Badge";
+import { sendAdminControllerCommand } from "@services/controller.service";
+import { useControllerRealtime } from "@hooks/useControllerRealtime";
+import { getControllerOperationLabel } from "@constants/controller.constants";
+import {
+  formError,
+  hasFormError,
+  normalizeFormError,
+} from "../utils/formError";
+import FieldError from "@components/FieldError";
 
-const AdminStatusBadge = ({ status }) => {
-  const styles = {
-    OPERATIONAL: "bg-green-500/10 text-green-400 border-green-500/20",
-    MAINTENANCE: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    UNASSIGNED: "bg-neutral-800 text-neutral-400 border-neutral-700",
-  };
-  const labels = {
-    OPERATIONAL: "Operativo",
-    MAINTENANCE: "Soporte",
-    UNASSIGNED: "Stock",
-  };
+const KilnStatusBadge = ({ controller }) => {
+  if (!controller) {
+    return <span className="text-sm italic text-neutral-400/70">Inactivo</span>;
+  }
 
-  return (
-    <span
-      className={`inline-flex rounded-full border px-1.5 py-1.5 text-[10px] font-medium leading-tight sm:px-2 sm:py-2 sm:text-xs ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
+  const isOn = controller.operativeStatus === "ON";
+  const text =
+    isOn && controller.temp != null
+      ? `Encendido`
+      : getControllerOperationLabel(controller.operativeStatus);
+
+  return <Badge style={isOn ? "success" : "default"} text={text} description={isOn && controller.temp != null ? (controller.temp.toFixed(1) + " °C") : null}/>;
 };
 
 const kilnFields = [
@@ -51,20 +59,32 @@ const kilnFields = [
     label: "Nombre del horno",
     type: "text",
     placeholder: "Horno Taller #40",
+    inputProps: {
+      minLength: 2,
+      maxLength: 100,
+    },
   },
   {
     name: "liters",
     label: "Capacidad (Litros)",
     type: "number",
     placeholder: "40",
+    inputProps: { min: 1, max: 500, step: 1 },
   },
   {
     name: "amps",
     label: "Amperaje",
     type: "number",
     placeholder: "25",
+    inputProps: { min: 1, max: 500, step: 1 },
   },
-  { name: "volts", label: "Voltaje", type: "number", placeholder: "220" },
+  {
+    name: "volts",
+    label: "Voltaje",
+    type: "number",
+    placeholder: "220",
+    inputProps: { min: 100, max: 600, step: 1 },
+  },
   {
     name: "phases",
     label: "Fases",
@@ -75,18 +95,6 @@ const kilnFields = [
     ],
   },
 ];
-
-const buildModalErrorMessage = (response) => {
-  const details = response?.data?.errorDetails;
-
-  if (Array.isArray(details) && details.length > 0) {
-    return details[0];
-  } else if (details) {
-    return details;
-  }
-
-  return response?.message || "No se pudo guardar el horno.";
-};
 
 const normalizeKilnFormData = (formData) => ({
   ...formData,
@@ -123,6 +131,7 @@ const linkControllerFields = [
 ];
 
 const normalizeSearchTerm = (value) => value.trim().toLowerCase();
+const PAGE_SIZE = 8;
 
 export default function AdminKilns() {
   const [loading, setLoading] = useState(false);
@@ -142,50 +151,40 @@ export default function AdminKilns() {
   const [linkUserSearchTerm, setLinkUserSearchTerm] = useState("");
   const [selectedUserToLink, setSelectedUserToLink] = useState(null);
   const [expandedKilnId, setExpandedKilnId] = useState(null);
+  const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [summary, setSummary] = useState({
+    total: 0,
+    withoutController: 0,
+    withoutOwner: 0,
+  });
   const linkUserSearchRef = useRef(null);
 
-  const filteredKilns = kilns.filter((kiln) => {
-    const searchLowercase = searchTerm.toLowerCase();
-
-    const results = () => {
-      if (searchTerm.length < 5) {
-        return (
-          kiln.kilnId.toString().includes(searchLowercase) ||
-          (kiln.user && kiln.user.name.toLowerCase().includes(searchLowercase))
-        );
-      } else {
-        return (
-          kiln.kilnId.toString().includes(searchLowercase) ||
-          (kiln.user &&
-            kiln.user.name.toLowerCase().includes(searchLowercase)) ||
-          (kiln.controllerId &&
-            kiln.controller.controllerId
-              .toLowerCase()
-              .includes(searchLowercase))
-        );
-      }
-    };
-
-    return results();
-  });
-
-  const fetchKilns = async () => {
+  const fetchKilns = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getAllKilns();
-      setKilns(result.data || []);
+      const result = await getAllKilns({
+        page,
+        pageSize: PAGE_SIZE,
+        search: searchTerm,
+      });
+      const payload = result.data || {};
+      setKilns(payload.items || []);
+      setTotalPages(payload.pagination?.totalPages || 1);
+      setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const result = await getAllUsers();
-      setUsers(result.data || []);
+      const result = await getAllUsers({ pageSize: 100 });
+      setUsers(result.data?.items || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -196,28 +195,27 @@ export default function AdminKilns() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchKilns();
+  }, [fetchKilns]);
+
+  const handleTelemetry = useCallback((telemetry) => {
+    setKilns((current) =>
+      current.map((kiln) =>
+        kiln.controller?.controllerId === telemetry.controllerId
+          ? {
+              ...kiln,
+              controller: {
+                ...kiln.controller,
+                operativeStatus: telemetry.operativeStatus,
+                connectionStatus: telemetry.connectionStatus,
+                temp: telemetry.temp,
+              },
+            }
+          : kiln,
+      ),
+    );
   }, []);
 
-  useEffect(() => {
-    const handleClickOutsideSearch = (event) => {
-      if (!isLinkUserModalOpen || !linkUserSearchTerm.trim()) {
-        return;
-      }
-
-      if (
-        linkUserSearchRef.current &&
-        !linkUserSearchRef.current.contains(event.target)
-      ) {
-        setLinkUserSearchTerm("");
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutsideSearch);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutsideSearch);
-    };
-  }, [isLinkUserModalOpen, linkUserSearchTerm]);
+  useControllerRealtime(handleTelemetry);
 
   const openCreateModal = () => {
     setModalMode("create");
@@ -287,18 +285,15 @@ export default function AdminKilns() {
           : await updateKiln(selectedKiln.kilnId, data);
 
       if (response.success) {
+        toast.success(`Horno ${modalMode === "create" ? "creado" : "actualizado"} exitosamente`)
         closeModal();
         fetchKilns();
         return;
       }
 
-      setModalError(buildModalErrorMessage(response));
+      setModalError(normalizeFormError(response));
     } catch (error) {
-      setModalError(
-        error.response?.data?.message ||
-          error.message ||
-          "Ocurrió un error inesperado al conectar con el servidor.",
-      );
+      setModalError(normalizeFormError(error));
     } finally {
       setLoading(false);
     }
@@ -324,7 +319,7 @@ export default function AdminKilns() {
 
   const handleLinkUserSubmit = async ({ userId }) => {
     if (!selectedKiln) {
-      setLinkUserError("Selecciona un horno antes de enlazar un usuario.");
+      setLinkUserError(formError("Selecciona un horno antes de enlazar un usuario."));
       return;
     }
 
@@ -332,12 +327,12 @@ export default function AdminKilns() {
       !selectedUserToLink ||
       String(selectedUserToLink.userId) !== String(userId)
     ) {
-      setLinkUserError("Selecciona un usuario de la lista para continuar.");
+      setLinkUserError(formError("Selecciona un usuario de la lista para continuar.", "userId"));
       return;
     }
 
     if (parseInt(selectedKiln?.userId) === parseInt(userId)) {
-      setLinkUserError("El horno ya está vinculado al usuario seleccionado");
+      setLinkUserError(formError("El horno ya está vinculado al usuario seleccionado", "userId"));
       return;
     }
 
@@ -348,19 +343,17 @@ export default function AdminKilns() {
       );
       if (response.success) {
         toast.success(
-          `Usuario ${selectedUserToLink.name} enlazado al horno ID ${selectedKiln.kilnId}.`,
+          `Usuario ${selectedUserToLink.name} enlazado al horno #${selectedKiln.kilnId}.`,
         );
         fetchKilns();
         fetchUsers();
+        closeLinkUserModal();
       } else {
-        throw new Error(
-          buildModalErrorMessage(response) || "Error al vincular usuario",
-        );
+        setLinkUserError(normalizeFormError(response));
+        return;
       }
     } catch (error) {
-      toast.error("Error al vincular usuario", { description: error.message });
-    } finally {
-      closeLinkUserModal();
+      setLinkUserError(normalizeFormError(error));
     }
   };
 
@@ -378,7 +371,7 @@ export default function AdminKilns() {
 
       if (response.success) {
         toast.success(
-          `Usuario desvinculado del horno ID ${selectedKiln.kilnId}.`,
+          `Usuario desvinculado del horno #${selectedKiln.kilnId}.`,
         );
         fetchKilns();
         fetchUsers();
@@ -402,21 +395,29 @@ export default function AdminKilns() {
     const pin = String(controllerPin || "").trim();
 
     if (!selectedKiln) {
-      setLinkControllerError(
-        "Selecciona un horno antes de enlazar un controlador.",
-      );
+      setLinkControllerError(formError("Selecciona un horno antes de enlazar un controlador."));
       return;
     }
 
+    const validationErrors = [];
     if (!/^[a-fA-F0-9]{6}$/.test(suffix)) {
-      setLinkControllerError(
-        "Ingresa los últimos 6 caracteres válidos de la UUID.",
-      );
-      return;
+      validationErrors.push({
+        message: "Ingresa los últimos 6 caracteres válidos de la UUID.",
+        field: "partialControllerId",
+      });
     }
 
     if (!/^\d{6}$/.test(pin)) {
-      setLinkControllerError("El PIN debe contener exactamente 6 dígitos.");
+      validationErrors.push({
+        message: "El PIN debe contener exactamente 6 dígitos.",
+        field: "pin",
+      });
+    }
+
+    if (validationErrors.length) {
+      setLinkControllerError(
+        normalizeFormError({ errors: validationErrors }),
+      );
       return;
     }
 
@@ -429,24 +430,16 @@ export default function AdminKilns() {
 
       if (response.success) {
         toast.success(
-          `Controlador enlazado al horno ID ${selectedKiln.kilnId}.`,
+          `Controlador enlazado al horno #${selectedKiln.kilnId}.`,
         );
         fetchKilns();
         closeLinkControllerModal();
         return;
       }
 
-      setLinkControllerError(
-        buildModalErrorMessage(response) ||
-          "No se pudo enlazar el controlador.",
-      );
+      setLinkControllerError(normalizeFormError(response));
     } catch (error) {
-      setLinkControllerError(
-        error.response?.data?.errorDetails ||
-          error.response?.data?.message ||
-          error.message ||
-          "Ocurrió un error inesperado al conectar con el servidor.",
-      );
+      setLinkControllerError(normalizeFormError(error));
     }
   };
 
@@ -461,23 +454,41 @@ export default function AdminKilns() {
 
       if (response.success) {
         toast.success(
-          `Controlador desvinculado del horno ID ${selectedKiln.kilnId}.`,
+          `Controlador desvinculado del horno #${selectedKiln.kilnId}.`,
         );
         fetchKilns();
         closeLinkControllerModal();
         return;
       }
 
-      setLinkControllerError(
-        buildModalErrorMessage(response) ||
-          "No se pudo desvincular el controlador.",
-      );
+      setLinkControllerError(normalizeFormError(response));
     } catch (error) {
-      setLinkControllerError(
-        error.response?.data?.message ||
-          error.message ||
-          "Ocurrió un error inesperado al conectar con el servidor.",
+      setLinkControllerError(normalizeFormError(error));
+    }
+  };
+
+  const handleKilnCommand = async (kiln) => {
+    if (!kiln.controller) return;
+
+    const command = kiln.controller.operativeStatus === "ON" ? "OFF" : "ON";
+    setCommandLoadingId(String(kiln.kilnId));
+
+    try {
+      const response = await sendAdminControllerCommand(
+        kiln.controller.controllerId,
+        command,
       );
+
+      if (response.success) {
+        toast.success(`Comando ${command} enviado al horno ${kiln.kilnId}.`);
+        return;
+      }
+
+      throw new Error(response.message || "Error al enviar comando");
+    } catch (error) {
+      toast.error("Error al enviar comando", { description: error.message });
+    } finally {
+      setCommandLoadingId("");
     }
   };
 
@@ -530,14 +541,14 @@ export default function AdminKilns() {
             <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Total Hornos
             </p>
-            <p className="text-xl font-bold sm:text-3xl">{kilns.length}</p>
+            <p className="text-xl font-bold sm:text-3xl">{summary.total}</p>
           </div>
           <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
             <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
               Sin Controlador
             </p>
             <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
-              {kilns.filter((k) => !k.controller).length}
+              {summary.withoutController}
             </p>
           </div>
           <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
@@ -545,15 +556,19 @@ export default function AdminKilns() {
               Sin Propietario
             </p>
             <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
-              {kilns.filter((k) => !k.user).length}
+              {summary.withoutOwner}
             </p>
           </div>
         </div>
       </div>
 
       {/* Barra de búsqueda */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[#141414] p-4 border border-neutral-800 rounded-xl">
-        <div className="relative w-full sm:w-96">
+      <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
+        <div className="border-b border-neutral-800 p-4">
+          <p className="mb-2 text-sm md:text-base text-neutral-400">
+            Busca hornos por ID, propietario o ID del controlador vinculado.
+          </p>
+          <div className="relative w-full sm:w-96">
           {/* Icono de Lupa  */}
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg
@@ -573,19 +588,22 @@ export default function AdminKilns() {
 
           <input
             type="text"
-            placeholder="Buscar por ID, propietario, ID controlador..."
+            placeholder="3, matias@argilla.cl, 123456..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
             className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
           />
+          </div>
         </div>
-      </div>
 
       {/* Contenedor de la Tabla */}
-      <div className="max-h-[65dvh] overflow-auto rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
-        {kilns.length > 0 ? (
+        {summary.total > 0 || searchTerm ? (
           !loading && (
-            <table className="w-full min-w-105 text-left text-xs sm:min-w-190 sm:text-sm">
+            <div className="overflow-auto">
+            <table className="w-full text-left text-xs sm:min-w-190 sm:text-sm">
               {/* Títulos de Columna */}
               <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
                 <tr>
@@ -636,8 +654,8 @@ export default function AdminKilns() {
 
               {/* Cuerpo de la Tabla */}
               <tbody className="divide-y divide-neutral-800/60">
-                {filteredKilns.length > 0 ? (
-                  filteredKilns.map((kiln) => (
+                {kilns.length > 0 ? (
+                  kilns.map((kiln) => (
                     <Fragment key={kiln.kilnId}>
                       <tr className="hover:bg-neutral-900/30 transition-colors">
                         {/* Columna ID */}
@@ -676,7 +694,7 @@ export default function AdminKilns() {
                                 toast.success("¡ID copiada!");
                               }}
                               title={"Copiar id: " + kiln.controllerId}
-                              className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline hover:cursor-pointer"
+                              className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline"
                             >
                               ...{kiln.controllerId.slice(-6)}
                             </span>
@@ -689,7 +707,9 @@ export default function AdminKilns() {
 
                         {/* Columna Estado badge */}
                         <td className="px-3 py-4 text-center sm:px-6 sm:py-5">
-                          <AdminStatusBadge status={kiln.status} />
+                          <div className="flex flex-row justify-center items-center">
+                            <KilnStatusBadge controller={kiln.controller} />
+                          </div>
                         </td>
 
                         {/* Columna Litros */}
@@ -713,6 +733,30 @@ export default function AdminKilns() {
                         {/* Botones de Acción */}
                         <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
                           <div className="flex justify-center gap-0.5 sm:gap-2">
+                            <button
+                              type="button"
+                              disabled={
+                                !kiln.controller ||
+                                kiln.controller.connectionStatus !== "ONLINE" ||
+                                commandLoadingId === String(kiln.kilnId)
+                              }
+                              onClick={() => handleKilnCommand(kiln)}
+                              className={
+                                "hidden rounded-lg p-1.5 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 sm:p-2 md:inline-flex " +
+                                (kiln.controller?.operativeStatus === "ON"
+                                  ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400"
+                                  : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400")
+                              }
+                              title={
+                                !kiln.controller
+                                  ? "Requiere controlador"
+                                  : kiln.controller.operativeStatus === "ON"
+                                    ? "Apagar horno"
+                                    : "Encender horno"
+                              }
+                            >
+                              <LuPower />
+                            </button>
                             <button
                               type="button"
                               onClick={() =>
@@ -743,7 +787,7 @@ export default function AdminKilns() {
                             <button
                               onClick={() => openLinkUserModal(kiln)}
                               className={
-                                "p-2 rounded-lg text-neutral-400 transition-colors hover:cursor-pointer" +
+                                "hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer md:inline-flex" +
                                 (kiln.user
                                   ? " hover:text-red-400 hover:bg-red-400/10"
                                   : " hover:text-green-400 hover:bg-green-400/10")
@@ -765,7 +809,7 @@ export default function AdminKilns() {
                             <button
                               onClick={() => openLinkControllerModal(kiln)}
                               className={
-                                "p-2 rounded-lg text-neutral-400 transition-colors hover:cursor-pointer" +
+                                "hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer md:inline-flex" +
                                 (kiln.controller
                                   ? " hover:text-red-400 hover:bg-red-400/10"
                                   : " hover:text-green-400 hover:bg-green-400/10")
@@ -780,9 +824,19 @@ export default function AdminKilns() {
                             </button>
 
                             {/* Editar datos */}
+                            <Link
+                              to={`/admin/kilns/${kiln.kilnId}/history`}
+                              className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white sm:p-2 md:inline-flex"
+                              title="Ver historial"
+                              aria-label={`Ver historial del horno ${kiln.kilnId}`}
+                            >
+                              <LuHistory />
+                            </Link>
+
+                            {/* Editar datos */}
                             <button
                               onClick={() => openEditModal(kiln)}
-                              className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2"
+                              className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2 md:inline-flex"
                               title="Editar datos"
                             >
                               <LuPencil />
@@ -794,7 +848,7 @@ export default function AdminKilns() {
                                 setSelectedKiln(kiln);
                                 setIsAlertOpen(true);
                               }}
-                              className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2"
+                              className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2 md:inline-flex"
                               title="Eliminar horno"
                             >
                               <LuTrash2 />
@@ -805,15 +859,15 @@ export default function AdminKilns() {
                       {expandedKilnId === kiln.kilnId && (
                         <tr className="bg-neutral-950/60 md:hidden">
                           <td colSpan="7" className="px-3 py-3">
-                            <dl className="grid grid-cols-2 gap-3 text-xs">
+                            <dl className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
                               <div>
                                 <dt className="font-bold text-neutral-400">
-                                  Controlador
+                                  Temperatura
                                 </dt>
-                                <dd className="mt-1 break-all font-mono text-neutral-200">
-                                  {kiln.controllerId
-                                    ? `...${kiln.controllerId.slice(-6)}`
-                                    : "No vinculado"}
+                                <dd className="mt-1 text-neutral-200">
+                                  {kiln.controller?.temp == null
+                                    ? "No disponible"
+                                    : `${kiln.controller.temp.toFixed(1)} °C`}
                                 </dd>
                               </div>
                               <div>
@@ -824,7 +878,7 @@ export default function AdminKilns() {
                                   {kiln.liters} litros
                                 </dd>
                               </div>
-                              <div className="col-span-2">
+                              <div>
                                 <dt className="font-bold text-neutral-400">
                                   Datos eléctricos
                                 </dt>
@@ -837,7 +891,109 @@ export default function AdminKilns() {
                                     : "Trifásico"}
                                 </dd>
                               </div>
+                              <div>
+                                <dt className="font-bold text-neutral-400">
+                                  Controlador
+                                </dt>
+                                <dd className="mt-1 break-all font-mono text-neutral-200">
+                                  {kiln.controllerId
+                                    ? `...${kiln.controllerId.slice(-6)}`
+                                    : "No vinculado"}
+                                </dd>
+                              </div>
                             </dl>
+                            <div className="mt-4 border-t border-neutral-800 pt-3">
+                              <p className="mb-2 text-xs font-bold text-neutral-400">
+                                Acciones
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-base">
+                                <button
+                                  type="button"
+                                  disabled={
+                                    !kiln.controller ||
+                                    kiln.controller.connectionStatus !== "ONLINE" ||
+                                    commandLoadingId === String(kiln.kilnId)
+                                  }
+                                  onClick={() => handleKilnCommand(kiln)}
+                                  className={
+                                    "inline-flex rounded-lg p-2 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 " +
+                                    (kiln.controller?.operativeStatus === "ON"
+                                      ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400"
+                                      : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400")
+                                  }
+                                  title={
+                                    !kiln.controller
+                                      ? "Requiere controlador"
+                                      : kiln.controller.operativeStatus === "ON"
+                                        ? "Apagar horno"
+                                        : "Encender horno"
+                                  }
+                                >
+                                  <LuPower />
+                                </button>
+                                <button
+                                  onClick={() => openLinkUserModal(kiln)}
+                                  className={
+                                    "inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer" +
+                                    (kiln.user
+                                      ? " hover:text-red-400 hover:bg-red-400/10"
+                                      : " hover:text-green-400 hover:bg-green-400/10")
+                                  }
+                                  title={
+                                    kiln.user
+                                      ? "Desvincular usuario"
+                                      : "Asignar usuario"
+                                  }
+                                >
+                                  {kiln.user ? (
+                                    <LuUserRoundMinus />
+                                  ) : (
+                                    <LuUserRoundPlus />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => openLinkControllerModal(kiln)}
+                                  className={
+                                    "inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer" +
+                                    (kiln.controller
+                                      ? " hover:text-red-400 hover:bg-red-400/10"
+                                      : " hover:text-green-400 hover:bg-green-400/10")
+                                  }
+                                  title={
+                                    kiln.controller
+                                      ? "Desvincular controlador"
+                                      : "Asignar controlador"
+                                  }
+                                >
+                                  {kiln.controller ? <LuUnlink /> : <LuLink />}
+                                </button>
+                                <button
+                                  onClick={() => openEditModal(kiln)}
+                                  className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white"
+                                  title="Editar datos"
+                                >
+                                  <LuPencil />
+                                </button>
+                                <Link
+                                  to={`/admin/kilns/${kiln.kilnId}/history`}
+                                  className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+                                  title="Ver historial"
+                                  aria-label={`Ver historial del horno ${kiln.kilnId}`}
+                                >
+                                  <LuHistory />
+                                </Link>
+                                <button
+                                  onClick={() => {
+                                    setSelectedKiln(kiln);
+                                    setIsAlertOpen(true);
+                                  }}
+                                  className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400"
+                                  title="Eliminar horno"
+                                >
+                                  <LuTrash2 />
+                                </button>
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -856,9 +1012,10 @@ export default function AdminKilns() {
                 )}
               </tbody>
             </table>
+            </div>
           )
         ) : (
-          <p className="text-neutral-400 text-sm/relaxed p-4 text-center">
+          <p className="text-neutral-300 text-sm/relaxed p-4 text-center">
             No hay hornos registrados. <br />
             Haz click en el botón{" "}
             <span className="rounded-lg font-medium">
@@ -867,6 +1024,7 @@ export default function AdminKilns() {
             para registrar un horno.
           </p>
         )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <Modal
@@ -879,7 +1037,7 @@ export default function AdminKilns() {
         onSubmit={handleCreateKiln}
         error={modalError}
         loading={loading}
-        onClearError={() => setModalError(null)}
+        onClearError={setModalError}
       />
 
       <Modal
@@ -889,7 +1047,7 @@ export default function AdminKilns() {
           (selectedKilnHasOwner
             ? "Desvincular usuario de "
             : "Asignar usuario a ") +
-          "Horno ID " +
+          "Horno #" +
           selectedKiln?.kilnId
         }
         fields={linkUserFields}
@@ -901,8 +1059,8 @@ export default function AdminKilns() {
         }
         error={linkUserError}
         loading={false}
-        onClearError={() => setLinkUserError(null)}
-        renderContent={({ setFormData, onClearError }) => {
+        onClearError={setLinkUserError}
+        renderContent={({ setFormData, onClearError, error }) => {
           return (
             <div className="flex flex-col gap-6">
               {!selectedKilnHasOwner && (
@@ -913,22 +1071,28 @@ export default function AdminKilns() {
                     </label>
                     <input
                       type="text"
+                      name="userId"
                       value={linkUserSearchTerm}
-                      placeholder="ID, nombre o correo del usuario..."
+                      placeholder="Juan, matias@argilla.cl, 3..."
                       onChange={(e) => {
                         const value = e.target.value;
                         setLinkUserSearchTerm(value);
                         setFormData((prev) => ({ ...prev, userId: "" }));
 
-                        if (linkUserError) {
-                          onClearError();
-                        }
+                        onClearError("userId");
                       }}
+                      aria-invalid={hasFormError(error, "userId") || undefined}
+                      aria-describedby={hasFormError(error, "userId") ? "kiln-user-error" : undefined}
                       className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
                     />
+                    <FieldError error={error} field="userId" id="kiln-user-error" />
 
                     {linkUserSearchTerm.trim() && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-2xl">
+                      <FloatingDropdown
+                        anchorRef={linkUserSearchRef}
+                        open
+                        onRequestClose={() => setLinkUserSearchTerm("")}
+                      >
                         {loading ? (
                           <div className="px-4 py-3 text-sm text-neutral-500">
                             Cargando usuarios...
@@ -959,7 +1123,7 @@ export default function AdminKilns() {
                                     ...prev,
                                     userId: String(user.userId),
                                   }));
-                                  onClearError();
+                                  onClearError("userId");
                                 }}
                                 className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
                               >
@@ -967,7 +1131,7 @@ export default function AdminKilns() {
                                   {user.name}
                                 </span>
                                 <span className="text-xs font-bold text-neutral-400">
-                                  ID {user.userId} · {user.email}
+                                  #{user.userId} - {user.email}
                                 </span>
                               </button>
                             );
@@ -977,7 +1141,7 @@ export default function AdminKilns() {
                             No se encontraron usuarios con ese criterio.
                           </div>
                         )}
-                      </div>
+                      </FloatingDropdown>
                     )}
                   </div>
                 </div>
@@ -1054,8 +1218,8 @@ export default function AdminKilns() {
         }
         error={linkControllerError}
         loading={false}
-        onClearError={() => setLinkControllerError(null)}
-        renderContent={({ formData, setFormData, onClearError }) => (
+        onClearError={setLinkControllerError}
+        renderContent={({ formData, setFormData, onClearError, error }) => (
           <div className="space-y-6">
             {selectedKiln?.controllerId && (
               <p className="text-neutral-300 text-center">
@@ -1072,7 +1236,9 @@ export default function AdminKilns() {
                   </p>
                 )}
 
-                {linkControllerFields.map((field) => (
+                {linkControllerFields.map((field) => {
+                  const errorField = field.name === "controllerSuffix" ? "partialControllerId" : "pin";
+                  return (
                   <div key={field.name} className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-neutral-400 ml-1">
                       {field.label}
@@ -1087,16 +1253,18 @@ export default function AdminKilns() {
                         const { name, value } = e.target;
                         setFormData((prev) => ({ ...prev, [name]: value }));
 
-                        if (linkControllerError) {
-                          onClearError();
-                        }
+                        onClearError(errorField);
                       }}
+                      aria-invalid={hasFormError(error, errorField) || undefined}
+                      aria-describedby={hasFormError(error, errorField) ? `${field.name}-error` : undefined}
                       required={field.required !== false}
                       className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors"
                       {...(field.inputProps || {})}
                     />
+                    <FieldError error={error} field={errorField} id={`${field.name}-error`} />
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

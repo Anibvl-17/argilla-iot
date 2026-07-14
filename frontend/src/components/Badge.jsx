@@ -6,7 +6,20 @@ const defaultStyles = {
   success: "bg-green-800/60 border-green-700/60 text-green-300/80",
 };
 
-export const Badge = ({ style = "default", text, customStyle = null }) => {
+const textStyles = {
+  default: "text-neutral-300/80",
+  warning: "text-yellow-300/80",
+  danger: "text-red-300/90 ",
+  info: "text-blue-300/80",
+  success: "text-green-300/80",
+}
+
+export const Badge = ({
+  style = "default",
+  text,
+  customStyle = null,
+  description = null,
+}) => {
   if (!customStyle && !defaultStyles[style]) {
     style = "default";
   }
@@ -14,11 +27,25 @@ export const Badge = ({ style = "default", text, customStyle = null }) => {
   return (
     <div
       className={
-        customStyle || (defaultStyles[style] +
-        " max-w-max truncate rounded-md border px-1.5 py-0.5 text-[10px] leading-tight sm:px-2.5 sm:py-1 sm:text-sm")
+        customStyle ||
+        defaultStyles[style] +
+          " max-w-max text-pretty rounded-md border px-1.5 py-0.5 text-xs leading-tight sm:px-2.5 sm:py-1 sm:text-xs"
       }
     >
       {text}
+      {description && (
+        <>
+          <br />
+          <span
+            className={
+              textStyles[style] +
+                " max-w-max truncate text-xs leading-tight sm:text-xs"
+            }
+          >
+            {description}
+          </span>
+        </>
+      )}
     </div>
   );
 };

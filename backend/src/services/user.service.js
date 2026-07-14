@@ -92,3 +92,49 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
 export async function getAllUsers() {
   return await prisma.user.findMany({ omit: { password: true } });
 }
+
+export async function getUsersPage({ page = 1, pageSize = 10, search = "" } = {}) {
+  const safePage = Math.max(1, Number(page) || 1);
+  const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+  const normalizedSearch = String(search || "").trim();
+  const numericSearch = Number(normalizedSearch);
+  const upperSearch = normalizedSearch.toUpperCase();
+  const roleSearch = upperSearch.startsWith("ADMIN")
+    ? ROLES.ADMIN
+    : upperSearch.startsWith("USU") || upperSearch === ROLES.USER
+      ? ROLES.USER
+      : undefined;
+  const where = normalizedSearch
+    ? {
+        OR: [
+          ...(Number.isInteger(numericSearch) ? [{ userId: numericSearch }] : []),
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          { email: { contains: normalizedSearch, mode: "insensitive" } },
+          ...(roleSearch ? [{ role: roleSearch }] : []),
+        ],
+      }
+    : {};
+
+  const [items, total, scopeTotal] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      omit: { password: true },
+      orderBy: { userId: "asc" },
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
+    }),
+    prisma.user.count({ where }),
+    prisma.user.count(),
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
+    summary: { total: scopeTotal },
+  };
+}

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Modal from "@components/Modal";
+import Pagination from "@components/Pagination";
 import { createUser, getAllUsers, updateUser } from "@services/user.service";
 import { ROLE_LABELS } from "@constants/user.constants";
 import { LuPencil, LuTrash2 } from "react-icons/lu";
@@ -8,6 +9,9 @@ import AlertDialog from "../components/AlertDialog";
 import { toast } from "sonner";
 import { Badge } from "../components/Badge";
 import { useAuth } from "@context/AuthContext";
+import { normalizeFormError } from "../utils/formError";
+
+const PAGE_SIZE = 10;
 
 const userFields = [
   {
@@ -43,16 +47,6 @@ const createUserFields = [
   },
 ];
 
-const buildModalErrorMessage = (response) => {
-  const details = response?.data?.errorDetails;
-
-  if (Array.isArray(details) && details.length > 0) {
-    return details[0];
-  }
-
-  return response?.message || "No se pudo guardar el usuario.";
-};
-
 export default function AdminUsers() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
@@ -62,33 +56,30 @@ export default function AdminUsers() {
   const [modalError, setModalError] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const { user: sessionUser } = useAuth();
 
-  const filteredUsers = users.filter((user) => {
-    const searchLowercase = searchTerm.toLowerCase();
-    return (
-      user.name.toLowerCase().includes(searchLowercase) ||
-      ROLE_LABELS[user.role].toLowerCase().includes(searchLowercase) ||
-      user.email.toLowerCase().includes(searchLowercase)
-    );
-  });
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getAllUsers();
-      setUsers(result.data || []);
+      const result = await getAllUsers({ page, pageSize: PAGE_SIZE, search: searchTerm });
+      const payload = result.data || {};
+      setUsers(payload.items || []);
+      setTotalPages(payload.pagination?.totalPages || 1);
+      setTotalUsers(payload.summary?.total || 0);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const openCreateModal = () => {
     setModalMode("create");
@@ -126,13 +117,9 @@ export default function AdminUsers() {
         return;
       }
 
-      setModalError(buildModalErrorMessage(response));
+      setModalError(normalizeFormError(response));
     } catch (error) {
-      setModalError(
-        error.response?.data?.message ||
-          error.message ||
-          "Ocurrio un error inesperado al conectar con el servidor.",
-      );
+      setModalError(normalizeFormError(error));
     } finally {
       setLoading(false);
     }
@@ -177,15 +164,19 @@ export default function AdminUsers() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[#141414] border border-neutral-800 p-5 rounded-xl shadow-md">
-          <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider mb-1">
+          <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-1">
             Total Usuarios
           </p>
-          <p className="text-3xl font-bold">{users.length}</p>
+          <p className="text-3xl font-bold">{totalUsers}</p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[#141414] p-4 border border-neutral-800 rounded-xl">
-        <div className="relative w-full sm:w-96">
+      <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
+        <div className="border-b border-neutral-800 p-4">
+          <p className="mb-2 text-sm md:text-base text-neutral-400">
+            Busca usuarios por nombre, correo electrónico, ID o rol.
+          </p>
+          <div className="relative w-full sm:w-96">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg
               className="h-5 w-5 text-neutral-500"
@@ -203,17 +194,19 @@ export default function AdminUsers() {
           </div>
           <input
             type="text"
-            placeholder="Buscar por nombre, email o rol..."
+            placeholder="Juan, matias@argilla.cl, usuario..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
             className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
           />
+          </div>
         </div>
-      </div>
-
-      <div className="max-h-[65dvh] overflow-auto rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
+        <div className="overflow-auto">
         {!loading && (
-          <table className="w-full min-w-105 text-left text-xs sm:min-w-170 sm:text-sm">
+          <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs font-bold uppercase tracking-wider text-neutral-500">
               <tr>
                 <th scope="col" className="hidden px-3 py-3 sm:table-cell sm:px-6 sm:py-4">
@@ -238,8 +231,8 @@ export default function AdminUsers() {
             </thead>
 
             <tbody className="divide-y divide-neutral-800/60">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+              {users.length > 0 ? (
+                users.map((user) => (
                   <tr
                     key={user.userId}
                     className="hover:bg-neutral-900/30 transition-colors"
@@ -281,7 +274,7 @@ export default function AdminUsers() {
                         >
                           <LuPencil />
                         </button>
-                        {sessionUser.id !== user.userId && (
+                        {sessionUser.userId !== user.userId && (
                           <button
                             onClick={() => {
                               setSelectedUser(user);
@@ -310,6 +303,8 @@ export default function AdminUsers() {
             </tbody>
           </table>
         )}
+        </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <Modal
@@ -326,7 +321,7 @@ export default function AdminUsers() {
         onSubmit={handleSubmitUser}
         error={modalError}
         loading={loading}
-        onClearError={() => setModalError(null)}
+        onClearError={setModalError}
       />
 
       <AlertDialog

@@ -20,7 +20,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "seed": "prisma db seed",
+    "simulator": "node src/scripts/runSimulator.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

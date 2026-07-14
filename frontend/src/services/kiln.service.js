@@ -26,6 +26,37 @@ export async function getMyKiln(kilnId) {
   }
 }
 
+export async function getMyKilnTelemetry(kilnId, page = 1, pageSize = 10) {
+  try {
+    const response = await axios.get(`/kiln/my-kilns/${kilnId}/telemetry`, {
+      params: { page, pageSize },
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar la telemetría");
+  }
+}
+
+export async function getAdminKiln(kilnId) {
+  try {
+    const response = await axios.get(`/kiln/admin/${kilnId}`);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar el horno");
+  }
+}
+
+export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
+  try {
+    const response = await axios.get(`/kiln/admin/${kilnId}/telemetry`, {
+      params: { page, pageSize },
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar la telemetría");
+  }
+}
+
 export async function renameMyKiln(kilnId, name) {
   try {
     const response = await axios.patch(`/kiln/my-kilns/${kilnId}/name`, {
@@ -37,9 +68,21 @@ export async function renameMyKiln(kilnId, name) {
   }
 }
 
-export async function getAllKilns() {
+export async function sendMyKilnControllerCommand(kilnId, command) {
   try {
-    const response = await axios.get("/kiln/all");
+    const response = await axios.post(
+      `/kiln/my-kilns/${kilnId}/controller/command`,
+      { command },
+    );
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible enviar el comando");
+  }
+}
+
+export async function getAllKilns(params = {}) {
+  try {
+    const response = await axios.get("/kiln/all", { params });
     const kilns = response.data.data;
     return { success: true, data: kilns };
   } catch (error) {

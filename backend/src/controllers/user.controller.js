@@ -9,7 +9,7 @@ import {
   deleteUser,
   getUserProfile,
   updateUser,
-  getAllUsers as getAllUsersRequest,
+  getUsersPage,
 } from "../services/user.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
 
@@ -23,7 +23,7 @@ export async function addUser(req, res) {
     return handleSuccess(res, 201, "Usuario creado exitosamente", newUser);
   } catch (error) {
     if (error.code === "P2002") {
-      return handleErrorClient(res, 409, "Ya existe un usuario con ese email");
+      return handleErrorClient(res, 409, "Ya existe un usuario con ese email", null, "email");
     }
 
     return handleErrorServer(
@@ -59,7 +59,7 @@ export async function editProfile(req, res) {
     );
   } catch (error) {
     if (error.code === "INVALID_CURRENT_PASSWORD") {
-      return handleErrorClient(res, 400, error.message);
+      return handleErrorClient(res, 400, error.message, null, "currentPassword");
     }
 
     if (error.code === "P2025") {
@@ -116,6 +116,10 @@ export async function editUser(req, res) {
       updatedUser,
     );
   } catch (error) {
+    if (error.code === "P2002") {
+      return handleErrorClient(res, 409, "Ya existe un usuario con ese email", null, "email");
+    }
+
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Usuario no encontrado");
     }
@@ -158,14 +162,10 @@ export async function removeUser(req, res) {
 
 export async function getAllUsers(req, res) {
   try {
-    const users = await getAllUsersRequest();
+    const users = await getUsersPage(req.query);
 
     // Implementado solo en caso excepcional. En la práctica no debería ocurrir
     // Siempre existe al menos admin en base de datos
-    if (users && users.length === 0) {
-      return handleSuccess(res, 204, "No hay usuarios registrados", []);
-    }
-
     return handleSuccess(res, 200, "Usuarios obtenidos exitosamente", users);
   } catch (error) {
     return handleErrorServer(

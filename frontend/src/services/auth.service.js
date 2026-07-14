@@ -33,6 +33,7 @@ export async function register(data) {
       success: false,
       message:
         error.response?.data?.message || "Error al conectar con el servidor",
+      data: error.response?.data,
     };
   }
 }

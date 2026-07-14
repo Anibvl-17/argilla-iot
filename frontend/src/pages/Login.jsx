@@ -3,6 +3,8 @@ import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { login } from "@services/auth.service";
 import useAuthForm from "@hooks/useAuthForm";
+import FieldError from "@components/FieldError";
+import { hasFormError } from "../utils/formError";
 
 /**
  * @todo En pantallas height < 700 y width > 1024, hay problemas de diseño
@@ -33,7 +35,7 @@ const Login = () => {
       if (result.success) {
         setUser(result.user);
       } else {
-        errorData(result || "Credenciales incorrectas");
+        errorData(result || "Credenciales incorrectas", "password");
       }
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
@@ -53,8 +55,6 @@ const Login = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
-        {error && <p className="text-sm text-yellow-500/80">{error}</p>}
-
         {/* Input email */}
         <div className="flex flex-col gap-1.5">
           <label className="text-neutral-300 font-medium ml-1">
@@ -63,13 +63,17 @@ const Login = () => {
           <input
             type="email"
             id="email"
+            name="email"
+            aria-invalid={hasFormError(error, "email") || undefined}
+            aria-describedby={hasFormError(error, "email") ? "email-error" : undefined}
             placeholder="ejemplo@correo.com"
             onChange={(e) => {
               setEmail(e.target.value);
-              handleInputChange();
+              handleInputChange(e);
             }}
             className="bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
           />
+          <FieldError error={error} field="email" id="email-error" />
         </div>
 
         {/* Input contraseña */}
@@ -81,10 +85,13 @@ const Login = () => {
             <input
               type="password"
               id="password"
+              name="password"
+              aria-invalid={hasFormError(error, "password") || undefined}
+              aria-describedby={hasFormError(error, "password") ? "password-error" : undefined}
               placeholder="••••••••"
               onChange={(e) => {
                 setPassword(e.target.value);
-                handleInputChange();
+                handleInputChange(e);
               }}
               className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
             />
@@ -109,6 +116,7 @@ const Login = () => {
               </svg>
             </button>
           </div>
+          <FieldError error={error} field="password" id="password-error" />
         </div>
 
         <div className="text-center mt-1">
@@ -116,6 +124,8 @@ const Login = () => {
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
+
+        <FieldError error={error} />
 
         <button
           type="submit"

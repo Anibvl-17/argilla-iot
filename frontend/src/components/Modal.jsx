@@ -1,4 +1,10 @@
 import { useState, useEffect } from "react";
+import FieldError from "./FieldError";
+import {
+  clearFormError,
+  hasFormError,
+  normalizeFormError,
+} from "../utils/formError";
 
 export default function Modal({
   isOpen,
@@ -31,13 +37,13 @@ export default function Modal({
 
   if (!isOpen) return null;
 
+  const normalizedError = error ? normalizeFormError(error) : null;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (error) {
-      onClearError();
-    }
+    if (normalizedError) onClearError(clearFormError(normalizedError, name));
   };
 
   const handleSubmit = (e) => {
@@ -82,36 +88,21 @@ export default function Modal({
 
         {/* Formulario Dinámico */}
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-5 overflow-y-auto p-4 sm:gap-8 sm:p-6">
-          {error && (
-            <div className="mb-5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
-              <svg
-                className="w-5 h-5 text-red-500 shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-sm text-red-400 leading-snug">{error}</p>
-            </div>
-          )}
-
           <div className="space-y-4">
             {renderContent ? (
               renderContent({
                 formData,
                 setFormData,
                 handleChange,
-                onClearError,
-                error,
+                onClearError: (field) =>
+                  onClearError(clearFormError(normalizedError, field)),
+                error: normalizedError,
               })
             ) : (
-              fields.map((field) => (
+              fields.map((field) => {
+                const errorId = `${field.name}-error`;
+                const hasFieldError = hasFormError(normalizedError, field.name);
+                return (
                 <div key={field.name} className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-neutral-300 ml-1">
                     {field.label}
@@ -123,6 +114,8 @@ export default function Modal({
                       value={formData[field.name] || ""}
                       onChange={handleChange}
                       required={field.required !== false}
+                      aria-invalid={hasFieldError || undefined}
+                      aria-describedby={hasFieldError ? errorId : undefined}
                       className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
                     >
                       <option value="" disabled>
@@ -142,14 +135,24 @@ export default function Modal({
                       value={formData[field.name] || ""}
                       onChange={handleChange}
                       required={field.required !== false}
+                      aria-invalid={hasFieldError || undefined}
+                      aria-describedby={hasFieldError ? errorId : undefined}
                       {...(field.inputProps || {})}
                       className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
                     />
                   )}
+                  <FieldError
+                    error={normalizedError}
+                    field={field.name}
+                    id={errorId}
+                  />
                 </div>
-              ))
+                );
+              })
             )}
           </div>
+
+          <FieldError error={normalizedError} />
 
           {/* Botones de acción */}
           <div className="flex flex-col gap-3 min-[360px]:flex-row">

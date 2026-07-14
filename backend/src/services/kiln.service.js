@@ -72,10 +72,68 @@ export async function getAllKilns() {
   });
 }
 
+export async function getKilnsPage({ page = 1, pageSize = 10, search = "" } = {}) {
+  const safePage = Math.max(1, Number(page) || 1);
+  const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+  const normalizedSearch = String(search || "").trim();
+  const numericSearch = Number(normalizedSearch);
+  const where = normalizedSearch
+    ? {
+        OR: [
+          ...(Number.isInteger(numericSearch) ? [{ kilnId: numericSearch }] : []),
+          {
+            user: {
+              is: {
+                OR: [
+                  { name: { contains: normalizedSearch, mode: "insensitive" } },
+                  { email: { contains: normalizedSearch, mode: "insensitive" } },
+                ],
+              },
+            },
+          },
+          {
+            controller: {
+              is: {
+                controllerId: { contains: normalizedSearch, mode: "insensitive" },
+              },
+            },
+          },
+        ],
+      }
+    : {};
+
+  const [items, total, scopeTotal, withoutController, withoutOwner] =
+    await prisma.$transaction([
+      prisma.kiln.findMany({
+        where,
+        include: { user: true, controller: true },
+        orderBy: { kilnId: "asc" },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+      prisma.kiln.count({ where }),
+      prisma.kiln.count(),
+      prisma.kiln.count({ where: { controller: { is: null } } }),
+      prisma.kiln.count({ where: { user: { is: null } } }),
+    ]);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
+    summary: { total: scopeTotal, withoutController, withoutOwner },
+  };
+}
+
 const controllerSelection = {
   controllerId: true,
   temp: true,
   operativeStatus: true,
+  connectionStatus: true,
   switchType: true,
   switchAmps: true,
 };
@@ -165,6 +223,98 @@ export async function renameUserKiln(userId, kilnId, name) {
   });
 
   return presentKiln(kiln);
+}
+
+export async function getOwnedKilnController(userId, kilnId) {
+  const kiln = await prisma.kiln.findFirst({
+    where: { kilnId, userId },
+    select: {
+      kilnId: true,
+      controller: {
+        select: {
+          controllerId: true,
+          temp: true,
+          operativeStatus: true,
+          connectionStatus: true,
+        },
+      },
+    },
+  });
+
+  if (!kiln || !kiln.controller) return null;
+
+  return kiln.controller;
+}
+
+export async function getOwnedKilnTelemetry(userId, kilnId, page = 1, pageSize = 10) {
+  const kiln = await prisma.kiln.findFirst({
+    where: { kilnId, userId },
+    select: { kilnId: true },
+  });
+
+  if (!kiln) return null;
+
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.min(50, Math.max(1, pageSize));
+  const skip = (safePage - 1) * safePageSize;
+
+  const [items, total] = await prisma.$transaction([
+    prisma.telemetry.findMany({
+      where: { kilnId },
+      orderBy: { timestamp: "desc" },
+      skip,
+      take: safePageSize,
+    }),
+    prisma.telemetry.count({ where: { kilnId } }),
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
+  };
+}
+
+export async function getAdminKilnById(kilnId) {
+  return await prisma.kiln.findUnique({
+    where: { kilnId },
+    include: { user: true, controller: true },
+  });
+}
+
+export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
+  const kiln = await prisma.kiln.findUnique({
+    where: { kilnId },
+    select: { kilnId: true },
+  });
+
+  if (!kiln) return null;
+
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.min(50, Math.max(1, pageSize));
+  const [items, total] = await prisma.$transaction([
+    prisma.telemetry.findMany({
+      where: { kilnId },
+      orderBy: { timestamp: "desc" },
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
+    }),
+    prisma.telemetry.count({ where: { kilnId } }),
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
+  };
 }
 
 /**
