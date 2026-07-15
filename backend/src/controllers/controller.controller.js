@@ -12,7 +12,7 @@ import {
   remove,
   getControllersPage,
   linkControllerToUser,
-  unlinkUserFromController as unlinkUserFromControllerRequest
+  unlinkUserFromController as unlinkUserFromControllerRequest,
 } from "../services/controller.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
 import { publishControllerCommand } from "../config/mqttClient.js";
@@ -134,6 +134,14 @@ export async function generateControllerPin(req, res) {
         res,
         409,
         "No se puede generar un PIN mientras el controlador está desconectado",
+      );
+    }
+
+    if (controller.kiln) {
+      return handleErrorClient(
+        res,
+        409,
+        "No se puede generar un PIN para un controlador que ya está vinculado",
       );
     }
 

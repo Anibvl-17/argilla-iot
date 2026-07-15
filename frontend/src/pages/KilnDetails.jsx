@@ -288,7 +288,7 @@ export default function KilnDetails() {
           <div className="mt-6 flex flex-col gap-3 border-t border-neutral-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-semibold text-neutral-100">
-                Control del relé
+                Control del switch
               </h3>
               {commandError && (
                 <p className="mt-1 text-sm text-red-400">{commandError}</p>

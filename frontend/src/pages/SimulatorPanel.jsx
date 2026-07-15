@@ -360,20 +360,21 @@ export default function SimulatorPanel() {
               ["OFFLINE", "Desconectado"],
             ]}
           />
-          { connectionFilter !== "OFFLINE" &&
-          <FilterSelect
-            label="Operación"
-            value={operationFilter}
-            onChange={(value) => {
-              setOperationFilter(value);
-              if (value) setConnectionFilter("ONLINE");
-              setPage(1);
-            }}
-            options={[
-              ["ON", "Encendido"],
-              ["OFF", "Apagado"],
-            ]}
-          />}
+          {connectionFilter !== "OFFLINE" && (
+            <FilterSelect
+              label="Operación"
+              value={operationFilter}
+              onChange={(value) => {
+                setOperationFilter(value);
+                if (value) setConnectionFilter("ONLINE");
+                setPage(1);
+              }}
+              options={[
+                ["ON", "Encendido"],
+                ["OFF", "Apagado"],
+              ]}
+            />
+          )}
           <FilterSelect
             label="Horno"
             value={kilnFilter}
@@ -603,22 +604,25 @@ function ControllerCard({
                 className={
                   "inline-flex justify-center items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:bg-neutral-800 disabled:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer " +
                   (on
-                    ? "bg-red-500/10 text-red-300 enabled:hover:bg-red-500/20"
-                    : "bg-green-500/10 text-green-300 enabled:hover:bg-green-500/20")
+                    ? "bg-red-500/10 text-red-300 enabled:hover:bg-red-500/20 "
+                    : "bg-green-500/10 text-green-300 enabled:hover:bg-green-500/20 ") +
+                  (!hasKiln ? "col-span-1" : "col-span-2")
                 }
               >
                 {pending ? "Enviando..." : on ? "Apagar" : "Encender"}
               </button>
 
-              <button
-                type="button"
-                onClick={onGeneratePin}
-                disabled={pinPending}
-                className="inline-flex justify-center items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors enabled:hover:bg-blue-400/10 enabled:hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
-                title="Generar PIN"
-              >
-                {pinPending ? "Generando..." : "Generar PIN"}
-              </button>
+              {!hasKiln && (
+                <button
+                  type="button"
+                  onClick={onGeneratePin}
+                  disabled={pinPending}
+                  className="inline-flex justify-center items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors enabled:hover:bg-blue-400/10 enabled:hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
+                  title="Generar PIN"
+                >
+                  {pinPending ? "Generando..." : "Generar PIN"}
+                </button>
+              )}
             </div>
           )}
 
