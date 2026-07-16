@@ -38,6 +38,7 @@ import {
   normalizeFormError,
 } from "../utils/formError";
 import FieldError from "@components/FieldError";
+import { getPageAfterDeletion } from "../utils/pagination";
 
 const KilnStatusBadge = ({ controller }) => {
   if (!controller) {
@@ -305,8 +306,16 @@ export default function AdminKilns() {
       const response = await deleteKiln(selectedKiln.kilnId);
 
       if (response.success) {
+        const nextPage = getPageAfterDeletion({
+          page,
+          itemsOnPage: kilns.length,
+        });
         toast.success("Horno eliminado exitosamente.");
-        fetchKilns();
+        if (nextPage !== page) {
+          setPage(nextPage);
+        } else {
+          fetchKilns();
+        }
       }
     } catch (error) {
       toast.error("Error al eliminar horno", error.message);

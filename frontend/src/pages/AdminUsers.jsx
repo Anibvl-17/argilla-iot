@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Badge } from "../components/Badge";
 import { useAuth } from "@context/AuthContext";
 import { normalizeFormError } from "../utils/formError";
+import { getPageAfterDeletion } from "../utils/pagination";
 
 const PAGE_SIZE = 10;
 
@@ -131,8 +132,16 @@ export default function AdminUsers() {
       const response = await deleteUser(selectedUser.userId);
 
       if (response.success) {
+        const nextPage = getPageAfterDeletion({
+          page,
+          itemsOnPage: users.length,
+        });
         toast.success("Usuario eliminado exitosamente.");
-        fetchUsers();
+        if (nextPage !== page) {
+          setPage(nextPage);
+        } else {
+          fetchUsers();
+        }
       } else {
         toast.error(response.message);
       }

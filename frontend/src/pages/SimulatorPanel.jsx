@@ -28,6 +28,7 @@ import {
 } from "react-icons/lu";
 import { toast } from "sonner";
 import { normalizeFormError } from "../utils/formError";
+import { getPageAfterDeletion } from "../utils/pagination";
 
 const PAGE_SIZE = 6;
 
@@ -181,10 +182,18 @@ export default function SimulatorPanel() {
     const response = await deleteController(selectedController.controllerId);
 
     if (response.success) {
+      const nextPage = getPageAfterDeletion({
+        page,
+        itemsOnPage: controllers.length,
+      });
       toast.success("Controlador eliminado exitosamente.");
       setIsAlertOpen(false);
       setSelectedController(null);
-      await fetchControllers();
+      if (nextPage !== page) {
+        setPage(nextPage);
+      } else {
+        await fetchControllers();
+      }
     } else {
       toast.error("Error al eliminar controlador", {
         description: response.message,
@@ -418,13 +427,15 @@ export default function SimulatorPanel() {
               />
             ))}
           </div>
-          <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414]">
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
+          {totalPages > 1 && (
+            <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414]">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
         </>
       )}
 

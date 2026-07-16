@@ -37,6 +37,7 @@ import {
   normalizeFormError,
 } from "../utils/formError";
 import FieldError from "@components/FieldError";
+import { getPageAfterDeletion } from "../utils/pagination";
 
 const controllerFields = [
   {
@@ -273,7 +274,7 @@ export default function AdminControllers() {
       );
       if (response.success) {
         toast.success(
-          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId}.`,
+          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId.slice(-6)}.`,
         );
         fetchControllers();
         fetchUsers();
@@ -350,8 +351,16 @@ export default function AdminControllers() {
       const response = await deleteController(selectedController.controllerId);
 
       if (response.success) {
+        const nextPage = getPageAfterDeletion({
+          page,
+          itemsOnPage: controllers.length,
+        });
         toast.success("Controlador eliminado exitosamente.");
-        fetchControllers();
+        if (nextPage !== page) {
+          setPage(nextPage);
+        } else {
+          fetchControllers();
+        }
       }
     } catch (error) {
       toast.error("Error al eliminar controlador", error.message);
