@@ -182,7 +182,7 @@ export function connectMqtt() {
     } catch (error) {
       if (error.code === "P2025") {
         if (!unregisteredControllerFound) {
-          console.warn(`[MQTT] Info: se ignoran publicaciones controladores no registrados`);
+          console.warn(`[MQTT] Info: se ignoran publicaciones de controladores no registrados`);
           unregisteredControllerFound = true;
         }
         return;

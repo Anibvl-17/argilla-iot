@@ -48,19 +48,19 @@ router.post(
   sendOwnedKilnControllerCommand,
 );
 
+router.use(verifyRoles([ROLES.ADMIN]));
+
 router.post(
   "/:kilnId/link",
   validateSchema(linkControllerValidation),
-  linkController,
 );
+linkController,
 router.post("/:kilnId/unlink", unlinkController);
 router.patch(
   "/:kilnId/release",
   validateSchema(unlinkUserValidation),
   unlinkUser,
 );
-
-router.use(verifyRoles([ROLES.ADMIN]));
 
 // CRUD
 router.get("/all", getAllKilns);

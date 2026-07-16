@@ -416,7 +416,7 @@ async function main() {
     );
   }
 
-  console.log("Seed listo; los registros demo fueron creados o normalizados.");
+  console.log("Seed listo. Registros demo fueron creados o normalizados.");
   console.log(`Administrador: ${admin.email}`);
   console.log(`Ceramistas: ${demoUsers.map((user) => user.email).join(", ")}`);
 }

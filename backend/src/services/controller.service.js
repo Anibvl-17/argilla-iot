@@ -113,7 +113,7 @@ export async function remove(controllerId) {
 }
 
 /**
- * Genera un pin de 4 digitos
+ * Genera un pin de 6 digitos
  *
  * @param {string} uuid UUID del controlador
  * @returns PIN aleatorio
@@ -397,7 +397,6 @@ export async function linkControllerToUser(partialControllerId, userId, pin) {
  * @param {number} userId
  * @param {number} controllerId
  * @returns El controlador actualizado
- * @todo desvincular horno, si existe,  de usuario también por seguridad
  */
 export async function unlinkUserFromController(userId, controllerId) {
   return await prisma.$transaction(async (tx) => {
