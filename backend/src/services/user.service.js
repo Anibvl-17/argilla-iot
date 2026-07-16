@@ -93,7 +93,11 @@ export async function getAllUsers() {
   return await prisma.user.findMany({ omit: { password: true } });
 }
 
-export async function getUsersPage({ page = 1, pageSize = 10, search = "" } = {}) {
+export async function getUsersPage({
+  page = 1,
+  pageSize = 10,
+  search = "",
+} = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
@@ -107,7 +111,9 @@ export async function getUsersPage({ page = 1, pageSize = 10, search = "" } = {}
   const where = normalizedSearch
     ? {
         OR: [
-          ...(Number.isInteger(numericSearch) ? [{ userId: numericSearch }] : []),
+          ...(Number.isInteger(numericSearch)
+            ? [{ userId: numericSearch }]
+            : []),
           { name: { contains: normalizedSearch, mode: "insensitive" } },
           { email: { contains: normalizedSearch, mode: "insensitive" } },
           ...(roleSearch ? [{ role: roleSearch }] : []),

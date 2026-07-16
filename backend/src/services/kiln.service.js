@@ -1,6 +1,4 @@
-import { disconnect } from "cluster";
 import { prisma } from "../config/prisma.js";
-import { clearPin } from "./controller.service.js";
 
 export async function createKiln(kilnData) {
   return await prisma.kiln.create({
@@ -72,7 +70,11 @@ export async function getAllKilns() {
   });
 }
 
-export async function getKilnsPage({ page = 1, pageSize = 10, search = "" } = {}) {
+export async function getKilnsPage({
+  page = 1,
+  pageSize = 10,
+  search = "",
+} = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
@@ -80,13 +82,17 @@ export async function getKilnsPage({ page = 1, pageSize = 10, search = "" } = {}
   const where = normalizedSearch
     ? {
         OR: [
-          ...(Number.isInteger(numericSearch) ? [{ kilnId: numericSearch }] : []),
+          ...(Number.isInteger(numericSearch)
+            ? [{ kilnId: numericSearch }]
+            : []),
           {
             user: {
               is: {
                 OR: [
                   { name: { contains: normalizedSearch, mode: "insensitive" } },
-                  { email: { contains: normalizedSearch, mode: "insensitive" } },
+                  {
+                    email: { contains: normalizedSearch, mode: "insensitive" },
+                  },
                 ],
               },
             },
@@ -94,7 +100,10 @@ export async function getKilnsPage({ page = 1, pageSize = 10, search = "" } = {}
           {
             controller: {
               is: {
-                controllerId: { contains: normalizedSearch, mode: "insensitive" },
+                controllerId: {
+                  contains: normalizedSearch,
+                  mode: "insensitive",
+                },
               },
             },
           },
@@ -246,7 +255,12 @@ export async function getOwnedKilnController(userId, kilnId) {
   return kiln.controller;
 }
 
-export async function getOwnedKilnTelemetry(userId, kilnId, page = 1, pageSize = 10) {
+export async function getOwnedKilnTelemetry(
+  userId,
+  kilnId,
+  page = 1,
+  pageSize = 10,
+) {
   const kiln = await prisma.kiln.findFirst({
     where: { kilnId, userId },
     select: { kilnId: true },
@@ -322,7 +336,7 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
  *
  * @param {number} kilnId ID del Horno
  * @param {string} partialControllerId Ultimos 6 caracteres del UUID del Controlador
- * @param {number} pin Pin de 4 digitos
+ * @param {number} pin Pin de 6 digitos
  * @returns El Horno con el controlador asociado, o Error
  */
 export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
@@ -421,7 +435,6 @@ export async function unlinkControllerFromKiln(kilnId) {
  *
  * @param {number} userId
  * @returns El Horno actualizado
- * @todo evitar uso de parseInt() en service, mover a controller
  */
 export async function linkUserToKiln(kilnId, userId) {
   return await prisma.$transaction(async (tx) => {
@@ -472,7 +485,6 @@ export async function linkUserToKiln(kilnId, userId) {
  * @param {number} userId
  * @param {number} kilnId
  * @returns El Horno actualizado
- * @todo desvincular controlador de usuario también por seguridad
  */
 export async function unlinkUserFromKiln(userId, kilnId) {
   return await prisma.$transaction(async (tx) => {

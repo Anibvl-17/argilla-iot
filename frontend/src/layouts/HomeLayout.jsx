@@ -33,7 +33,9 @@ export default function HomeLayout() {
         </div>
 
         {/* Navegación Principal */}
-        <nav className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${userRole === "ADMIN" ? "grid-cols-5" : "grid-cols-2"}`}>
+        <nav
+          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${userRole === "ADMIN" ? "grid-cols-5" : "grid-cols-2"}`}
+        >
           {/* Opciones usuario */}
           {userRole === "USER" && (
             <>
@@ -44,10 +46,22 @@ export default function HomeLayout() {
           {/* Opciones admin */}
           {userRole === "ADMIN" && (
             <>
-              <SidebarItem path="/admin" title="Resumen" icon={LuChartNoAxesCombined} />
-              <SidebarItem path="/admin/users" title="Usuarios" icon={LuUsers} />
+              <SidebarItem
+                path="/admin"
+                title="Resumen"
+                icon={LuChartNoAxesCombined}
+              />
+              <SidebarItem
+                path="/admin/users"
+                title="Usuarios"
+                icon={LuUsers}
+              />
               <SidebarItem path="/admin/kilns" title="Hornos" icon={LuFlame} />
-              <SidebarItem path="/admin/controllers" title="Controladores" icon={LuCircuitBoard} />
+              <SidebarItem
+                path="/admin/controllers"
+                title="Controladores"
+                icon={LuCircuitBoard}
+              />
             </>
           )}
           <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
@@ -72,7 +86,7 @@ export default function HomeLayout() {
             onClick={() => setIsProfileOpen(true)}
             className="flex items-center gap-2 rounded-md border border-neutral-700/80 bg-neutral-900 px-3 py-2 text-sm transition-colors hover:bg-neutral-800 sm:px-4 hover:cursor-pointer"
           >
-            <LuUser className="text-lg"/>
+            <LuUser className="text-lg" />
             <span className="hidden sm:inline">Mi perfil</span>
           </button>
         </header>

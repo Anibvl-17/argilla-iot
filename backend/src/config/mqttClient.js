@@ -182,7 +182,9 @@ export function connectMqtt() {
     } catch (error) {
       if (error.code === "P2025") {
         if (!unregisteredControllerFound) {
-          console.warn(`[MQTT] Info: se ignoran publicaciones controladores no registrados`);
+          console.warn(
+            `[MQTT] Info: se ignoran publicaciones de controladores no registrados`,
+          );
           unregisteredControllerFound = true;
         }
         return;
@@ -210,7 +212,9 @@ export function publishControllerCommand(controllerId, command) {
   }
 
   if (pendingCommands.has(controllerId)) {
-    const error = new Error("Ya existe un comando pendiente para este controlador");
+    const error = new Error(
+      "Ya existe un comando pendiente para este controlador",
+    );
     error.code = "MQTT_COMMAND_PENDING";
     return Promise.reject(error);
   }

@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   LuArrowLeft,
   LuCircuitBoard,
+  LuCopy,
   LuPencil,
   LuPower,
   LuSave,
@@ -29,11 +30,21 @@ import {
   normalizeFormError,
 } from "../utils/formError";
 
-function Detail({ label, value }) {
+function Detail({ label, value, canCopy }) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
       <dt className="text-sm font-medium text-neutral-400">{label}</dt>
-      <dd className="mt-1 font-medium text-neutral-100">{value}</dd>
+      <dd className="flex items-center gap-2 mt-1 font-medium text-neutral-100">
+        {value}
+        {canCopy && (
+          <button
+            className="text-sm hover:cursor-pointer hover:text-red-400"
+            title="Copiar ID"
+          >
+            <LuCopy />
+          </button>
+        )}
+      </dd>
     </div>
   );
 }
@@ -73,37 +84,43 @@ export default function KilnDetails() {
     };
   }, [kilnId]);
 
-  const fetchTelemetry = useCallback(async (page = 1) => {
-    setTelemetryLoading(true);
-    const result = await getMyKilnTelemetry(kilnId, page, 10);
-    setTelemetryLoading(false);
+  const fetchTelemetry = useCallback(
+    async (page = 1) => {
+      setTelemetryLoading(true);
+      const result = await getMyKilnTelemetry(kilnId, page, 10);
+      setTelemetryLoading(false);
 
-    if (result.success) {
-      setTelemetry(result.data.items || []);
-      setTelemetryPagination(result.data.pagination);
-    }
-  }, [kilnId]);
+      if (result.success) {
+        setTelemetry(result.data.items || []);
+        setTelemetryPagination(result.data.pagination);
+      }
+    },
+    [kilnId],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTelemetry(1);
   }, [fetchTelemetry]);
 
-  const handleTelemetry = useCallback((telemetry) => {
-    setKiln((current) => {
-      if (current?.controller?.controllerCode !== telemetry.controllerCode)
-        return current;
-      const nextKiln = {
-        ...current,
-        controller: { ...current.controller, ...telemetry },
-      };
-      return nextKiln;
-    });
+  const handleTelemetry = useCallback(
+    (telemetry) => {
+      setKiln((current) => {
+        if (current?.controller?.controllerCode !== telemetry.controllerCode)
+          return current;
+        const nextKiln = {
+          ...current,
+          controller: { ...current.controller, ...telemetry },
+        };
+        return nextKiln;
+      });
 
-    if (telemetry.telemetrySaved) {
-      fetchTelemetry(telemetryPagination.page);
-    }
-  }, [fetchTelemetry, telemetryPagination.page]);
+      if (telemetry.telemetrySaved) {
+        fetchTelemetry(telemetryPagination.page);
+      }
+    },
+    [fetchTelemetry, telemetryPagination.page],
+  );
 
   useControllerRealtime(handleTelemetry);
 
@@ -177,7 +194,11 @@ export default function KilnDetails() {
                   autoFocus
                   name="name"
                   aria-invalid={hasFormError(formError, "name") || undefined}
-                  aria-describedby={hasFormError(formError, "name") ? "kiln-name-error" : undefined}
+                  aria-describedby={
+                    hasFormError(formError, "name")
+                      ? "kiln-name-error"
+                      : undefined
+                  }
                   value={name}
                   onChange={(event) => {
                     setName(event.target.value);
@@ -256,11 +277,15 @@ export default function KilnDetails() {
         </div>
         {controller ? (
           <>
-          <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Detail
-              label="Identificador"
-              value={`...${controller.controllerCode}`}
-            />
+            <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Detail
+                label="Temperatura"
+                value={
+                  controller.temp == null
+                    ? "No disponible"
+                    : `${controller.temp.toFixed(1)} °C`
+                }
+              />
               <Detail
                 label="Estado operativo"
                 value={getControllerOperationLabel(controller.operativeStatus)}
@@ -271,29 +296,31 @@ export default function KilnDetails() {
                   controller.connectionStatus,
                 )}
               />
-            <Detail
-              label="Temperatura"
-              value={
-                controller.temp == null
-                  ? "No disponible"
-                  : `${controller.temp.toFixed(1)} °C`
-              }
-            />
-            <Detail label="Tipo de switch" value={SWITCH_LABELS[controller.switchType]} />
-            <Detail
-              label="Amperaje soportado"
-              value={`${controller.switchAmps} A`}
-            />
-          </dl>
-          <div className="mt-6 flex flex-col gap-3 border-t border-neutral-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-100">
-                Control del relé
-              </h3>
-              {commandError && (
-                <p className="mt-1 text-sm text-red-400">{commandError}</p>
-              )}
-            </div>
+              <span className="font-mono">
+                <Detail
+                  label="Identificador"
+                  canCopy
+                  value={`...${controller.controllerCode}`}
+                />
+              </span>
+              <Detail
+                label="Tipo de switch"
+                value={SWITCH_LABELS[controller.switchType]}
+              />
+              <Detail
+                label="Amperaje soportado"
+                value={`${controller.switchAmps} A`}
+              />
+            </dl>
+            <div className="mt-6 flex flex-col gap-3 border-t border-neutral-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-100">
+                  Control del switch
+                </h3>
+                {commandError && (
+                  <p className="mt-1 text-sm text-red-400">{commandError}</p>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"

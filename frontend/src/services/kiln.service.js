@@ -93,7 +93,7 @@ export async function getAllKilns(params = {}) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -112,7 +112,7 @@ export async function createKiln(data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -131,7 +131,7 @@ export async function updateKiln(kilnId, data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -149,7 +149,7 @@ export async function deleteKiln(kilnId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -168,7 +168,7 @@ export async function linkUser(kilnId, userId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -186,7 +186,7 @@ export async function unlinkUser(kilnId, userId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -209,7 +209,7 @@ export async function linkController(kilnId, partialControllerId, pin) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -228,7 +228,7 @@ export async function unlinkController(kilnId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }

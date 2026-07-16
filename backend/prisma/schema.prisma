@@ -45,7 +45,6 @@ model User {
 // Hardware físico (ESP32)
 model Controller {
   controllerId     String               @id @default(uuid())
-  operationStatus  String               @default("OFF")
   temp             Float?
   pin              Int? // PIN temporal para vinculación
   operativeStatus  CtrlOperativeStatus  @default(OFF)

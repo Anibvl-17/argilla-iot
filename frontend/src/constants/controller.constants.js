@@ -14,7 +14,7 @@ export const CONTROLLER_LINK_STATUS_LABELS = {
 
 export const SWITCH_LABELS = {
   CONTACTOR: "Contactor",
-  SSR: "SSR"
+  SSR: "SSR",
 };
 
 export const CONTROLLER_OPERATION_LABELS = {

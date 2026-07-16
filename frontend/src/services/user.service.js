@@ -47,7 +47,7 @@ export async function getAllUsers(params = {}) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -67,7 +67,7 @@ export async function createUser(data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -87,7 +87,7 @@ export async function updateUser(userId, data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -106,7 +106,7 @@ export async function deleteUser(userId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }

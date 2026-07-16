@@ -25,7 +25,6 @@ export async function getAdminSummary() {
         OR: [{ userId: { not: null } }, { kiln: { isNot: null } }],
       },
     }),
-    prisma.controller.count({ where: { operativeStatus: "ON" } }),
     prisma.user.count(),
   ]);
 

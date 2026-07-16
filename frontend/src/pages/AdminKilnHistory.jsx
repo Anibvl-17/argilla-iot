@@ -3,10 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Pagination from "@components/Pagination";
 import { Badge } from "@components/Badge";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
-import {
-  getAdminKiln,
-  getAdminKilnTelemetry,
-} from "@services/kiln.service";
+import { getAdminKiln, getAdminKilnTelemetry } from "@services/kiln.service";
 import {
   getControllerConnectionLabel,
   getControllerOperationLabel,
@@ -35,39 +32,49 @@ export default function AdminKilnHistory() {
     };
   }, [kilnId]);
 
-  const fetchTelemetry = useCallback(async (page = 1) => {
-    setTelemetryLoading(true);
-    const result = await getAdminKilnTelemetry(kilnId, page, 10);
-    if (result.success) {
-      setTelemetry(result.data.items || []);
-      setPagination(result.data.pagination || { page: 1, totalPages: 1 });
-    } else {
-      setError(result.message);
-    }
-    setTelemetryLoading(false);
-  }, [kilnId]);
+  const fetchTelemetry = useCallback(
+    async (page = 1) => {
+      setTelemetryLoading(true);
+      const result = await getAdminKilnTelemetry(kilnId, page, 10);
+      if (result.success) {
+        setTelemetry(result.data.items || []);
+        setPagination(result.data.pagination || { page: 1, totalPages: 1 });
+      } else {
+        setError(result.message);
+      }
+      setTelemetryLoading(false);
+    },
+    [kilnId],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTelemetry(1);
   }, [fetchTelemetry]);
 
-  const handleTelemetry = useCallback((event) => {
-    setKiln((current) =>
-      current?.controller?.controllerId === event.controllerId
-        ? { ...current, controller: { ...current.controller, ...event } }
-        : current,
-    );
+  const handleTelemetry = useCallback(
+    (event) => {
+      setKiln((current) =>
+        current?.controller?.controllerId === event.controllerId
+          ? { ...current, controller: { ...current.controller, ...event } }
+          : current,
+      );
 
-    if (event.kilnId === Number(kilnId) && event.telemetrySaved) {
-      fetchTelemetry(1);
-    }
-  }, [fetchTelemetry, kilnId]);
+      if (event.kilnId === Number(kilnId) && event.telemetrySaved) {
+        fetchTelemetry(1);
+      }
+    },
+    [fetchTelemetry, kilnId],
+  );
 
   useControllerRealtime(handleTelemetry);
 
   if (loading) {
-    return <div className="py-20 text-center text-neutral-400">Cargando horno...</div>;
+    return (
+      <div className="py-20 text-center text-neutral-400">
+        Cargando horno...
+      </div>
+    );
   }
 
   if (error || !kiln) {
@@ -75,7 +82,10 @@ export default function AdminKilnHistory() {
       <div className="rounded-2xl border border-red-900/60 bg-red-950/20 p-6 text-red-300">
         <p className="font-semibold">No fue posible cargar el historial.</p>
         <p className="mt-2 text-sm text-red-200/70">{error}</p>
-        <Link to="/admin/kilns" className="mt-5 inline-flex items-center gap-2 text-sm text-white">
+        <Link
+          to="/admin/kilns"
+          className="mt-5 inline-flex items-center gap-2 text-sm text-white"
+        >
           <LuArrowLeft /> Volver a hornos
         </Link>
       </div>
@@ -107,7 +117,9 @@ export default function AdminKilnHistory() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge
-            style={controller?.connectionStatus === "ONLINE" ? "info" : "default"}
+            style={
+              controller?.connectionStatus === "ONLINE" ? "info" : "default"
+            }
             text={
               controller
                 ? getControllerConnectionLabel(controller.connectionStatus)
@@ -116,7 +128,9 @@ export default function AdminKilnHistory() {
           />
           {controller?.connectionStatus === "ONLINE" && (
             <Badge
-              style={controller.operativeStatus === "ON" ? "success" : "default"}
+              style={
+                controller.operativeStatus === "ON" ? "success" : "default"
+              }
               text={getControllerOperationLabel(controller.operativeStatus)}
             />
           )}
@@ -129,7 +143,11 @@ export default function AdminKilnHistory() {
         <Metric label="Voltaje" value={`${kiln.volts} V`} />
         <Metric
           label="Controlador"
-          value={controller ? `...${controller.controllerId.slice(-6)}` : "Sin vincular"}
+          value={
+            controller
+              ? `...${controller.controllerId.slice(-6)}`
+              : "Sin vincular"
+          }
         />
       </section>
 
@@ -148,8 +166,12 @@ export default function AdminKilnHistory() {
             <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
               <tr>
                 <th className="px-3 py-3 font-medium sm:px-6">Fecha</th>
-                <th className="px-3 py-3 text-center font-medium sm:px-6">Temperatura</th>
-                <th className="px-3 py-3 text-center font-medium sm:px-6">Estado</th>
+                <th className="px-3 py-3 text-center font-medium sm:px-6">
+                  Temperatura
+                </th>
+                <th className="px-3 py-3 text-center font-medium sm:px-6">
+                  Estado
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/60">
@@ -169,8 +191,13 @@ export default function AdminKilnHistory() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="px-6 py-12 text-center text-neutral-500">
-                    {telemetryLoading ? "Cargando historial..." : "Sin registros de telemetría."}
+                  <td
+                    colSpan="3"
+                    className="px-6 py-12 text-center text-neutral-500"
+                  >
+                    {telemetryLoading
+                      ? "Cargando historial..."
+                      : "Sin registros de telemetría."}
                   </td>
                 </tr>
               )}
@@ -193,7 +220,10 @@ function Metric({ label, value }) {
       <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 sm:text-xs">
         {label}
       </p>
-      <p className="mt-1 truncate font-mono text-base font-semibold text-neutral-100 sm:text-xl" title={value}>
+      <p
+        className="mt-1 truncate font-mono text-base font-semibold text-neutral-100 sm:text-xl"
+        title={value}
+      >
         {value}
       </p>
     </div>

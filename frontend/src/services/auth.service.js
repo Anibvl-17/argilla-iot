@@ -14,7 +14,7 @@ export async function login(email, password) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -41,7 +41,7 @@ export async function register(data) {
 export async function logout() {
   try {
     await axios.post("/auth/logout");
-    
+
     cookies.remove("jwt-auth");
   } catch (error) {
     console.error("Error al cerrar sesión", error);

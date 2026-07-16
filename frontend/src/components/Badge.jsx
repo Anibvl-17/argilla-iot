@@ -12,7 +12,7 @@ const textStyles = {
   danger: "text-red-300/90 ",
   info: "text-blue-300/80",
   success: "text-green-300/80",
-}
+};
 
 export const Badge = ({
   style = "default",
@@ -39,7 +39,7 @@ export const Badge = ({
           <span
             className={
               textStyles[style] +
-                " max-w-max truncate text-xs leading-tight sm:text-xs"
+              " max-w-max truncate text-xs leading-tight sm:text-xs"
             }
           >
             {description}

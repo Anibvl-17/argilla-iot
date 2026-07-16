@@ -10,21 +10,12 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import ControllerStatus from "@components/ControllerStatus";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
+import { SWITCH_LABELS } from "../constants/controller.constants";
 
 function applyTelemetry(controller, telemetry) {
   return controller?.controllerCode === telemetry.controllerCode
     ? { ...controller, ...telemetry }
     : controller;
-}
-
-function Temperature({ value }) {
-  return value == null ? (
-    <span className="text-sm italic text-neutral-400">
-      Temperatura no disponible
-    </span>
-  ) : (
-    <span className="text-sm text-neutral-300">{value.toFixed(1)} °C</span>
-  );
 }
 
 export default function Home() {
@@ -128,32 +119,52 @@ export default function Home() {
             {data.kilns.map((kiln) => (
               <article
                 key={kiln.kilnId}
-                className="flex min-h-64 min-w-0 flex-col rounded-2xl border border-neutral-800 bg-[#141414] p-4 shadow-xl shadow-black/10 transition-colors hover:border-neutral-700 sm:min-h-72 sm:p-6"
+                className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-neutral-800 bg-[#141414] p-4 shadow-xl shadow-black/10 transition-colors hover:border-neutral-700 sm:p-6"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950/50 text-xl text-red-500">
-                    <LuFlame />
-                  </div>
-                  <ControllerStatus controller={kiln.controller} />
+                <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-neutral-700">
+                  <span className="rounded-xl text-neutral-400">
+                    {kiln.name}
+                  </span>
+
+                  <span className="flex items-center justify-center gap-1 text-neutral-400">
+                    <LuBox />
+                    {kiln.liters} litros
+                  </span>
                 </div>
-                <h2 className="mt-5 truncate text-xl font-semibold">
-                  {kiln.name}
+
+                <h2 className="truncate text-center">
+                  {kiln.controller ? (
+                    <span className="text-4xl/relaxed tracking-wide font-bold text-neutral-200">
+                      {kiln.controller?.temp.toFixed(1)} °C
+                    </span>
+                  ) : (
+                    <p className="text-neutral-300">Sin controlador asociado</p>
+                  )}
                 </h2>
-                <div className="mt-3 flex items-center gap-2 text-neutral-300">
-                  <LuBox />
-                  <span>{kiln.liters} litros</span>
-                </div>
-                <div className="mt-1">
-                  <Temperature value={kiln.controller?.temp} />
-                </div>
+
                 {kiln.controller && (
-                  <p className="mt-1 text-xs font-medium text-neutral-500">
-                    {getControllerConnectionLabel(
-                      kiln.controller.connectionStatus,
-                    )}
-                  </p>
+                  <div className="text-neutral-300/90 pb-2 border-b border-b-neutral-700">
+                    <div
+                      className={
+                        "flex flex-row items-center " +
+                        (kiln.controller?.connectionStatus === "ONLINE"
+                          ? "justify-between"
+                          : "justify-center")
+                      }
+                    >
+                      <p className="text-sm text-neutral-400">
+                        {getControllerConnectionLabel(
+                          kiln.controller.connectionStatus,
+                        )}
+                      </p>
+                      {kiln.controller?.connectionStatus === "ONLINE" && (
+                        <ControllerStatus controller={kiln.controller} />
+                      )}
+                    </div>
+                  </div>
                 )}
-                <div className="mt-auto flex flex-col gap-3 pt-6 min-[380px]:flex-row">
+
+                <div className="flex flex-col gap-3 min-[380px]:flex-row">
                   <button
                     disabled={
                       !kiln.controller ||
@@ -165,12 +176,17 @@ export default function Home() {
                       kiln.controller?.connectionStatus === "OFFLINE"
                         ? "Controlador desconectado"
                         : kiln.controller
-                        ? kiln.controller.operativeStatus === "ON"
-                          ? "Apagar horno"
-                          : "Encender horno"
-                        : "Requiere controlador"
+                          ? kiln.controller.operativeStatus === "ON"
+                            ? "Apagar horno"
+                            : "Encender horno"
+                          : "Requiere controlador"
                     }
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-200 transition-colors enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600"
+                    className={
+                      "flex flex-1 items-center justify-center gap-2 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-200 transition-colors disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600 hover:cursor-pointer " +
+                      (kiln.controller?.operativeStatus === "ON"
+                        ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400 enabled:hover:border-red-400/60"
+                        : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400 enabled:hover:border-green-400/50")
+                    }
                   >
                     <LuPower />
                     {commandLoadingId === String(kiln.kilnId)
@@ -218,14 +234,17 @@ export default function Home() {
                   <div>
                     <dt className="text-neutral-500">Temperatura</dt>
                     <dd className="mt-1">
-                      {controller.temp == null
+                      {controller.temp == null ||
+                      controller.connectionStatus !== "ONLINE"
                         ? "No disponible"
                         : `${controller.temp.toFixed(1)} °C`}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Switch</dt>
-                    <dd className="mt-1">{controller.switchType}</dd>
+                    <dd className="mt-1">
+                      {SWITCH_LABELS[controller.switchType]}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Capacidad</dt>

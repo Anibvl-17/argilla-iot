@@ -13,7 +13,7 @@ export async function getAllControllers(params = {}) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -32,7 +32,7 @@ export async function createController(data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -54,7 +54,7 @@ export async function updateController(controllerId, data) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -73,7 +73,7 @@ export async function getAccessibleControllers(params = {}) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -93,7 +93,7 @@ export async function sendAdminControllerCommand(controllerId, command) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -111,7 +111,7 @@ export async function deleteController(controllerId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -133,7 +133,7 @@ export async function linkUserToController(controllerId, userId, pin) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -151,7 +151,7 @@ export async function unlinkUserFromController(controllerId, userId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -169,7 +169,7 @@ export async function generateControllerPin(controllerId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }
@@ -187,7 +187,7 @@ export async function clearControllerPin(controllerId) {
     return {
       success: false,
       message:
-        error.response?.data.message || "Error al conectar con el servidor",
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }

@@ -12,7 +12,13 @@ export async function loginUser(req, res) {
 
     handleSuccess(res, 200, "Inicio de sesión exitoso", data);
   } catch (error) {
-    handleErrorClient(res, 401, "Error al iniciar sesión", error.message, "password");
+    handleErrorClient(
+      res,
+      401,
+      "Error al iniciar sesión",
+      error.message,
+      "password",
+    );
   }
 }
 
@@ -24,7 +30,13 @@ export async function registerUser(req, res) {
     handleSuccess(res, 201, "Usuario registrado exitosamente", newUser);
   } catch (error) {
     if (error.code === "P2002") {
-      handleErrorClient(res, 409, "El correo electrónico ya está registrado", null, "email");
+      handleErrorClient(
+        res,
+        409,
+        "El correo electrónico ya está registrado",
+        null,
+        "email",
+      );
     } else {
       handleErrorServer(res, 500, "Error interno del servidor", error.message);
     }

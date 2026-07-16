@@ -37,6 +37,7 @@ import {
   normalizeFormError,
 } from "../utils/formError";
 import FieldError from "@components/FieldError";
+import { getPageAfterDeletion } from "../utils/pagination";
 
 const controllerFields = [
   {
@@ -188,10 +189,12 @@ export default function AdminControllers() {
 
   const handleSubmitController = async (formData) => {
     if (selectedController?.kiln?.amps > parseInt(formData.switchAmps)) {
-      setModalError(formError(
-        `El horno vinculado requiere al menos ${selectedController?.kiln.amps}. Desvincula el controlador del horno antes de reducir su amperaje.`,
-        "switchAmps",
-      ));
+      setModalError(
+        formError(
+          `El horno vinculado requiere al menos ${selectedController?.kiln.amps}. Desvincula el controlador del horno antes de reducir su amperaje.`,
+          "switchAmps",
+        ),
+      );
       return;
     }
 
@@ -233,7 +236,9 @@ export default function AdminControllers() {
 
   const handleLinkUserSubmit = async ({ userId }) => {
     if (!selectedController) {
-      setLinkUserError(formError("Selecciona un controlador antes de enlazar un usuario."));
+      setLinkUserError(
+        formError("Selecciona un controlador antes de enlazar un usuario."),
+      );
       return;
     }
 
@@ -273,7 +278,7 @@ export default function AdminControllers() {
       );
       if (response.success) {
         toast.success(
-          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId}.`,
+          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId.slice(-6)}.`,
         );
         fetchControllers();
         fetchUsers();
@@ -350,8 +355,16 @@ export default function AdminControllers() {
       const response = await deleteController(selectedController.controllerId);
 
       if (response.success) {
+        const nextPage = getPageAfterDeletion({
+          page,
+          itemsOnPage: controllers.length,
+        });
         toast.success("Controlador eliminado exitosamente.");
-        fetchControllers();
+        if (nextPage !== page) {
+          setPage(nextPage);
+        } else {
+          fetchControllers();
+        }
       }
     } catch (error) {
       toast.error("Error al eliminar controlador", error.message);
@@ -1015,10 +1028,18 @@ export default function AdminControllers() {
                         onClearError("userId");
                       }}
                       aria-invalid={hasFormError(error, "userId") || undefined}
-                      aria-describedby={hasFormError(error, "userId") ? "controller-user-error" : undefined}
+                      aria-describedby={
+                        hasFormError(error, "userId")
+                          ? "controller-user-error"
+                          : undefined
+                      }
                       className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
                     />
-                    <FieldError error={error} field="userId" id="controller-user-error" />
+                    <FieldError
+                      error={error}
+                      field="userId"
+                      id="controller-user-error"
+                    />
 
                     {linkUserSearchTerm.trim() && (
                       <FloatingDropdown
@@ -1096,11 +1117,19 @@ export default function AdminControllers() {
                         onClearError("pin");
                       }}
                       aria-invalid={hasFormError(error, "pin") || undefined}
-                      aria-describedby={hasFormError(error, "pin") ? "controller-pin-error" : undefined}
+                      aria-describedby={
+                        hasFormError(error, "pin")
+                          ? "controller-pin-error"
+                          : undefined
+                      }
                       required
                       className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
                     />
-                    <FieldError error={error} field="pin" id="controller-pin-error" />
+                    <FieldError
+                      error={error}
+                      field="pin"
+                      id="controller-pin-error"
+                    />
                   </div>
                 </div>
               )}

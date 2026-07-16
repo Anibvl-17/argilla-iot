@@ -28,7 +28,9 @@ export function verifyRoles(roles) {
       }
 
       if (!roles.includes(user.role)) {
-        const validRoles = roles.map((role) => ROLE_NAMES[role] || role).join(", ");
+        const validRoles = roles
+          .map((role) => ROLE_NAMES[role] || role)
+          .join(", ");
         return handleErrorClient(
           res,
           403,
