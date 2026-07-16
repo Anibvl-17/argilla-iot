@@ -221,14 +221,20 @@ export const AdminHome = () => {
                 label="Vinculados"
                 value={summary.kilns.linked}
                 valueDescription="vinculados"
-                tone={summary.kilns.linked > 0 ? "text-blue-400" : "text-amber-400"}
+                tone={
+                  summary.kilns.linked > 0 ? "text-blue-400" : "text-amber-400"
+                }
               />
               <Metric
                 icon={LuPower}
                 label="En funcionamiento"
                 value={summary.kilns.operational}
                 valueDescription="en funcionamiento"
-                tone={summary.kilns.operational > 0 ? "text-green-400" : "text-amber-400"}
+                tone={
+                  summary.kilns.operational > 0
+                    ? "text-green-400"
+                    : "text-amber-400"
+                }
                 isLastChild
               />
             </>
@@ -248,7 +254,11 @@ export const AdminHome = () => {
                 value={summary.controllers.linked}
                 valueDescription="vinculados"
                 isLastChild
-                tone={summary.controllers.linked > 0 ? "text-blue-400" : "text-amber-400"}
+                tone={
+                  summary.controllers.linked > 0
+                    ? "text-blue-400"
+                    : "text-amber-400"
+                }
               />
             </>
           }

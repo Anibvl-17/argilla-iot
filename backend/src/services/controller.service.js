@@ -14,15 +14,15 @@ const TELEMETRY_SAMPLE_SECONDS =
 
 function getControllerLinkStatus(controller) {
   if (controller.kiln && controller.user) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
+    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER;
   }
 
   if (controller.kiln) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN
+    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN;
   }
 
   if (controller.user) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_USER
+    return CONTROLLER_LINK_STATUS.LINKED_TO_USER;
   }
 
   return CONTROLLER_LINK_STATUS.UNLINKED;
@@ -157,9 +157,9 @@ export async function updateControllerTelemetry(controllerId, data) {
         operativeStatus: true,
         connectionStatus: true,
         temp: true,
-      kiln: { select: { kilnId: true } },
-    },
-  });
+        kiln: { select: { kilnId: true } },
+      },
+    });
 
     let telemetrySaved = false;
 

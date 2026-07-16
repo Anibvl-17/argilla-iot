@@ -53,7 +53,8 @@ class ControllerSimulator {
     this.currentTemp =
       typeof controller.temp === "number" ? controller.temp : TEMP_START;
     this.relayState =
-      controller.operativeStatus === "ON" || controller.operativeStatus === "OFF"
+      controller.operativeStatus === "ON" ||
+      controller.operativeStatus === "OFF"
         ? controller.operativeStatus
         : "OFF";
     this.tempTimer = null;
@@ -117,7 +118,9 @@ class ControllerSimulator {
 
       this.relayState = command;
       this.publishRelayState();
-      console.log(`[SIM:${this.controllerId.slice(-6)}] Comando recibido -> ${command}`);
+      console.log(
+        `[SIM:${this.controllerId.slice(-6)}] Comando recibido -> ${command}`,
+      );
     });
 
     this.client.on("error", (error) => {
@@ -130,7 +133,9 @@ class ControllerSimulator {
 
     this.client.on("reconnect", () => {
       if (this.shuttingDown) return;
-      console.log(`[SIM:${this.controllerId.slice(-6)}] Reconectando al broker...`);
+      console.log(
+        `[SIM:${this.controllerId.slice(-6)}] Reconectando al broker...`,
+      );
     });
 
     this.client.on("close", () => {
@@ -173,10 +178,7 @@ class ControllerSimulator {
     const trend = this.relayState === "ON" ? 0.4 : -0.3;
 
     this.currentTemp += drift + trend;
-    this.currentTemp = Math.min(
-      TEMP_MAX,
-      Math.max(TEMP_MIN, this.currentTemp),
-    );
+    this.currentTemp = Math.min(TEMP_MAX, Math.max(TEMP_MIN, this.currentTemp));
 
     const payload = {
       deviceId: this.controllerId,
@@ -260,7 +262,10 @@ export class SimulatorService {
 
     this.refreshTimer = setInterval(() => {
       this.syncControllers().catch((error) => {
-        console.error("[SIM] Error al sincronizar controladores:", error.message);
+        console.error(
+          "[SIM] Error al sincronizar controladores:",
+          error.message,
+        );
       });
     }, REFRESH_MS);
   }

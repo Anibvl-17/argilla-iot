@@ -52,7 +52,7 @@ export default function FloatingDropdown({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[70] overflow-y-auto rounded-xl border border-neutral-700 bg-[#0a0a0a] shadow-2xl"
+      className="fixed z-70 overflow-y-auto rounded-xl border border-neutral-700 bg-[#0a0a0a] shadow-2xl"
       style={position}
     >
       {children}

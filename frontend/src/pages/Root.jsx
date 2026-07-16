@@ -5,10 +5,10 @@ import { Toaster } from "sonner";
 function Root() {
   return (
     <AuthProvider>
-      <Toaster theme="dark"/>
+      <Toaster theme="dark" />
       <Outlet />
     </AuthProvider>
-  )
+  );
 }
 
 export default Root;

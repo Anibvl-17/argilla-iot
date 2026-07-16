@@ -37,7 +37,10 @@ function Detail({ label, value, canCopy }) {
       <dd className="flex items-center gap-2 mt-1 font-medium text-neutral-100">
         {value}
         {canCopy && (
-          <button className="text-sm hover:cursor-pointer hover:text-red-400" title="Copiar ID">
+          <button
+            className="text-sm hover:cursor-pointer hover:text-red-400"
+            title="Copiar ID"
+          >
             <LuCopy />
           </button>
         )}

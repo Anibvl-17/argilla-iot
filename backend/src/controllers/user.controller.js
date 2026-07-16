@@ -23,15 +23,16 @@ export async function addUser(req, res) {
     return handleSuccess(res, 201, "Usuario creado exitosamente", newUser);
   } catch (error) {
     if (error.code === "P2002") {
-      return handleErrorClient(res, 409, "Ya existe un usuario con ese email", null, "email");
+      return handleErrorClient(
+        res,
+        409,
+        "Ya existe un usuario con ese email",
+        null,
+        "email",
+      );
     }
 
-    return handleErrorServer(
-      res,
-      500,
-      "Error al crear usuario",
-      error.message,
-    );
+    return handleErrorServer(res, 500, "Error al crear usuario", error.message);
   }
 }
 
@@ -59,7 +60,13 @@ export async function editProfile(req, res) {
     );
   } catch (error) {
     if (error.code === "INVALID_CURRENT_PASSWORD") {
-      return handleErrorClient(res, 400, error.message, null, "currentPassword");
+      return handleErrorClient(
+        res,
+        400,
+        error.message,
+        null,
+        "currentPassword",
+      );
     }
 
     if (error.code === "P2025") {
@@ -117,7 +124,13 @@ export async function editUser(req, res) {
     );
   } catch (error) {
     if (error.code === "P2002") {
-      return handleErrorClient(res, 409, "Ya existe un usuario con ese email", null, "email");
+      return handleErrorClient(
+        res,
+        409,
+        "Ya existe un usuario con ese email",
+        null,
+        "email",
+      );
     }
 
     if (error.code === "P2025") {
@@ -139,7 +152,11 @@ export async function removeUser(req, res) {
     const currentUserId = req.user.id;
 
     if (currentUserId === parseInt(userId)) {
-      return handleErrorClient(res, 403, "No puedes eliminar tu propio usuario.");
+      return handleErrorClient(
+        res,
+        403,
+        "No puedes eliminar tu propio usuario.",
+      );
     }
 
     await deleteUser(parseInt(userId));

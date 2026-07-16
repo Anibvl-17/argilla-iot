@@ -71,7 +71,9 @@ const demoUsers = [
     key: "valentina",
     email: "valentina@argilla.test",
     name: "Valentina Soto",
-    controllers: [{ key: "unlinked", id: "44444444-4444-4444-8444-444444444444" }],
+    controllers: [
+      { key: "unlinked", id: "44444444-4444-4444-8444-444444444444" },
+    ],
     kilns: [{ name: "Horno de Valentina", liters: 45, amps: 20 }],
   },
   {
@@ -94,7 +96,13 @@ const demoUsers = [
     name: "Camila Paredes",
     controllers: [],
     kilns: [
-      { name: "Horno mural de Camila", liters: 80, phases: 3, volts: 380, amps: 32 },
+      {
+        name: "Horno mural de Camila",
+        liters: 80,
+        phases: 3,
+        volts: 380,
+        amps: 32,
+      },
       { name: "Horno joyería de Camila", liters: 18, amps: 10 },
     ],
   },
@@ -113,9 +121,21 @@ const demoUsers = [
     email: "isabel@argilla.test",
     name: "Isabel Navarro",
     controllers: [
-      { key: "stock-a", id: "88888888-8888-4888-8888-888888888881", switchAmps: 25 },
-      { key: "stock-b", id: "88888888-8888-4888-8888-888888888882", switchAmps: 40 },
-      { key: "stock-c", id: "88888888-8888-4888-8888-888888888883", switchType: "SSR" },
+      {
+        key: "stock-a",
+        id: "88888888-8888-4888-8888-888888888881",
+        switchAmps: 25,
+      },
+      {
+        key: "stock-b",
+        id: "88888888-8888-4888-8888-888888888882",
+        switchAmps: 40,
+      },
+      {
+        key: "stock-c",
+        id: "88888888-8888-4888-8888-888888888883",
+        switchType: "SSR",
+      },
     ],
     kilns: [],
   },
@@ -125,10 +145,19 @@ const demoUsers = [
     name: "Renata Silva",
     controllers: [
       { key: "small", id: "99999999-9999-4999-8999-999999999991" },
-      { key: "large", id: "99999999-9999-4999-8999-999999999992", switchAmps: 40 },
+      {
+        key: "large",
+        id: "99999999-9999-4999-8999-999999999992",
+        switchAmps: 40,
+      },
     ],
     kilns: [
-      { name: "Horno pruebas de Renata", controllerKey: "small", liters: 30, amps: 16 },
+      {
+        name: "Horno pruebas de Renata",
+        controllerKey: "small",
+        liters: 30,
+        amps: 16,
+      },
       {
         name: "Horno producción de Renata",
         controllerKey: "large",
@@ -147,13 +176,36 @@ const demoUsers = [
       { key: "kiln-1", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1" },
       { key: "kiln-2", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2" },
       { key: "kiln-3", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3" },
-      { key: "kiln-4", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4", switchAmps: 40 },
-      { key: "kiln-5", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5", switchAmps: 40 },
+      {
+        key: "kiln-4",
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4",
+        switchAmps: 40,
+      },
+      {
+        key: "kiln-5",
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5",
+        switchAmps: 40,
+      },
     ],
     kilns: [
-      { name: "Horno bizcocho de Felipe", controllerKey: "kiln-1", liters: 45, amps: 20 },
-      { name: "Horno rakú de Felipe", controllerKey: "kiln-2", liters: 55, amps: 22 },
-      { name: "Horno porcelana de Felipe", controllerKey: "kiln-3", liters: 65, amps: 25 },
+      {
+        name: "Horno bizcocho de Felipe",
+        controllerKey: "kiln-1",
+        liters: 45,
+        amps: 20,
+      },
+      {
+        name: "Horno rakú de Felipe",
+        controllerKey: "kiln-2",
+        liters: 55,
+        amps: 22,
+      },
+      {
+        name: "Horno porcelana de Felipe",
+        controllerKey: "kiln-3",
+        liters: 65,
+        amps: 25,
+      },
       {
         name: "Horno comunitario de Felipe",
         controllerKey: "kiln-4",
@@ -176,9 +228,16 @@ const demoUsers = [
     key: "paula",
     email: "paula@argilla.test",
     name: "Paula Medina",
-    controllers: [{ key: "linked", id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }],
+    controllers: [
+      { key: "linked", id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+    ],
     kilns: [
-      { name: "Horno principal de Paula", controllerKey: "linked", liters: 70, amps: 28 },
+      {
+        name: "Horno principal de Paula",
+        controllerKey: "linked",
+        liters: 70,
+        amps: 28,
+      },
       { name: "Horno pendiente de Paula", liters: 40, amps: 20 },
     ],
   },
@@ -190,7 +249,14 @@ const demoUsers = [
       { key: "linked", id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1" },
       { key: "backup", id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc2" },
     ],
-    kilns: [{ name: "Horno de Andrés", controllerKey: "linked", liters: 55, amps: 22 }],
+    kilns: [
+      {
+        name: "Horno de Andrés",
+        controllerKey: "linked",
+        liters: 55,
+        amps: 22,
+      },
+    ],
   },
   {
     key: "elena",
@@ -199,11 +265,20 @@ const demoUsers = [
     controllers: [
       { key: "kiln-a", id: "dddddddd-dddd-4ddd-8ddd-ddddddddddd1" },
       { key: "kiln-b", id: "dddddddd-dddd-4ddd-8ddd-ddddddddddd2" },
-      { key: "kiln-c", id: "dddddddd-dddd-4ddd-8ddd-ddddddddddd3", switchType: "SSR" },
+      {
+        key: "kiln-c",
+        id: "dddddddd-dddd-4ddd-8ddd-ddddddddddd3",
+        switchType: "SSR",
+      },
       { key: "spare", id: "dddddddd-dddd-4ddd-8ddd-ddddddddddd4" },
     ],
     kilns: [
-      { name: "Horno esmalte Elena", controllerKey: "kiln-a", liters: 42, amps: 18 },
+      {
+        name: "Horno esmalte Elena",
+        controllerKey: "kiln-a",
+        liters: 42,
+        amps: 18,
+      },
       {
         name: "Horno esculturas Elena",
         controllerKey: "kiln-b",
@@ -212,19 +287,33 @@ const demoUsers = [
         volts: 380,
         amps: 30,
       },
-      { name: "Horno laboratorio Elena", controllerKey: "kiln-c", liters: 25, amps: 12 },
+      {
+        name: "Horno laboratorio Elena",
+        controllerKey: "kiln-c",
+        liters: 25,
+        amps: 12,
+      },
     ],
   },
 ];
 
 const orphanControllers = [
   { id: "55555555-5555-4555-8555-555555555555", switchAmps: 25 },
-  { id: "66666666-6666-4666-8666-666666666666", switchType: "SSR", switchAmps: 30 },
+  {
+    id: "66666666-6666-4666-8666-666666666666",
+    switchType: "SSR",
+    switchAmps: 30,
+  },
   { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", switchAmps: 40 },
 ];
 
 const orphanKilns = [
-  { name: "Horno huérfano 1", liters: 30, amps: 16, aliases: ["Horno huerfano 1"] },
+  {
+    name: "Horno huérfano 1",
+    liters: 30,
+    amps: 16,
+    aliases: ["Horno huerfano 1"],
+  },
   {
     name: "Horno huérfano 2",
     liters: 70,
@@ -363,7 +452,9 @@ async function main() {
         kiln.name,
         {
           userId,
-          controllerId: kiln.controllerKey ? controllerByKey[kiln.controllerKey] : null,
+          controllerId: kiln.controllerKey
+            ? controllerByKey[kiln.controllerKey]
+            : null,
           liters: kiln.liters,
           phases: kiln.phases,
           volts: kiln.volts,

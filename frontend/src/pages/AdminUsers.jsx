@@ -65,7 +65,11 @@ export default function AdminUsers() {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getAllUsers({ page, pageSize: PAGE_SIZE, search: searchTerm });
+      const result = await getAllUsers({
+        page,
+        pageSize: PAGE_SIZE,
+        search: searchTerm,
+      });
       const payload = result.data || {};
       setUsers(payload.items || []);
       setTotalPages(payload.pagination?.totalPages || 1);
@@ -158,7 +162,9 @@ export default function AdminUsers() {
     <div className="min-w-0 space-y-6 text-white">
       <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Usuarios</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Usuarios
+          </h1>
           <p className="text-neutral-300 mt-1 text-sm">
             Gestión centralizada de todos los usuarios de la plataforma.
           </p>
@@ -186,134 +192,154 @@ export default function AdminUsers() {
             Busca usuarios por nombre, correo electrónico, ID o rol.
           </p>
           <div className="relative w-full sm:w-96">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg
-              className="h-5 w-5 text-neutral-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Juan, matias@argilla.cl, usuario..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
-          />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-neutral-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Juan, matias@argilla.cl, usuario..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
+            />
           </div>
         </div>
         <div className="overflow-auto">
-        {!loading && (
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs font-bold uppercase tracking-wider text-neutral-500">
-              <tr>
-                <th scope="col" className="hidden px-3 py-3 sm:table-cell sm:px-6 sm:py-4">
-                  ID
-                </th>
-                <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
-                  Email
-                </th>
-                <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
-                  Nombre
-                </th>
-                <th scope="col" className="px-3 py-3 text-center sm:px-6 sm:py-4">
-                  Rol
-                </th>
-                <th scope="col" className="hidden px-3 py-3 text-center md:table-cell sm:px-6 sm:py-4">
-                  Fecha de registro
-                </th>
-                <th scope="col" className="px-3 py-3 text-center sm:px-6 sm:py-4">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-neutral-800/60">
-              {users.length > 0 ? (
-                users.map((user) => (
-                  <tr
-                    key={user.userId}
-                    className="hover:bg-neutral-900/30 transition-colors"
+          {!loading && (
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs font-bold uppercase tracking-wider text-neutral-500">
+                <tr>
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 sm:table-cell sm:px-6 sm:py-4"
                   >
-                    {/* ID */}
-                    <td className="hidden px-3 py-4 font-mono text-neutral-200 sm:table-cell sm:px-6 sm:py-5 sm:text-base">
-                      {user.userId}
-                    </td>
+                    ID
+                  </th>
+                  <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
+                    Email
+                  </th>
+                  <th scope="col" className="px-3 py-3 sm:px-6 sm:py-4">
+                    Nombre
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-center sm:px-6 sm:py-4"
+                  >
+                    Rol
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 text-center md:table-cell sm:px-6 sm:py-4"
+                  >
+                    Fecha de registro
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-center sm:px-6 sm:py-4"
+                  >
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
 
-                    {/* Email */}
-                    <td className="max-w-36 break-all px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
-                      {user.email}
-                    </td>
+              <tbody className="divide-y divide-neutral-800/60">
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <tr
+                      key={user.userId}
+                      className="hover:bg-neutral-900/30 transition-colors"
+                    >
+                      {/* ID */}
+                      <td className="hidden px-3 py-4 font-mono text-neutral-200 sm:table-cell sm:px-6 sm:py-5 sm:text-base">
+                        {user.userId}
+                      </td>
 
-                    {/* Nombre */}
-                    <td className="max-w-28 wrap-break-word px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
-                      {user.name}
-                    </td>
+                      {/* Email */}
+                      <td className="max-w-36 break-all px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
+                        {user.email}
+                      </td>
 
-                    {/* Rol */}
-                    <td className="px-3 py-4 sm:px-6 sm:py-5">
-                      <span className="flex items-center justify-center">
-                        <Badge style="default" text={ROLE_LABELS[user.role]} />
-                      </span>
-                    </td>
+                      {/* Nombre */}
+                      <td className="max-w-28 wrap-break-word px-3 py-4 text-neutral-300 sm:max-w-none sm:px-6 sm:py-5">
+                        {user.name}
+                      </td>
 
-                    {/* Fecha creación */}
-                    <td className="hidden px-3 py-4 text-center text-neutral-300 md:table-cell sm:px-6 sm:py-5">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
+                      {/* Rol */}
+                      <td className="px-3 py-4 sm:px-6 sm:py-5">
+                        <span className="flex items-center justify-center">
+                          <Badge
+                            style="default"
+                            text={ROLE_LABELS[user.role]}
+                          />
+                        </span>
+                      </td>
 
-                    {/* Botones de acción */}
-                    <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
-                          title="Editar datos"
-                        >
-                          <LuPencil />
-                        </button>
-                        {sessionUser.userId !== user.userId && (
+                      {/* Fecha creación */}
+                      <td className="hidden px-3 py-4 text-center text-neutral-300 md:table-cell sm:px-6 sm:py-5">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+
+                      {/* Botones de acción */}
+                      <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
+                        <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsAlertOpen(true);
-                            }}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
-                            title="Eliminar usuario"
+                            onClick={() => openEditModal(user)}
+                            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors hover:cursor-pointer"
+                            title="Editar datos"
                           >
-                            <LuTrash2 />
+                            <LuPencil />
                           </button>
-                        )}
-                      </div>
+                          {sessionUser.userId !== user.userId && (
+                            <button
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsAlertOpen(true);
+                              }}
+                              className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-400/10 transition-colors hover:cursor-pointer"
+                              title="Eliminar usuario"
+                            >
+                              <LuTrash2 />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-6 py-12 text-center text-neutral-500"
+                    >
+                      No se encontraron usuarios que coincidan con "{searchTerm}
+                      ".
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-12 text-center text-neutral-500"
-                  >
-                    No se encontraron usuarios que coincidan con "{searchTerm}".
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
 
       <Modal

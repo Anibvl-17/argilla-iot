@@ -179,10 +179,21 @@ export default function ProfileModal({ onClose }) {
                     required
                     type="password"
                     value={passwords.currentPassword}
-                    aria-invalid={hasFormError(passwordError, "currentPassword") || undefined}
-                    aria-describedby={hasFormError(passwordError, "currentPassword") ? "current-password-error" : undefined}
+                    aria-invalid={
+                      hasFormError(passwordError, "currentPassword") ||
+                      undefined
+                    }
+                    aria-describedby={
+                      hasFormError(passwordError, "currentPassword")
+                        ? "current-password-error"
+                        : undefined
+                    }
                   />
-                  <FieldError error={passwordError} field="currentPassword" id="current-password-error" />
+                  <FieldError
+                    error={passwordError}
+                    field="currentPassword"
+                    id="current-password-error"
+                  />
                 </label>
 
                 <label className="block font-medium text-sm text-neutral-400">
@@ -196,10 +207,20 @@ export default function ProfileModal({ onClose }) {
                     required
                     type="password"
                     value={passwords.newPassword}
-                    aria-invalid={hasFormError(passwordError, "newPassword") || undefined}
-                    aria-describedby={hasFormError(passwordError, "newPassword") ? "new-password-error" : undefined}
+                    aria-invalid={
+                      hasFormError(passwordError, "newPassword") || undefined
+                    }
+                    aria-describedby={
+                      hasFormError(passwordError, "newPassword")
+                        ? "new-password-error"
+                        : undefined
+                    }
                   />
-                  <FieldError error={passwordError} field="newPassword" id="new-password-error" />
+                  <FieldError
+                    error={passwordError}
+                    field="newPassword"
+                    id="new-password-error"
+                  />
                 </label>
 
                 <FieldError error={passwordError} />

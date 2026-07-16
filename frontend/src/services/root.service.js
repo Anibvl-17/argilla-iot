@@ -29,7 +29,7 @@ instance.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status;
-    if (error.response && status === 401 || status === 403) {
+    if ((error.response && status === 401) || status === 403) {
       const isLoginRequest = error.config.url.includes("/login");
 
       if (!isLoginRequest) {

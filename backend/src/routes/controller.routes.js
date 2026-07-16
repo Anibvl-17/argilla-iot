@@ -9,7 +9,7 @@ import {
   removeController,
   sendControllerCommand,
   linkUserToController,
-  unlinkUserFromController
+  unlinkUserFromController,
 } from "../controllers/controller.controller.js";
 import { authenticateJWT } from "../middlewares/authentication.middleware.js";
 import { verifyRoles } from "../middlewares/authorization.middleware.js";

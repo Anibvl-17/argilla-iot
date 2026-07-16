@@ -87,69 +87,73 @@ export default function Modal({
         </div>
 
         {/* Formulario Dinámico */}
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-5 overflow-y-auto p-4 sm:gap-8 sm:p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-col gap-5 overflow-y-auto p-4 sm:gap-8 sm:p-6"
+        >
           <div className="space-y-4">
-            {renderContent ? (
-              renderContent({
-                formData,
-                setFormData,
-                handleChange,
-                onClearError: (field) =>
-                  onClearError(clearFormError(normalizedError, field)),
-                error: normalizedError,
-              })
-            ) : (
-              fields.map((field) => {
-                const errorId = `${field.name}-error`;
-                const hasFieldError = hasFormError(normalizedError, field.name);
-                return (
-                <div key={field.name} className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-neutral-300 ml-1">
-                    {field.label}
-                  </label>
+            {renderContent
+              ? renderContent({
+                  formData,
+                  setFormData,
+                  handleChange,
+                  onClearError: (field) =>
+                    onClearError(clearFormError(normalizedError, field)),
+                  error: normalizedError,
+                })
+              : fields.map((field) => {
+                  const errorId = `${field.name}-error`;
+                  const hasFieldError = hasFormError(
+                    normalizedError,
+                    field.name,
+                  );
+                  return (
+                    <div key={field.name} className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-neutral-300 ml-1">
+                        {field.label}
+                      </label>
 
-                  {field.type === "select" ? (
-                    <select
-                      name={field.name}
-                      value={formData[field.name] || ""}
-                      onChange={handleChange}
-                      required={field.required !== false}
-                      aria-invalid={hasFieldError || undefined}
-                      aria-describedby={hasFieldError ? errorId : undefined}
-                      className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
-                    >
-                      <option value="" disabled>
-                        Selecciona una opción
-                      </option>
-                      {field.options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      placeholder={field.placeholder || ""}
-                      value={formData[field.name] || ""}
-                      onChange={handleChange}
-                      required={field.required !== false}
-                      aria-invalid={hasFieldError || undefined}
-                      aria-describedby={hasFieldError ? errorId : undefined}
-                      {...(field.inputProps || {})}
-                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
-                    />
-                  )}
-                  <FieldError
-                    error={normalizedError}
-                    field={field.name}
-                    id={errorId}
-                  />
-                </div>
-                );
-              })
-            )}
+                      {field.type === "select" ? (
+                        <select
+                          name={field.name}
+                          value={formData[field.name] || ""}
+                          onChange={handleChange}
+                          required={field.required !== false}
+                          aria-invalid={hasFieldError || undefined}
+                          aria-describedby={hasFieldError ? errorId : undefined}
+                          className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
+                        >
+                          <option value="" disabled>
+                            Selecciona una opción
+                          </option>
+                          {field.options.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          placeholder={field.placeholder || ""}
+                          value={formData[field.name] || ""}
+                          onChange={handleChange}
+                          required={field.required !== false}
+                          aria-invalid={hasFieldError || undefined}
+                          aria-describedby={hasFieldError ? errorId : undefined}
+                          {...(field.inputProps || {})}
+                          className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                        />
+                      )}
+                      <FieldError
+                        error={normalizedError}
+                        field={field.name}
+                        id={errorId}
+                      />
+                    </div>
+                  );
+                })}
           </div>
 
           <FieldError error={normalizedError} />

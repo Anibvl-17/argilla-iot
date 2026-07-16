@@ -57,7 +57,9 @@ const Register = ({ setMode }) => {
   return (
     <>
       <div className="mb-5 sm:mb-8">
-        <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">¡Hola!</h1>
+        <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">
+          ¡Hola!
+        </h1>
         <p className="text-base text-neutral-400 sm:text-lg">
           Ingresa tus datos para crear tu cuenta
         </p>
@@ -72,7 +74,9 @@ const Register = ({ setMode }) => {
             id="name"
             name="name"
             aria-invalid={hasFormError(error, "name") || undefined}
-            aria-describedby={hasFormError(error, "name") ? "name-error" : undefined}
+            aria-describedby={
+              hasFormError(error, "name") ? "name-error" : undefined
+            }
             placeholder="John Doe"
             onChange={(e) => {
               setName(e.target.value);
@@ -93,7 +97,9 @@ const Register = ({ setMode }) => {
             id="email"
             name="email"
             aria-invalid={hasFormError(error, "email") || undefined}
-            aria-describedby={hasFormError(error, "email") ? "email-error" : undefined}
+            aria-describedby={
+              hasFormError(error, "email") ? "email-error" : undefined
+            }
             placeholder="ejemplo@correo.com"
             onChange={(e) => {
               setEmail(e.target.value);
@@ -115,7 +121,9 @@ const Register = ({ setMode }) => {
               id="password"
               name="password"
               aria-invalid={hasFormError(error, "password") || undefined}
-              aria-describedby={hasFormError(error, "password") ? "password-error" : undefined}
+              aria-describedby={
+                hasFormError(error, "password") ? "password-error" : undefined
+              }
               placeholder="••••••••"
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -158,7 +166,11 @@ const Register = ({ setMode }) => {
               id="confirm-password"
               name="confirmPassword"
               aria-invalid={hasFormError(error, "confirmPassword") || undefined}
-              aria-describedby={hasFormError(error, "confirmPassword") ? "confirm-password-error" : undefined}
+              aria-describedby={
+                hasFormError(error, "confirmPassword")
+                  ? "confirm-password-error"
+                  : undefined
+              }
               placeholder="••••••••"
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
@@ -167,7 +179,11 @@ const Register = ({ setMode }) => {
               className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
             />
           </div>
-          <FieldError error={error} field="confirmPassword" id="confirm-password-error" />
+          <FieldError
+            error={error}
+            field="confirmPassword"
+            id="confirm-password-error"
+          />
         </div>
 
         <FieldError error={error} />

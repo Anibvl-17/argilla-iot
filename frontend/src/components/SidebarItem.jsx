@@ -16,7 +16,9 @@ export const SidebarItem = ({ path, title, icon: Icon }) => {
           : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
       }`}
     >
-      {Icon && <Icon className="h-5 w-5 shrink-0 xl:h-4 xl:w-4" aria-hidden="true" />}
+      {Icon && (
+        <Icon className="h-5 w-5 shrink-0 xl:h-4 xl:w-4" aria-hidden="true" />
+      )}
       <span className="max-w-full truncate">{title}</span>
     </Link>
   );

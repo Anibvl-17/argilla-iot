@@ -78,11 +78,7 @@ export async function renameOwnedKiln(req, res) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
 
-    const kiln = await renameUserKiln(
-      req.user.id,
-      kilnId,
-      req.body.name,
-    );
+    const kiln = await renameUserKiln(req.user.id, kilnId, req.body.name);
 
     if (!kiln) {
       return handleErrorClient(res, 404, "Horno no encontrado");
@@ -109,11 +105,7 @@ export async function sendOwnedKilnControllerCommand(req, res) {
     const controller = await getOwnedKilnController(req.user.id, kilnId);
 
     if (!controller) {
-      return handleErrorClient(
-        res,
-        404,
-        "Horno sin controlador disponible",
-      );
+      return handleErrorClient(res, 404, "Horno sin controlador disponible");
     }
 
     if (controller.connectionStatus !== "ONLINE") {
@@ -253,7 +245,13 @@ export async function linkController(req, res) {
     }
 
     if (!partialControllerId) {
-      return handleErrorClient(res, 400, "El ID del controlador es requerido", null, "partialControllerId");
+      return handleErrorClient(
+        res,
+        400,
+        "El ID del controlador es requerido",
+        null,
+        "partialControllerId",
+      );
     }
 
     const updatedKiln = await linkControllerToKiln(
@@ -326,7 +324,10 @@ export async function linkUser(req, res) {
       return handleErrorClient(res, 400, "El ID del horno es requerido");
     }
 
-    const claimedKiln = await linkUserToKiln(parseInt(kilnId), parseInt(userId));
+    const claimedKiln = await linkUserToKiln(
+      parseInt(kilnId),
+      parseInt(userId),
+    );
     void emitAdminSummary();
 
     return handleSuccess(

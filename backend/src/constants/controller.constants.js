@@ -7,8 +7,8 @@ export const CONTROLLER_LINK_STATUS = {
 
 export const CONTROLLER_OPERATION_STATUS = {
   ON: "ON",
-  OFF: "OFF"
-}
+  OFF: "OFF",
+};
 
 export const SWITCH_TYPES = {
   CONTACTOR: "CONTACTOR",
