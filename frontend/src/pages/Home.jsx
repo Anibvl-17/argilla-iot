@@ -10,6 +10,7 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import ControllerStatus from "@components/ControllerStatus";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
+import { SWITCH_LABELS } from "../constants/controller.constants";
 
 function applyTelemetry(controller, telemetry) {
   return controller?.controllerCode === telemetry.controllerCode
@@ -233,14 +234,14 @@ export default function Home() {
                   <div>
                     <dt className="text-neutral-500">Temperatura</dt>
                     <dd className="mt-1">
-                      {controller.temp == null
+                      {controller.temp == null || controller.connectionStatus !== "ONLINE"
                         ? "No disponible"
                         : `${controller.temp.toFixed(1)} °C`}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Switch</dt>
-                    <dd className="mt-1">{controller.switchType}</dd>
+                    <dd className="mt-1">{SWITCH_LABELS[controller.switchType]}</dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Capacidad</dt>

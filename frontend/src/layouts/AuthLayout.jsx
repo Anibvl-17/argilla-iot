@@ -4,9 +4,6 @@ import kiln from "@assets/kiln-illustration.webp";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 
-/**
- * @todo En pantallas height < 700 y width > 1024, hay problemas de diseño
- */
 const AuthLayout = () => {
   const [mode, setMode] = useState("login");
 

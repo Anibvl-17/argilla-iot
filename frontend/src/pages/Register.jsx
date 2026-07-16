@@ -7,9 +7,6 @@ import { toast } from "sonner";
 import FieldError from "@components/FieldError";
 import { hasFormError } from "../utils/formError";
 
-/**
- * @todo En pantallas height < 700 y width > 1024, hay problemas de diseño
- */
 const Register = ({ setMode }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

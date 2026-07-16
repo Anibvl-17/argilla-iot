@@ -6,9 +6,6 @@ import useAuthForm from "@hooks/useAuthForm";
 import FieldError from "@components/FieldError";
 import { hasFormError } from "../utils/formError";
 
-/**
- * @todo En pantallas height < 700 y width > 1024, hay problemas de diseño
- */
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

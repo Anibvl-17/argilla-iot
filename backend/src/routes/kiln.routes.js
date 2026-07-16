@@ -53,8 +53,8 @@ router.use(verifyRoles([ROLES.ADMIN]));
 router.post(
   "/:kilnId/link",
   validateSchema(linkControllerValidation),
+  linkController,
 );
-linkController,
 router.post("/:kilnId/unlink", unlinkController);
 router.patch(
   "/:kilnId/release",
