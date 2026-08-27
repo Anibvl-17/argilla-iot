@@ -5,6 +5,7 @@ import useAuthForm from "@hooks/useAuthForm";
 import { register } from "@services/auth.service";
 import { toast } from "sonner";
 import FieldError from "@components/FieldError";
+import PasswordInput from "@components/PasswordInput";
 import { hasFormError } from "../utils/formError";
 
 const Register = ({ setMode }) => {
@@ -112,73 +113,49 @@ const Register = ({ setMode }) => {
 
         {/* Input contraseña */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-neutral-300 font-medium ml-1">
+          <label htmlFor="password" className="text-neutral-300 font-medium ml-1">
             Contraseña
           </label>
-          <div className="relative">
-            <input
-              type="password"
-              id="password"
-              name="password"
-              aria-invalid={hasFormError(error, "password") || undefined}
-              aria-describedby={
-                hasFormError(error, "password") ? "password-error" : undefined
-              }
-              placeholder="••••••••"
-              onChange={(e) => {
-                setPassword(e.target.value);
-                handleInputChange(e);
-              }}
-              className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
-            />
-            {/* Icono ojo */}
-            <button
-              type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-          </div>
+          <PasswordInput
+            id="password"
+            name="password"
+            aria-invalid={hasFormError(error, "password") || undefined}
+            aria-describedby={
+              hasFormError(error, "password") ? "password-error" : undefined
+            }
+            placeholder="••••••••"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              handleInputChange(e);
+            }}
+          />
           <FieldError error={error} field="password" id="password-error" />
         </div>
 
         {/* Confirmar contraseña */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-neutral-300 font-medium ml-1">
+          <label
+            htmlFor="confirm-password"
+            className="text-neutral-300 font-medium ml-1"
+          >
             Confirma tu contraseña
           </label>
-          <div className="relative">
-            <input
-              type="password"
-              id="confirm-password"
-              name="confirmPassword"
-              aria-invalid={hasFormError(error, "confirmPassword") || undefined}
-              aria-describedby={
-                hasFormError(error, "confirmPassword")
-                  ? "confirm-password-error"
-                  : undefined
-              }
-              placeholder="••••••••"
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                handleInputChange(e);
-              }}
-              className="w-full bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
-            />
-          </div>
+          <PasswordInput
+            id="confirm-password"
+            name="confirmPassword"
+            visibilityLabel="confirmación de contraseña"
+            aria-invalid={hasFormError(error, "confirmPassword") || undefined}
+            aria-describedby={
+              hasFormError(error, "confirmPassword")
+                ? "confirm-password-error"
+                : undefined
+            }
+            placeholder="••••••••"
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              handleInputChange(e);
+            }}
+          />
           <FieldError
             error={error}
             field="confirmPassword"
