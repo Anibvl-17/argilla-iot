@@ -7,7 +7,6 @@ export async function getAdminSummary() {
     operationalKilns,
     registeredControllers,
     linkedControllers,
-    operationalControllers,
     registeredUsers,
   ] = await prisma.$transaction([
     prisma.kiln.count(),
