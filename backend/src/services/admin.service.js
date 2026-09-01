@@ -36,7 +36,6 @@ export async function getAdminSummary() {
     controllers: {
       registered: registeredControllers,
       linked: linkedControllers,
-      operational: operationalControllers,
     },
     users: { registered: registeredUsers },
   };
