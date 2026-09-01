@@ -29,6 +29,7 @@ import {
   hasFormError,
   normalizeFormError,
 } from "../utils/formError";
+import { toast } from "sonner";
 
 function Detail({ label, value, canCopy }) {
   return (
@@ -40,6 +41,10 @@ function Detail({ label, value, canCopy }) {
           <button
             className="text-sm hover:cursor-pointer hover:text-red-400"
             title="Copiar ID"
+            onClick={() => {
+              navigator.clipboard.writeText(value.slice(3));
+              toast.success("¡ID copiada!");
+            }}
           >
             <LuCopy />
           </button>
