@@ -22,6 +22,29 @@ export async function createKiln(kilnData) {
  * @returns El Horno con los datos actualizados
  */
 export async function edit(kilnId, data) {
+  const currentKiln = await prisma.kiln.findUnique({
+    where: { kilnId },
+    include: { controller: { select: { switchAmps: true } } },
+  });
+
+  if (!currentKiln) {
+    const error = new Error("Horno no encontrado");
+    error.code = "P2025";
+    throw error;
+  }
+
+  if (
+    currentKiln.controller &&
+    data.amps != null &&
+    data.amps > currentKiln.controller.switchAmps
+  ) {
+    const error = new Error(
+      `El controlador vinculado soporta hasta ${currentKiln.controller.switchAmps}A. Desvincula el controlador del horno antes de aumentar su amperaje.`,
+    );
+    error.code = "INCOMPATIBLE_CONTROLLER_AMPERAGE";
+    throw error;
+  }
+
   return await prisma.kiln.update({
     where: {
       kilnId,

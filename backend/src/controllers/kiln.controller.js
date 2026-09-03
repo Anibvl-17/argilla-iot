@@ -380,6 +380,10 @@ export async function editKiln(req, res) {
       updatedKiln,
     );
   } catch (error) {
+    if (error.code === "INCOMPATIBLE_CONTROLLER_AMPERAGE") {
+      return handleErrorClient(res, 409, error.message, null, "amps");
+    }
+
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }

@@ -285,6 +285,23 @@ export default function AdminKilns() {
   };
 
   const handleCreateKiln = async (formData) => {
+    const requestedAmps = Number(formData.amps);
+    const controllerAmps = selectedKiln?.controller?.switchAmps;
+
+    if (
+      modalMode === "edit" &&
+      controllerAmps != null &&
+      requestedAmps > controllerAmps
+    ) {
+      setModalError(
+        formError(
+          `El controlador vinculado soporta hasta ${controllerAmps}A. Desvincula el controlador del horno antes de aumentar su amperaje.`,
+          "amps",
+        ),
+      );
+      return;
+    }
+
     setLoading(true);
     setModalError(null);
 
