@@ -25,8 +25,8 @@ export default function Pagination({ page, totalPages, onPageChange }) {
   if (safeTotalPages <= 1) return null;
 
   return (
-    <nav className="flex flex-col gap-3 border-t border-neutral-800 bg-[#141414] px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
-      <div className="text-center text-xs font-medium text-neutral-500 sm:text-left">
+    <nav className="flex flex-col gap-3 border-t border-border bg-surface px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="text-center text-xs font-medium text-muted sm:text-left">
         Página {page} de {safeTotalPages}
       </div>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -34,7 +34,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
           type="button"
           disabled={!canGoPrevious}
           onClick={() => onPageChange(page - 1)}
-          className="rounded-lg border border-neutral-700 px-3 py-1.5 text-neutral-300 transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-control-border px-3 py-1.5 text-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           Anterior
         </button>
@@ -47,14 +47,14 @@ export default function Pagination({ page, totalPages, onPageChange }) {
               className={
                 "min-w-9 rounded-lg border px-3 py-1.5 transition-colors " +
                 (item === page
-                  ? "border-red-600 bg-red-700 text-white"
-                  : "border-neutral-700 text-neutral-300 hover:bg-neutral-800")
+                  ? "border-primary bg-primary text-on-action"
+                  : "border-control-border text-secondary hover:bg-surface-hover")
               }
             >
               {item}
             </button>
           ) : (
-            <span key={item} className="px-1.5 text-neutral-500">
+            <span key={item} className="px-1.5 text-muted">
               ...
             </span>
           ),
@@ -63,7 +63,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
           type="button"
           disabled={!canGoNext}
           onClick={() => onPageChange(page + 1)}
-          className="rounded-lg border border-neutral-700 px-3 py-1.5 text-neutral-300 transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-control-border px-3 py-1.5 text-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           Siguiente
         </button>

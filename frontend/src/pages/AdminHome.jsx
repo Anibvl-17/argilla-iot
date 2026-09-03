@@ -16,18 +16,18 @@ function Metric({
   value,
   valueDescription,
   isLastChild = false,
-  tone = "text-neutral-200",
+  tone = "text-content",
 }) {
   return (
     <div
       className={
         "p-4 flex flex-row items-center justify-start gap-2 " +
-        (!isLastChild && "border-b border-neutral-800")
+        (!isLastChild && "border-b border-border")
       }
     >
       <Icon className={tone + " h-4 w-4"} aria-hidden="true" />
-      <p className="mb-1 text-2xl text-neutral-200">
-        <span className="mb-1 text-2xl font-bold text-neutral-200">
+      <p className="mb-1 text-2xl text-content">
+        <span className="mb-1 text-2xl font-bold text-content">
           {value}
         </span>{" "}
         {valueDescription}
@@ -40,21 +40,21 @@ function TotalStat({ icon: Icon, label, value, to }) {
   return (
     <Link
       to={to}
-      className="group flex min-w-0 items-center gap-3 rounded-xl border border-neutral-800 bg-[#141414] px-4 py-3 transition-colors hover:border-neutral-700 hover:bg-neutral-900/70"
+      className="group flex min-w-0 items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-control-border hover:bg-surface-hover"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-400">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-accent">
         <Icon className="text-2xl" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-medium uppercase tracking-wider text-neutral-400">
+        <span className="block truncate text-xs font-medium uppercase tracking-wider text-muted">
           {label}
         </span>
-        <span className="mt-0.5 block text-2xl font-bold text-white">
+        <span className="mt-0.5 block text-2xl font-bold text-content">
           {value}
         </span>
       </span>
       <LuArrowRight
-        className="h-4 w-4 shrink-0 text-neutral-600 transition-colors group-hover:text-neutral-300"
+        className="h-4 w-4 shrink-0 text-muted transition-colors group-hover:text-secondary"
         aria-hidden="true"
       />
     </Link>
@@ -63,9 +63,9 @@ function TotalStat({ icon: Icon, label, value, to }) {
 
 function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-xl">
+    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
       <div className="flex items-center gap-3 px-5 py-4">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl  text-red-400">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl  text-accent">
           <Icon className="text-2xl" aria-hidden="true" />
         </span>
         <h2 className="text-lg font-semibold">{title}</h2>
@@ -75,7 +75,7 @@ function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
 
       <Link
         to={to}
-        className="mt-4 flex items-center justify-end gap-3 border-t border-neutral-800 px-5 py-4 text-sm font-medium text-neutral-400 transition-colors hover:bg-neutral-900/60 hover:text-white"
+        className="mt-4 flex items-center justify-end gap-3 border-t border-border px-5 py-4 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-content"
       >
         {linkLabel}
         <LuArrowRight className="text-base" aria-hidden="true" />
@@ -91,7 +91,7 @@ function LoadingCards() {
         {[0, 1, 2].map((stat) => (
           <div
             key={stat}
-            className="h-20 animate-pulse rounded-xl border border-neutral-800 bg-[#141414]"
+            className="h-20 animate-pulse rounded-xl border border-border bg-surface"
           />
         ))}
       </div>
@@ -99,7 +99,7 @@ function LoadingCards() {
         {[0, 1].map((card) => (
           <div
             key={card}
-            className="h-72 animate-pulse rounded-2xl border border-neutral-800 bg-[#141414]"
+            className="h-72 animate-pulse rounded-2xl border border-border bg-surface"
           />
         ))}
       </div>
@@ -142,7 +142,7 @@ export const AdminHome = () => {
 
   if (loading && !summary) {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-content">
         <PageHeading />
         <LoadingCards />
       </div>
@@ -151,15 +151,15 @@ export const AdminHome = () => {
 
   if (error && !summary) {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-content">
         <PageHeading />
-        <div className="rounded-2xl border border-red-900/60 bg-red-950/20 p-6 text-red-300">
+        <div className="rounded-2xl border border-danger-border bg-danger-soft p-6 text-danger">
           <h2 className="font-semibold">No pudimos cargar el resumen</h2>
-          <p className="mt-2 text-sm text-red-200/70">{error}</p>
+          <p className="mt-2 text-sm text-danger">{error}</p>
           <button
             type="button"
             onClick={loadSummary}
-            className="mt-5 rounded-lg border border-red-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-950/60"
+            className="mt-5 rounded-lg border border-danger-border px-4 py-2 text-sm font-medium transition-colors hover:bg-danger-soft hover:text-danger"
           >
             Reintentar
           </button>
@@ -174,11 +174,11 @@ export const AdminHome = () => {
     summary.users.registered > 0;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-content">
       <PageHeading />
 
       {!hasRecords && (
-        <p className="rounded-xl border border-neutral-800 bg-[#141414] p-4 text-sm text-neutral-400">
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
           Aún no hay registros en el sistema. Puedes comenzar desde cualquiera
           de las secciones de administración.
         </p>
@@ -222,7 +222,7 @@ export const AdminHome = () => {
                 value={summary.kilns.linked}
                 valueDescription="vinculados"
                 tone={
-                  summary.kilns.linked > 0 ? "text-blue-400" : "text-amber-400"
+                  summary.kilns.linked > 0 ? "text-info" : "text-warning"
                 }
               />
               <Metric
@@ -232,8 +232,8 @@ export const AdminHome = () => {
                 valueDescription="en funcionamiento"
                 tone={
                   summary.kilns.operational > 0
-                    ? "text-green-400"
-                    : "text-amber-400"
+                    ? "text-success"
+                    : "text-warning"
                 }
                 isLastChild
               />
@@ -256,8 +256,8 @@ export const AdminHome = () => {
                 isLastChild
                 tone={
                   summary.controllers.linked > 0
-                    ? "text-blue-400"
-                    : "text-amber-400"
+                    ? "text-info"
+                    : "text-warning"
                 }
               />
             </>
@@ -272,7 +272,7 @@ function PageHeading() {
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">Resumen</h1>
-      <p className="mt-1 text-sm text-neutral-300">
+      <p className="mt-1 text-sm text-secondary">
         Estado general de los equipos y usuarios de la plataforma.
       </p>
     </div>

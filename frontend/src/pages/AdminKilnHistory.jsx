@@ -71,7 +71,7 @@ export default function AdminKilnHistory() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-neutral-400">
+      <div className="py-20 text-center text-muted">
         Cargando horno...
       </div>
     );
@@ -79,12 +79,12 @@ export default function AdminKilnHistory() {
 
   if (error || !kiln) {
     return (
-      <div className="rounded-2xl border border-red-900/60 bg-red-950/20 p-6 text-red-300">
+      <div className="rounded-2xl border border-danger-border bg-danger-soft p-6 text-danger">
         <p className="font-semibold">No fue posible cargar el historial.</p>
-        <p className="mt-2 text-sm text-red-200/70">{error}</p>
+        <p className="mt-2 text-sm text-danger">{error}</p>
         <Link
           to="/admin/kilns"
-          className="mt-5 inline-flex items-center gap-2 text-sm text-white"
+          className="mt-5 inline-flex items-center gap-2 text-sm text-content"
         >
           <LuArrowLeft /> Volver a hornos
         </Link>
@@ -98,20 +98,20 @@ export default function AdminKilnHistory() {
     <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5">
       <Link
         to="/admin/kilns"
-        className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-content"
       >
         <LuArrowLeft /> Volver a hornos
       </Link>
 
       <header className="flex min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div className="min-w-0">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-500">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">
             Historial del horno
           </p>
           <h1 className="mt-2 wrap-break-word text-2xl font-semibold sm:text-3xl">
             {kiln.name || `Horno #${kiln.kilnId}`}
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="mt-1 text-sm text-muted">
             #{kiln.kilnId} - {kiln.user?.name || "Sin propietario"}
           </p>
         </div>
@@ -151,19 +151,19 @@ export default function AdminKilnHistory() {
         />
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-xl">
-        <div className="flex items-start gap-3 border-b border-neutral-800 p-4 sm:p-6">
-          <LuHistory className="mt-0.5 shrink-0 text-xl text-red-500" />
+      <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
+        <div className="flex items-start gap-3 border-b border-border p-4 sm:p-6">
+          <LuHistory className="mt-0.5 shrink-0 text-xl text-accent" />
           <div>
             <h2 className="font-semibold">Historial de temperatura</h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-muted">
               Registros paginados de temperatura y estado del switch.
             </p>
           </div>
         </div>
         <div className="max-h-[60dvh] overflow-auto">
           <table className="w-full min-w-120 text-left text-xs sm:text-sm">
-            <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
+            <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
                 <th className="px-3 py-3 font-medium sm:px-6">Fecha</th>
                 <th className="px-3 py-3 text-center font-medium sm:px-6">
@@ -174,17 +174,17 @@ export default function AdminKilnHistory() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {telemetry.length > 0 ? (
                 telemetry.map((item) => (
                   <tr key={item.telemetryId}>
-                    <td className="px-3 py-3 text-neutral-300 sm:px-6">
+                    <td className="px-3 py-3 text-secondary sm:px-6">
                       {new Date(item.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-3 py-3 text-center font-mono text-neutral-200 sm:px-6">
+                    <td className="px-3 py-3 text-center font-mono text-content sm:px-6">
                       {item.temperature.toFixed(1)} °C
                     </td>
-                    <td className="px-3 py-3 text-center text-neutral-300 sm:px-6">
+                    <td className="px-3 py-3 text-center text-secondary sm:px-6">
                       {item.switchState ? "Encendido" : "Apagado"}
                     </td>
                   </tr>
@@ -193,7 +193,7 @@ export default function AdminKilnHistory() {
                 <tr>
                   <td
                     colSpan="3"
-                    className="px-6 py-12 text-center text-neutral-500"
+                    className="px-6 py-12 text-center text-muted"
                   >
                     {telemetryLoading
                       ? "Cargando historial..."
@@ -216,12 +216,12 @@ export default function AdminKilnHistory() {
 
 function Metric({ label, value }) {
   return (
-    <div className="min-w-0 rounded-xl border border-neutral-800 bg-[#141414] p-3 sm:p-5">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 sm:text-xs">
+    <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
         {label}
       </p>
       <p
-        className="mt-1 truncate font-mono text-base font-semibold text-neutral-100 sm:text-xl"
+        className="mt-1 truncate font-mono text-base font-semibold text-content sm:text-xl"
         title={value}
       >
         {value}

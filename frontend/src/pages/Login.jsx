@@ -49,7 +49,7 @@ const Login = () => {
         <h1 className="mb-2 text-3xl/relaxed font-bold sm:text-4xl/relaxed">
           ¡Hola!
         </h1>
-        <p className="text-base text-neutral-400 sm:text-lg">
+        <p className="text-base text-muted sm:text-lg">
           Ingresa tus credenciales para acceder
         </p>
       </div>
@@ -57,7 +57,7 @@ const Login = () => {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
         {/* Input email */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-neutral-300 font-medium ml-1">
+          <label className="text-secondary font-medium ml-1">
             Correo electrónico
           </label>
           <input
@@ -73,14 +73,14 @@ const Login = () => {
               setEmail(e.target.value);
               handleInputChange(e);
             }}
-            className="bg-[#141414] py-3 px-4 border border-neutral-800 rounded-lg outline-none focus:border-red-500 focus:bg-[#1a1a1a] transition-all"
+            className="bg-field py-3 px-4 border border-control-border rounded-lg outline-none focus:border-focus focus:bg-field-focus transition-all"
           />
           <FieldError error={error} field="email" id="email-error" />
         </div>
 
         {/* Input contraseña */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-neutral-300 font-medium ml-1">
+          <label htmlFor="password" className="text-secondary font-medium ml-1">
             Contraseña
           </label>
           <PasswordInput
@@ -104,7 +104,7 @@ const Login = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-red-700 text-white py-3 rounded-lg mt-4 font-medium transition-all hover:bg-red-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(185,28,28,0.2)]"
+          className="w-full bg-primary text-on-action py-3 rounded-lg mt-4 font-medium transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed "
         >
           {loading ? "Cargando..." : "Iniciar sesión"}
         </button>

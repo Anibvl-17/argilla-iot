@@ -1,17 +1,17 @@
 const defaultStyles = {
-  default: "bg-neutral-800/60 border-neutral-700/60 text-neutral-300/80",
-  warning: "bg-yellow-800/60 border-yellow-700/60 text-yellow-300/80",
-  danger: "bg-red-800/60 border-red-700/60 text-red-300/90 ",
-  info: "bg-blue-800/60 border-blue-700/60 text-blue-300/80",
-  success: "bg-green-800/60 border-green-700/60 text-green-300/80",
+  default: "bg-surface-hover border-border text-secondary",
+  warning: "bg-warning-soft border-warning-border text-warning",
+  danger: "bg-danger-soft border-danger-border text-danger",
+  info: "bg-info-soft border-info-border text-info",
+  success: "bg-success-soft border-success-border text-success",
 };
 
 const textStyles = {
-  default: "text-neutral-300/80",
-  warning: "text-yellow-300/80",
-  danger: "text-red-300/90 ",
-  info: "text-blue-300/80",
-  success: "text-green-300/80",
+  default: "text-secondary",
+  warning: "text-warning",
+  danger: "text-danger",
+  info: "text-info",
+  success: "text-success",
 };
 
 export const Badge = ({

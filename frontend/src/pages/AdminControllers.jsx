@@ -412,67 +412,67 @@ export default function AdminControllers() {
   };
 
   return (
-    <div className="min-w-0 space-y-6 text-white scrollbar-thin scrollbar-track-neutral-500 scrollbar-thumb-red-300">
+    <div className="min-w-0 space-y-6 text-content">
       <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Controladores
           </h1>
-          <p className="text-neutral-300 mt-1 text-sm">
+          <p className="text-secondary mt-1 text-sm">
             Gestión centralizada de todos los controladores de la plataforma.
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="w-full rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:w-auto"
+          className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
         >
           Añadir Nuevo Controlador
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
-        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
             Total Controladores
           </p>
           <p className="text-xl font-bold sm:text-3xl">{summary.total}</p>
         </div>
-        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
             Asignados a Horno
           </p>
-          <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
+          <p className="text-xl font-bold text-info sm:text-3xl">
             {summary.linkedToKiln}
           </p>
         </div>
-        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
             Asignados a Usuario
           </p>
-          <p className="text-xl font-bold text-blue-400/90 sm:text-3xl">
+          <p className="text-xl font-bold text-info sm:text-3xl">
             {summary.linkedToUser}
           </p>
         </div>
-        <div className="rounded-xl border border-neutral-800 bg-[#141414] p-3 shadow-md sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
+        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
+          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
             Asignados a Horno y Usuario
           </p>
-          <p className="text-xl font-bold text-green-400/90 sm:text-3xl">
+          <p className="text-xl font-bold text-success sm:text-3xl">
             {summary.fullyLinked}
           </p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
-        <div className="border-b border-neutral-800 p-4">
-          <p className="mb-2 text-sm md:text-base text-neutral-400">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
+        <div className="border-b border-border p-4">
+          <p className="mb-2 text-sm md:text-base text-muted">
             Busca controladores por su ID completo o por sus últimos seis
             caracteres.
           </p>
           <div className="relative w-full sm:w-96">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
-                className="h-5 w-5 text-neutral-500"
+                className="h-5 w-5 text-muted"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -493,7 +493,7 @@ export default function AdminControllers() {
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
+              className="w-full bg-field border border-control-border text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-focus focus:ring-1 focus:ring-focus transition-all text-content placeholder:text-muted"
             />
           </div>
         </div>
@@ -503,7 +503,7 @@ export default function AdminControllers() {
           {summary.total > 0 || searchTerm ? (
             !loading && (
               <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
+                <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
                   <tr>
                     <th
                       scope="col"
@@ -562,11 +562,11 @@ export default function AdminControllers() {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-neutral-800/60">
+                <tbody className="divide-y divide-border">
                   {controllers.length > 0 ? (
                     controllers.map((controller) => (
                       <Fragment key={controller.controllerId}>
-                        <tr className="hover:bg-neutral-900/30 transition-colors">
+                        <tr className="hover:bg-surface-hover transition-colors">
                           {/* ID */}
                           <td
                             onClick={() => {
@@ -575,7 +575,7 @@ export default function AdminControllers() {
                               );
                               toast.success("¡ID copiada!");
                             }}
-                            className="px-3 py-4 font-mono text-red-400 hover:underline sm:px-6 sm:py-5 sm:text-base"
+                            className="px-3 py-4 font-mono text-accent hover:underline sm:px-6 sm:py-5 sm:text-base"
                             title={"Copiar ID: " + controller.controllerId}
                           >
                             ...{controller.controllerId.slice(-6)}
@@ -585,20 +585,20 @@ export default function AdminControllers() {
                           <td className="max-w-36 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
                             <div className="flex flex-col">
                               {controller.kiln ? (
-                                <span className="font-semibold text-neutral-100 text-base">
+                                <span className="font-semibold text-content text-base">
                                   Horno #{controller.kiln?.kilnId}
                                 </span>
                               ) : (
-                                <span className="text-sm text-neutral-400/70 italic">
+                                <span className="text-sm text-muted italic">
                                   Sin horno asignado
                                 </span>
                               )}
                               {controller.user ? (
-                                <span className="text-sm text-neutral-300">
+                                <span className="text-sm text-secondary">
                                   {controller.user.name}
                                 </span>
                               ) : (
-                                <span className="text-sm text-neutral-400/70 italic">
+                                <span className="text-sm text-muted italic">
                                   Sin propietario
                                 </span>
                               )}
@@ -648,9 +648,9 @@ export default function AdminControllers() {
                           </td>
 
                           {/* Temperatura */}
-                          <td className="hidden px-3 py-4 text-center font-mono text-neutral-300 lg:table-cell sm:px-6 sm:py-5">
+                          <td className="hidden px-3 py-4 text-center font-mono text-secondary lg:table-cell sm:px-6 sm:py-5">
                             {controller.temp == null ? (
-                              <span className="text-neutral-400/70 font-sans italic">
+                              <span className="text-muted font-sans italic">
                                 No disponible
                               </span>
                             ) : (
@@ -659,7 +659,7 @@ export default function AdminControllers() {
                           </td>
 
                           {/* Amperaje switch */}
-                          <td className="hidden px-3 py-4 text-center font-mono text-neutral-300 md:table-cell sm:px-6 sm:py-5">
+                          <td className="hidden px-3 py-4 text-center font-mono text-secondary md:table-cell sm:px-6 sm:py-5">
                             {controller.switchAmps}
                           </td>
 
@@ -692,10 +692,10 @@ export default function AdminControllers() {
                                   controller.connectionStatus !== "ONLINE"
                                 }
                                 className={
-                                  "hidden rounded-lg p-2 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 md:inline-flex " +
+                                  "hidden rounded-lg p-2 text-muted transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 md:inline-flex " +
                                   (controller.operativeStatus === "ON"
-                                    ? "enabled:hover:text-red-400 enabled:hover:bg-red-400/10"
-                                    : "enabled:hover:text-green-400 enabled:hover:bg-green-400/10")
+                                    ? "enabled:hover:text-accent enabled:hover:bg-danger-soft"
+                                    : "enabled:hover:text-success enabled:hover:bg-success-soft")
                                 }
                                 title={
                                   !controller.kiln
@@ -717,7 +717,7 @@ export default function AdminControllers() {
                                       : controller.controllerId,
                                   )
                                 }
-                                className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white md:hidden"
+                                className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-content md:hidden"
                                 title={
                                   expandedControllerId ===
                                   controller.controllerId
@@ -747,10 +747,10 @@ export default function AdminControllers() {
                               <button
                                 onClick={() => openLinkUserModal(controller)}
                                 className={
-                                  "hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer md:inline-flex" +
+                                  "hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer md:inline-flex" +
                                   (controller.user
-                                    ? " hover:text-red-400 hover:bg-red-400/10"
-                                    : " hover:text-green-400 hover:bg-green-400/10")
+                                    ? " hover:text-accent hover:bg-danger-soft"
+                                    : " hover:text-success hover:bg-success-soft")
                                 }
                                 title={
                                   controller.user
@@ -768,7 +768,7 @@ export default function AdminControllers() {
                               {/* Editar datos */}
                               <button
                                 onClick={() => openEditModal(controller)}
-                                className="hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white md:inline-flex"
+                                className="hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-surface-hover hover:text-content md:inline-flex"
                                 title="Editar datos"
                               >
                                 <LuPencil />
@@ -780,7 +780,7 @@ export default function AdminControllers() {
                                   setSelectedController(controller);
                                   setIsAlertOpen(true);
                                 }}
-                                className="hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 md:inline-flex"
+                                className="hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-danger-soft hover:text-accent md:inline-flex"
                                 title="Eliminar controlador"
                               >
                                 <LuTrash2 />
@@ -789,11 +789,11 @@ export default function AdminControllers() {
                           </td>
                         </tr>
                         {expandedControllerId === controller.controllerId && (
-                          <tr className="bg-neutral-950/60 md:hidden">
+                          <tr className="bg-surface-muted md:hidden">
                             <td colSpan="9" className="px-3 py-3">
                               <dl className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
                                 <div>
-                                  <dt className="font-bold text-neutral-400">
+                                  <dt className="font-bold text-muted">
                                     Estado y Conexión
                                   </dt>
                                   <dd className="mt-1 flex flex-wrap gap-1.5">
@@ -823,21 +823,21 @@ export default function AdminControllers() {
                                   </dd>
                                 </div>
                                 <div>
-                                  <dt className="font-bold text-neutral-400">
+                                  <dt className="font-bold text-muted">
                                     Switch
                                   </dt>
-                                  <dd className="mt-1 text-neutral-200">
+                                  <dd className="mt-1 text-content">
                                     {SWITCH_LABELS[controller.switchType]}{" "}
                                     {controller.switchAmps}A
                                   </dd>
                                 </div>
                                 <div>
-                                  <dt className="font-bold text-neutral-400">
+                                  <dt className="font-bold text-muted">
                                     Temperatura
                                   </dt>
-                                  <dd className="mt-1 font-mono text-neutral-200">
+                                  <dd className="mt-1 font-mono text-content">
                                     {controller.temp == null ? (
-                                      <span className="font-sans italic text-neutral-400/70">
+                                      <span className="font-sans italic text-muted">
                                         No disponible
                                       </span>
                                     ) : (
@@ -846,16 +846,16 @@ export default function AdminControllers() {
                                   </dd>
                                 </div>
                                 <div>
-                                  <dt className="font-bold text-neutral-400">
+                                  <dt className="font-bold text-muted">
                                     PIN
                                   </dt>
-                                  <dd className="mt-1 font-mono text-neutral-200">
+                                  <dd className="mt-1 font-mono text-content">
                                     {controller.pin || "Inactivo"}
                                   </dd>
                                 </div>
                               </dl>
-                              <div className="mt-4 border-t border-neutral-800 pt-3">
-                                <p className="mb-2 text-xs font-bold text-neutral-400">
+                              <div className="mt-4 border-t border-border pt-3">
+                                <p className="mb-2 text-xs font-bold text-muted">
                                   Acciones
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2 text-base">
@@ -874,10 +874,10 @@ export default function AdminControllers() {
                                       controller.connectionStatus !== "ONLINE"
                                     }
                                     className={
-                                      "inline-flex rounded-lg p-2 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 " +
+                                      "inline-flex rounded-lg p-2 text-muted transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 " +
                                       (controller.operativeStatus === "ON"
-                                        ? "enabled:hover:text-red-400 enabled:hover:bg-red-400/10"
-                                        : "enabled:hover:text-green-400 enabled:hover:bg-green-400/10")
+                                        ? "enabled:hover:text-accent enabled:hover:bg-danger-soft"
+                                        : "enabled:hover:text-success enabled:hover:bg-success-soft")
                                     }
                                     title={
                                       !controller.kiln
@@ -894,10 +894,10 @@ export default function AdminControllers() {
                                       openLinkUserModal(controller)
                                     }
                                     className={
-                                      "inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer" +
+                                      "inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer" +
                                       (controller.user
-                                        ? " hover:text-red-400 hover:bg-red-400/10"
-                                        : " hover:text-green-400 hover:bg-green-400/10")
+                                        ? " hover:text-accent hover:bg-danger-soft"
+                                        : " hover:text-success hover:bg-success-soft")
                                     }
                                     title={
                                       controller.user
@@ -913,7 +913,7 @@ export default function AdminControllers() {
                                   </button>
                                   <button
                                     onClick={() => openEditModal(controller)}
-                                    className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white"
+                                    className="inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-surface-hover hover:text-content"
                                     title="Editar datos"
                                   >
                                     <LuPencil />
@@ -923,7 +923,7 @@ export default function AdminControllers() {
                                       setSelectedController(controller);
                                       setIsAlertOpen(true);
                                     }}
-                                    className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400"
+                                    className="inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-danger-soft hover:text-accent"
                                     title="Eliminar controlador"
                                   >
                                     <LuTrash2 />
@@ -939,7 +939,7 @@ export default function AdminControllers() {
                     <tr>
                       <td
                         colSpan="9"
-                        className="px-6 py-12 text-center text-neutral-500"
+                        className="px-6 py-12 text-center text-muted"
                       >
                         No se encontraron controladores que coincidan con "
                         {searchTerm}".
@@ -950,7 +950,7 @@ export default function AdminControllers() {
               </table>
             )
           ) : (
-            <p className="text-neutral-300 text-sm/relaxed p-4 text-center">
+            <p className="text-secondary text-sm/relaxed p-4 text-center">
               No hay controladores registrados. <br />
               Haz click en el botón{" "}
               <span className="rounded-lg font-medium">
@@ -1012,7 +1012,7 @@ export default function AdminControllers() {
               {!selectedControllerHasOwner && (
                 <div className="flex flex-col gap-3">
                   <div className="relative" ref={linkUserSearchRef}>
-                    <label className="text-sm font-medium text-neutral-400 ml-1">
+                    <label className="text-sm font-medium text-muted ml-1">
                       Busca por nombre, correo electrónico o ID de usuario
                     </label>
                     <input
@@ -1033,7 +1033,7 @@ export default function AdminControllers() {
                           ? "controller-user-error"
                           : undefined
                       }
-                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                      className="mt-2 w-full bg-field border-2 border-control-border rounded-lg px-3 py-2.5 text-content outline-none focus:border-focus transition-colors"
                     />
                     <FieldError
                       error={error}
@@ -1048,7 +1048,7 @@ export default function AdminControllers() {
                         onRequestClose={() => setLinkUserSearchTerm("")}
                       >
                         {loading ? (
-                          <div className="px-4 py-3 text-sm text-neutral-500">
+                          <div className="px-4 py-3 text-sm text-muted">
                             Cargando usuarios...
                           </div>
                         ) : filteredUsersForLink.length > 0 ? (
@@ -1079,19 +1079,19 @@ export default function AdminControllers() {
                                   }));
                                   onClearError("userId");
                                 }}
-                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
+                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-surface-hover hover:cursor-pointer"
                               >
-                                <span className="text-sm font-medium text-white">
+                                <span className="text-sm font-medium text-content">
                                   {user.name}
                                 </span>
-                                <span className="text-xs font-bold text-neutral-400">
+                                <span className="text-xs font-bold text-muted">
                                   #{user.userId} - {user.email}
                                 </span>
                               </button>
                             );
                           })
                         ) : (
-                          <div className="px-4 py-3 text-sm text-neutral-500">
+                          <div className="px-4 py-3 text-sm text-muted">
                             No se encontraron usuarios con ese criterio.
                           </div>
                         )}
@@ -1099,7 +1099,7 @@ export default function AdminControllers() {
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-400 ml-1">
+                    <label className="text-sm font-medium text-muted ml-1">
                       Ingresa el PIN del controlador
                     </label>
                     <input
@@ -1123,7 +1123,7 @@ export default function AdminControllers() {
                           : undefined
                       }
                       required
-                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                      className="mt-2 w-full bg-field border-2 border-control-border rounded-lg px-3 py-2.5 text-content outline-none focus:border-focus transition-colors"
                     />
                     <FieldError
                       error={error}
@@ -1134,20 +1134,20 @@ export default function AdminControllers() {
                 </div>
               )}
               {!selectedControllerHasOwner && selectedController?.kiln && (
-                <p className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300">
+                <p className="rounded-lg border border-control-border bg-surface-muted px-3 py-2 text-sm text-secondary">
                   Si el horno asociado está libre, también se vinculará a este
                   propietario.
                 </p>
               )}
               {selectedController?.user && (
                 <div className="flex flex-col gap-4">
-                  <p className="text-neutral-300 text-pretty">
+                  <p className="text-secondary text-pretty">
                     {selectedController?.kiln
                       ? "El usuario será desvinculado del controlador y del horno asociado."
                       : "El usuario será desvinculado del controlador."}
                   </p>
-                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                    <p className="text-sm text-neutral-300">
+                  <div className="rounded-xl border border-control-border bg-surface-hover px-4 py-3 flex flex-row flex-wrap items-center justify-between">
+                    <p className="text-sm text-secondary">
                       Propietario actual
                     </p>
                     <p className="text-base">
@@ -1160,9 +1160,9 @@ export default function AdminControllers() {
 
               {!selectedControllerHasOwner && selectedUserToLink && (
                 <>
-                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
+                  <div className="rounded-xl border border-control-border bg-surface-hover px-4 py-3 flex flex-row flex-wrap items-center justify-between">
                     <div>
-                      <p className="text-sm text-neutral-300">
+                      <p className="text-sm text-secondary">
                         Nuevo propietario
                       </p>
                       <p className="mt-1">
@@ -1172,7 +1172,7 @@ export default function AdminControllers() {
                     <button
                       type="button"
                       onClick={() => setSelectedUserToLink(null)}
-                      className="inline-flex items-center rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
+                      className="inline-flex items-center rounded-lg bg-surface-hover px-4 py-2 text-sm text-content transition-colors hover:bg-danger-soft hover:cursor-pointer hover:text-danger"
                     >
                       Quitar selección
                     </button>
@@ -1193,7 +1193,7 @@ export default function AdminControllers() {
         onConfirm={confirmDelete}
         title="¿Eliminar controlador?"
         CustomMessage={() => (
-          <p className="text-neutral-300">
+          <p className="text-secondary">
             El controlador{" "}
             <span
               title={selectedController?.controllerId}

@@ -54,22 +54,22 @@ export default function Modal({
   return (
     // Backdrop (Fondo oscuro borroso)
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-2 backdrop-blur-sm sm:p-4"
       onClick={onClose}
     >
       {/* Contenedor del Modal */}
       <div
-        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-2 border-neutral-800 bg-[#141414] shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:max-h-[calc(100dvh-2rem)]"
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-dialog animate-in fade-in zoom-in-95 duration-200 sm:max-h-[calc(100dvh-2rem)]"
         onClick={(e) => e.stopPropagation()} // Evita que clics dentro del modal lo cierren
       >
         {/* Cabecera */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-800/60 bg-[#0a0a0a]/50 px-4 py-3 sm:px-6 sm:py-4">
-          <h3 className="min-w-0 text-lg font-bold tracking-tight text-white sm:text-xl">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+          <h3 className="min-w-0 text-lg font-bold tracking-tight text-content sm:text-xl">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-white transition-colors"
+            className="text-muted hover:text-content transition-colors"
           >
             <svg
               width="20"
@@ -109,7 +109,7 @@ export default function Modal({
                   );
                   return (
                     <div key={field.name} className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-neutral-300 ml-1">
+                      <label className="text-sm font-medium text-secondary ml-1">
                         {field.label}
                       </label>
 
@@ -121,7 +121,7 @@ export default function Modal({
                           required={field.required !== false}
                           aria-invalid={hasFieldError || undefined}
                           aria-describedby={hasFieldError ? errorId : undefined}
-                          className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors appearance-none"
+                          className="w-full bg-field border border-control-border rounded-lg px-3 py-2.5 text-sm text-content outline-none focus:border-focus transition-colors appearance-none"
                         >
                           <option value="" disabled>
                             Selecciona una opción
@@ -143,7 +143,7 @@ export default function Modal({
                           aria-invalid={hasFieldError || undefined}
                           aria-describedby={hasFieldError ? errorId : undefined}
                           {...(field.inputProps || {})}
-                          className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
+                          className="mt-2 w-full bg-field border-2 border-control-border rounded-lg px-3 py-2.5 text-content outline-none focus:border-focus transition-colors"
                         />
                       )}
                       <FieldError
@@ -164,20 +164,20 @@ export default function Modal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-2.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+              className="flex-1 py-2.5 border border-control-border hover:bg-surface-hover text-secondary rounded-lg text-sm font-medium transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-red-900/20"
+              className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-on-action rounded-lg text-sm font-medium transition-colors shadow-card"
             >
               {loading ? (
                 <>
                   {/* Spinner SVG simple */}
                   <svg
-                    className="animate-spin h-4 w-4 text-white"
+                    className="animate-spin h-4 w-4"
                     fill="none"
                     viewBox="0 0 24 24"
                   >

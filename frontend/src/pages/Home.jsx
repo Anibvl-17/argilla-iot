@@ -69,7 +69,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-neutral-400">
+      <div className="py-20 text-center text-muted">
         Cargando tus hornos...
       </div>
     );
@@ -77,9 +77,9 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-900/60 bg-red-950/20 p-6 text-red-300">
+      <div className="rounded-2xl border border-danger-border bg-danger-soft p-6 text-danger">
         <h1 className="font-semibold">No pudimos cargar tus hornos</h1>
-        <p className="mt-2 text-sm text-red-200/70">{error}</p>
+        <p className="mt-2 text-sm text-danger">{error}</p>
       </div>
     );
   }
@@ -94,24 +94,24 @@ export default function Home() {
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
             Mis hornos
           </h1>
-          <p className="mt-2 text-neutral-300">
+          <p className="mt-2 text-secondary">
             Revisa el estado y la información principal de tus hornos.
           </p>
         </div>
 
         {!hasEquipment ? (
-          <div className="rounded-2xl border border-dashed border-neutral-700 bg-neutral-900/30 px-4 py-10 text-center sm:px-6 sm:py-16">
-            <LuFlame className="mx-auto mb-4 text-4xl text-neutral-600" />
+          <div className="rounded-2xl border border-dashed border-control-border bg-surface-muted px-4 py-10 text-center sm:px-6 sm:py-16">
+            <LuFlame className="mx-auto mb-4 text-4xl text-muted" />
             <h2 className="text-lg font-medium">
               Aún no tienes hornos vinculados
             </h2>
-            <p className="mt-2 text-sm text-neutral-500">
+            <p className="mt-2 text-sm text-muted">
               Cuando un horno o controlador sea asociado a tu cuenta aparecerá
               aquí.
             </p>
           </div>
         ) : data.kilns.length === 0 ? (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-6 text-neutral-400">
+          <div className="rounded-2xl border border-border bg-surface-muted p-6 text-muted">
             No tienes hornos vinculados actualmente.
           </div>
         ) : (
@@ -119,14 +119,14 @@ export default function Home() {
             {data.kilns.map((kiln) => (
               <article
                 key={kiln.kilnId}
-                className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-neutral-800 bg-[#141414] p-4 shadow-xl shadow-black/10 transition-colors hover:border-neutral-700 sm:p-6"
+                className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel  transition-colors hover:border-control-border sm:p-6"
               >
-                <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-neutral-700">
-                  <span className="rounded-xl text-neutral-400">
+                <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-border">
+                  <span className="rounded-xl text-muted">
                     {kiln.name}
                   </span>
 
-                  <span className="flex items-center justify-center gap-1 text-neutral-400">
+                  <span className="flex items-center justify-center gap-1 text-muted">
                     <LuBox />
                     {kiln.liters} litros
                   </span>
@@ -134,16 +134,16 @@ export default function Home() {
 
                 <h2 className="truncate text-center">
                   {kiln.controller ? (
-                    <span className="text-4xl/relaxed tracking-wide font-bold text-neutral-200">
+                    <span className="text-4xl/relaxed tracking-wide font-bold text-content">
                       {kiln.controller?.temp.toFixed(1)} °C
                     </span>
                   ) : (
-                    <p className="text-neutral-300">Sin controlador asociado</p>
+                    <p className="text-secondary">Sin controlador asociado</p>
                   )}
                 </h2>
 
                 {kiln.controller && (
-                  <div className="text-neutral-300/90 pb-2 border-b border-b-neutral-700">
+                  <div className="text-secondary pb-2 border-b border-b-border">
                     <div
                       className={
                         "flex flex-row items-center " +
@@ -152,7 +152,7 @@ export default function Home() {
                           : "justify-center")
                       }
                     >
-                      <p className="text-sm text-neutral-400">
+                      <p className="text-sm text-muted">
                         {getControllerConnectionLabel(
                           kiln.controller.connectionStatus,
                         )}
@@ -182,10 +182,10 @@ export default function Home() {
                           : "Requiere controlador"
                     }
                     className={
-                      "flex flex-1 items-center justify-center gap-2 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-200 transition-colors disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600 hover:cursor-pointer " +
+                      "flex flex-1 items-center justify-center gap-2 rounded-lg border border-control-border px-3 py-2.5 text-sm text-content transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-disabled hover:cursor-pointer " +
                       (kiln.controller?.operativeStatus === "ON"
-                        ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400 enabled:hover:border-red-400/60"
-                        : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400 enabled:hover:border-green-400/50")
+                        ? "enabled:hover:bg-danger-soft enabled:hover:text-accent enabled:hover:border-danger-border"
+                        : "enabled:hover:bg-success-soft enabled:hover:text-success enabled:hover:border-success-border")
                     }
                   >
                     <LuPower />
@@ -197,7 +197,7 @@ export default function Home() {
                   </button>
                   <Link
                     to={`/kilns/${kiln.kilnId}`}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-700 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-red-600"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary-hover text-on-action"
                   >
                     Ver detalles <LuMoveRight />
                   </Link>
@@ -212,7 +212,7 @@ export default function Home() {
         <section>
           <div className="mb-5">
             <h2 className="text-xl font-semibold">Controladores sin horno</h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-muted">
               Estos controladores pertenecen a tu cuenta, pero aún no están
               asociados a un horno.
             </p>
@@ -221,18 +221,18 @@ export default function Home() {
             {data.unlinkedControllers.map((controller) => (
               <article
                 key={controller.controllerCode}
-                className="min-w-0 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-5"
+                className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 font-medium">
-                    <LuRadio className="text-red-500" /> Controlador ...
+                    <LuRadio className="text-accent" /> Controlador ...
                     {controller.controllerCode}
                   </div>
                   <ControllerStatus controller={controller} />
                 </div>
                 <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <dt className="text-neutral-500">Temperatura</dt>
+                    <dt className="text-muted">Temperatura</dt>
                     <dd className="mt-1">
                       {controller.temp == null ||
                       controller.connectionStatus !== "ONLINE"
@@ -241,17 +241,17 @@ export default function Home() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-neutral-500">Switch</dt>
+                    <dt className="text-muted">Switch</dt>
                     <dd className="mt-1">
                       {SWITCH_LABELS[controller.switchType]}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-neutral-500">Capacidad</dt>
+                    <dt className="text-muted">Capacidad</dt>
                     <dd className="mt-1">{controller.switchAmps} A</dd>
                   </div>
                   <div>
-                    <dt className="text-neutral-500">Conexión</dt>
+                    <dt className="text-muted">Conexión</dt>
                     <dd className="mt-1">
                       {getControllerConnectionLabel(
                         controller.connectionStatus,

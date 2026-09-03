@@ -1,0 +1,36 @@
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app: #0a0a0a;
+  --surface: #141414;
+  --surface-muted: #0a0a0a;
+  --surface-hover: #262626;
+  --field: #0a0a0a;
+  --field-focus: #1a1a1a;
+  --content: #f5f5f5;
+  --secondary: #d4d4d4;
+  --muted: #a3a3a3;
+  --disabled: #737373;
+  --border: #303030;
+  --control-border: #737373;
+  --primary-hover: #dc2626;
+  --accent: #f87171;
+  --focus: #f87171;
+  --inverse: #e5e5e5;
+  --inverse-hover: #ffffff;
+  --on-inverse: #171717;
+  --danger: #fca5a5;
+  --danger-soft: #450a0a;
+  --danger-border: #991b1b;
+  --success: #86efac;
+  --success-soft: #052e16;
+  --success-border: #166534;
+  --info: #93c5fd;
+  --info-soft: #172554;
+  --info-border: #1e40af;
+  --warning: #fde047;
+  --warning-soft: #422006;
+  --warning-border: #854d0e;
+  --card-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+  --panel-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  --dialog-shadow: 0 20px 50px rgb(0 0 0 / 50%);
+}

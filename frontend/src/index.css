@@ -1,18 +1,6 @@
 @import "tailwindcss";
-
-html {
-  background-color: black;
-  color: #F0F0F0;
-}
-
-html,
-body,
-#root {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  overflow-x: hidden;
-}
+@import "./styles/themes/brand.css";
+@import "./styles/themes/light.css";
+@import "./styles/themes/dark.css";
+@import "./styles/themes/tokens.css";
+@import "./styles/base.css";

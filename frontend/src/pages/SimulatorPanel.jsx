@@ -297,13 +297,13 @@ export default function SimulatorPanel() {
   );
 
   return (
-    <div className="min-w-0 space-y-6 text-white">
+    <div className="min-w-0 space-y-6 text-content">
       <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Controladores en tiempo real
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-neutral-300">
+          <p className="mt-1 max-w-3xl text-sm text-secondary">
             {isAdmin
               ? "Simula todos los controladores registrados."
               : "Simula tus controladores."}
@@ -315,7 +315,7 @@ export default function SimulatorPanel() {
             type="button"
             onClick={fetchControllers}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-sm font-medium text-neutral-200 transition-colors enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-control-border bg-surface-muted px-4 py-2.5 text-sm font-medium text-content transition-colors enabled:hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LuRefreshCcw className={loading ? "animate-spin" : ""} />
             Actualizar
@@ -324,7 +324,7 @@ export default function SimulatorPanel() {
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover"
             >
               <LuPlus />
               Nuevo controlador
@@ -333,8 +333,8 @@ export default function SimulatorPanel() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-neutral-800 bg-[#141414] p-4">
-        <p className="flex flex-row items-center justify-between flex-wrap mb-3 text-sm md:text-base text-neutral-400">
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <p className="flex flex-row items-center justify-between flex-wrap mb-3 text-sm md:text-base text-muted">
           Busca por ID y filtra por conexión, operación o vínculo con horno.
           <span className="text-xs md:text-sm">
             {totalItems} controladores encontrados
@@ -343,7 +343,7 @@ export default function SimulatorPanel() {
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <label className="relative sm:col-span-2 xl:col-span-1">
             <span className="sr-only">Buscar controlador</span>
-            <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+            <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="search"
               value={searchTerm}
@@ -353,7 +353,7 @@ export default function SimulatorPanel() {
                 setSearchTerm(event.target.value);
                 setPage(1);
               }}
-              className="w-full rounded-lg border border-neutral-700 bg-[#0a0a0a] py-2.5 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-red-500"
+              className="w-full rounded-lg border border-control-border bg-field py-2.5 pl-10 pr-3 text-sm text-content outline-none transition-colors placeholder:text-muted focus:border-focus"
             />
           </label>
           <FilterSelect
@@ -428,7 +428,7 @@ export default function SimulatorPanel() {
             ))}
           </div>
           {totalPages > 1 && (
-            <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414]">
+            <div className="overflow-hidden rounded-2xl border border-border bg-surface">
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -470,7 +470,7 @@ export default function SimulatorPanel() {
           onConfirm={confirmDelete}
           title="¿Eliminar controlador?"
           CustomMessage={() => (
-            <p className="text-neutral-300">
+            <p className="text-secondary">
               El controlador{" "}
               <span
                 title={selectedController?.controllerId}
@@ -508,14 +508,14 @@ function ControllerCard({
   const canOperate = online && hasKiln && !pending;
 
   return (
-    <article className="relative min-w-0 overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] p-4 shadow-xl sm:p-5">
+    <article className="relative min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-panel sm:p-5">
       <div
         className={`absolute inset-x-0 top-0 h-0.5 ${
           on
-            ? "bg-green-500"
+            ? "bg-success"
             : online && canOperate
-              ? "bg-blue-500"
-              : "bg-neutral-700"
+              ? "bg-info"
+              : "bg-surface-hover"
         }`}
       />
 
@@ -523,17 +523,17 @@ function ControllerCard({
         <div className="min-w-0">
           <p
             title={controller.controllerId}
-            className="truncate font-mono text-sm font-bold text-red-400"
+            className="truncate font-mono text-sm font-bold text-accent"
           >
             ...{controller.controllerId.slice(-6)}
           </p>
           {hasKiln ? (
-            <p className="mt-1 text-xs font-bold text-neutral-400">
+            <p className="mt-1 text-xs font-bold text-muted">
               Vinculado a horno
             </p>
           ) : (
-            <p className="mt-1 text-xs font-bold text-neutral-400 flex flex-row items-center justify-start gap-2">
-              <LuTriangleAlert className="text-amber-400 text-base" /> No
+            <p className="mt-1 text-xs font-bold text-muted flex flex-row items-center justify-start gap-2">
+              <LuTriangleAlert className="text-warning text-base" /> No
               vinculado a horno
             </p>
           )}
@@ -561,12 +561,12 @@ function ControllerCard({
                 ? controller.temp.toFixed(1)
                 : "--"}
             </span>
-            <span className="pb-1 font-mono text-sm text-neutral-500">°C</span>
+            <span className="pb-1 font-mono text-sm text-muted">°C</span>
           </div>
         </div>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3 text-xs">
+      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface-muted p-3 text-xs">
         <InfoItem label="Switch">
           {SWITCH_LABELS[controller.switchType]}{" "}
           <span className="font-mono">{controller.switchAmps}A</span>
@@ -580,7 +580,7 @@ function ControllerCard({
                   type="button"
                   onClick={onClearPin}
                   disabled={pinPending}
-                  className="hover:cursor-pointer inline-flex rounded-full p-1 text-neutral-500 transition-colors enabled:hover:bg-red-400/10 enabled:hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="hover:cursor-pointer inline-flex rounded-full p-1 text-muted transition-colors enabled:hover:bg-danger-soft enabled:hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
                   title="Eliminar PIN"
                   aria-label={`Eliminar PIN del controlador ${controller.controllerId}`}
                 >
@@ -601,8 +601,8 @@ function ControllerCard({
       </dl>
 
       {(online || isAdmin) && (
-        <div className="mt-4 border-t border-neutral-800 pt-3">
-          <p className="text-xs text-center font-bold text-neutral-400 pb-1">
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="text-xs text-center font-bold text-muted pb-1">
             Acciones
           </p>
 
@@ -613,10 +613,10 @@ function ControllerCard({
                 onClick={onToggle}
                 disabled={!canOperate}
                 className={
-                  "inline-flex justify-center items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:bg-neutral-800 disabled:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer " +
+                  "inline-flex justify-center items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:bg-surface-hover disabled:text-disabled disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer " +
                   (on
-                    ? "bg-red-500/10 text-red-300 enabled:hover:bg-red-500/20 "
-                    : "bg-green-500/10 text-green-300 enabled:hover:bg-green-500/20 ") +
+                    ? "bg-danger-soft text-danger enabled:hover:bg-danger-soft enabled:hover:brightness-95 "
+                    : "bg-success-soft text-success enabled:hover:bg-success-soft enabled:hover:brightness-95 ") +
                   (!hasKiln ? "col-span-1" : "col-span-2")
                 }
               >
@@ -628,7 +628,7 @@ function ControllerCard({
                   type="button"
                   onClick={onGeneratePin}
                   disabled={pinPending}
-                  className="inline-flex justify-center items-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors enabled:hover:bg-blue-400/10 enabled:hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
+                  className="inline-flex justify-center items-center gap-1.5 rounded-lg bg-surface-hover px-3 py-2 text-xs font-medium text-secondary transition-colors enabled:hover:bg-info-soft enabled:hover:text-info disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
                   title="Generar PIN"
                 >
                   {pinPending ? "Generando..." : "Generar PIN"}
@@ -642,7 +642,7 @@ function ControllerCard({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors hover:bg-blue-400/10 hover:text-blue-300 hover:cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-surface-hover px-3 py-2 text-xs font-medium text-secondary transition-colors hover:bg-info-soft hover:text-info hover:cursor-pointer"
                 title="Editar controlador"
               >
                 Editar
@@ -650,7 +650,7 @@ function ControllerCard({
               <button
                 type="button"
                 onClick={onDelete}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors hover:bg-red-400/10 hover:text-red-400 hover:cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-surface-hover px-3 py-2 text-xs font-medium text-secondary transition-colors hover:bg-danger-soft hover:text-accent hover:cursor-pointer"
                 title="Eliminar controlador"
               >
                 Eliminar
@@ -666,8 +666,8 @@ function ControllerCard({
 function InfoItem({ label, children }) {
   return (
     <div className="min-w-0">
-      <dt className="font-bold text-neutral-500">{label}</dt>
-      <dd className="mt-1 wrap-break-word text-neutral-200">{children}</dd>
+      <dt className="font-bold text-muted">{label}</dt>
+      <dd className="mt-1 wrap-break-word text-content">{children}</dd>
     </div>
   );
 }
@@ -679,7 +679,7 @@ function FilterSelect({ label, value, onChange, options }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-neutral-700 bg-[#0a0a0a] px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-red-500"
+        className="w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-sm text-content outline-none transition-colors focus:border-focus"
       >
         <option value="">{label}: Todos</option>
         {options.map(([optionValue, optionLabel]) => (
@@ -698,7 +698,7 @@ function LoadingState() {
       {[1, 2, 3].map((item) => (
         <div
           key={item}
-          className="h-72 animate-pulse rounded-2xl border border-neutral-800 bg-[#141414]"
+          className="h-72 animate-pulse rounded-2xl border border-border bg-surface"
         />
       ))}
     </div>
@@ -707,12 +707,12 @@ function LoadingState() {
 
 function ErrorState({ message, onRetry }) {
   return (
-    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center">
-      <p className="text-sm text-red-300">{message}</p>
+    <div className="rounded-2xl border border-danger-border bg-danger-soft p-6 text-center">
+      <p className="text-sm text-danger">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+        className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover"
       >
         <LuRefreshCcw />
         Reintentar
@@ -723,11 +723,11 @@ function ErrorState({ message, onRetry }) {
 
 function EmptyState({ isAdmin, onCreate }) {
   return (
-    <div className="rounded-2xl border border-neutral-800 bg-[#141414] p-6 text-center sm:p-10">
-      <p className="text-lg font-semibold text-white">
+    <div className="rounded-2xl border border-border bg-surface p-6 text-center sm:p-10">
+      <p className="text-lg font-semibold text-content">
         No hay controladores para mostrar
       </p>
-      <p className="mx-auto mt-2 max-w-xl text-sm text-neutral-400">
+      <p className="mx-auto mt-2 max-w-xl text-sm text-muted">
         {isAdmin
           ? "Crea un controlador para comenzar a monitorearlo desde el simulador."
           : "Cuando tengas controladores asociados a tu cuenta aparecerán aquí automáticamente."}
@@ -736,7 +736,7 @@ function EmptyState({ isAdmin, onCreate }) {
         <button
           type="button"
           onClick={onCreate}
-          className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover"
         >
           <LuPlus />
           Crear controlador
@@ -748,9 +748,9 @@ function EmptyState({ isAdmin, onCreate }) {
 
 function FilteredEmptyState() {
   return (
-    <div className="rounded-2xl border border-neutral-800 bg-[#141414] p-8 text-center">
-      <p className="font-semibold text-white">No hay coincidencias</p>
-      <p className="mt-2 text-sm text-neutral-400">
+    <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+      <p className="font-semibold text-content">No hay coincidencias</p>
+      <p className="mt-2 text-sm text-muted">
         Ajusta la búsqueda o los filtros para ver otros controladores.
       </p>
     </div>

@@ -33,13 +33,13 @@ import { toast } from "sonner";
 
 function Detail({ label, value, canCopy }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
-      <dt className="text-sm font-medium text-neutral-400">{label}</dt>
-      <dd className="flex items-center gap-2 mt-1 font-medium text-neutral-100">
+    <div className="rounded-xl border border-border bg-surface-muted p-4">
+      <dt className="text-sm font-medium text-muted">{label}</dt>
+      <dd className="flex items-center gap-2 mt-1 font-medium text-content">
         {value}
         {canCopy && (
           <button
-            className="text-sm hover:cursor-pointer hover:text-red-400"
+            className="text-sm hover:cursor-pointer hover:text-accent"
             title="Copiar ID"
             onClick={() => {
               navigator.clipboard.writeText(value.slice(3));
@@ -158,18 +158,18 @@ export default function KilnDetails() {
 
   if (loading)
     return (
-      <div className="py-20 text-center text-neutral-400">
+      <div className="py-20 text-center text-muted">
         Cargando horno...
       </div>
     );
   if (error || !kiln)
     return (
-      <div className="mx-auto max-w-3xl rounded-2xl border border-red-900/60 bg-red-950/20 p-6">
-        <h1 className="font-semibold text-red-300">Horno no encontrado</h1>
-        <p className="mt-2 text-sm text-red-200/70">{error}</p>
+      <div className="mx-auto max-w-3xl rounded-2xl border border-danger-border bg-danger-soft p-6">
+        <h1 className="font-semibold text-danger">Horno no encontrado</h1>
+        <p className="mt-2 text-sm text-danger">{error}</p>
         <Link
           to="/kilns"
-          className="mt-5 inline-flex items-center gap-2 text-sm text-white"
+          className="mt-5 inline-flex items-center gap-2 text-sm text-content"
         >
           <LuArrowLeft /> Volver a mis hornos
         </Link>
@@ -183,13 +183,13 @@ export default function KilnDetails() {
     <div className="mx-auto w-full max-w-7xl">
       <Link
         to="/kilns"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-content"
       >
         <LuArrowLeft /> Volver a mis hornos
       </Link>
       <div className="flex min-w-0 flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-500">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">
             Detalle del horno
           </p>
           {editing ? (
@@ -212,11 +212,11 @@ export default function KilnDetails() {
                   minLength={2}
                   maxLength={100}
                   required
-                  className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-[#0a0a0a] px-3 py-2 text-xl font-semibold outline-none focus:border-red-600"
+                  className="min-w-0 flex-1 rounded-lg border border-control-border bg-field px-3 py-2 text-xl font-semibold outline-none focus:border-focus"
                 />
                 <button
                   disabled={saving}
-                  className="rounded-lg bg-red-700 px-3 text-white hover:bg-red-600"
+                  className="rounded-lg bg-primary px-3 text-on-action hover:bg-primary-hover"
                   title="Guardar"
                 >
                   <LuSave />
@@ -228,7 +228,7 @@ export default function KilnDetails() {
                     setName(kiln.name);
                     setFormError(null);
                   }}
-                  className="rounded-lg border border-neutral-700 px-3 text-neutral-300 hover:bg-neutral-800"
+                  className="rounded-lg border border-control-border px-3 text-secondary hover:bg-surface-hover"
                   title="Cancelar"
                 >
                   <LuX />
@@ -244,7 +244,7 @@ export default function KilnDetails() {
               </h1>
               <button
                 onClick={() => setEditing(true)}
-                className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+                className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content"
                 title="Editar nombre"
               >
                 <LuPencil />
@@ -255,7 +255,7 @@ export default function KilnDetails() {
         <ControllerStatus controller={controller} />
       </div>
 
-      <section className="mt-8 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-6">
+      <section className="mt-8 rounded-2xl border border-border bg-surface p-4 sm:p-6">
         <h2 className="text-lg font-semibold">Información del horno</h2>
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Detail label="Capacidad" value={`${kiln.liters} litros`} />
@@ -268,14 +268,14 @@ export default function KilnDetails() {
         </dl>
       </section>
 
-      <section className="mt-5 rounded-2xl border border-neutral-800 bg-[#141414] p-4 sm:p-6">
+      <section className="mt-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-950/50 text-red-500">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-soft text-accent">
             <LuCircuitBoard />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Controlador</h2>
-            <p className="text-sm font-medium text-neutral-400">
+            <p className="text-sm font-medium text-muted">
               Información técnica y estado actual
             </p>
           </div>
@@ -317,13 +317,13 @@ export default function KilnDetails() {
                 value={`${controller.switchAmps} A`}
               />
             </dl>
-            <div className="mt-6 flex flex-col gap-3 border-t border-neutral-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-neutral-100">
+                <h3 className="text-sm font-semibold text-content">
                   Control del switch
                 </h3>
                 {commandError && (
-                  <p className="mt-1 text-sm text-red-400">{commandError}</p>
+                  <p className="mt-1 text-sm text-accent">{commandError}</p>
                 )}
               </div>
               <div className="flex gap-2">
@@ -335,10 +335,10 @@ export default function KilnDetails() {
                   }
                   onClick={() => handleCommand(nextCommand)}
                   className={
-                    "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 " +
+                    "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-on-action transition-colors disabled:cursor-not-allowed disabled:opacity-60 " +
                     (nextCommand === "ON"
-                      ? "bg-green-700 enabled:hover:bg-green-600"
-                      : "bg-red-700 enabled:hover:bg-red-600")
+                      ? "bg-success-action enabled:hover:bg-success-action-hover text-on-action"
+                      : "bg-primary enabled:hover:bg-primary-hover text-on-action")
                   }
                 >
                   <LuPower />
@@ -352,22 +352,22 @@ export default function KilnDetails() {
             </div>
           </>
         ) : (
-          <div className="mt-5 rounded-xl border border-dashed border-neutral-700 p-8 text-center font-medium text-neutral-500">
+          <div className="mt-5 rounded-xl border border-dashed border-control-border p-8 text-center font-medium text-muted">
             Este horno no tiene un controlador vinculado.
           </div>
         )}
       </section>
 
-      <section className="mt-5 rounded-2xl border border-neutral-800 bg-[#141414]">
-        <div className="flex flex-col gap-1 border-b border-neutral-800 p-4 sm:p-6">
+      <section className="mt-5 rounded-2xl border border-border bg-surface">
+        <div className="flex flex-col gap-1 border-b border-border p-4 sm:p-6">
           <h2 className="text-lg font-semibold">Historial de temperatura</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-muted">
             Registros guardados por muestreo de telemetría.
           </p>
         </div>
         <div className="overflow-auto">
           <table className="w-full min-w-120 text-left text-sm">
-            <thead className="border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
+            <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium sm:px-6">Fecha</th>
                 <th className="px-4 py-3 text-center font-medium sm:px-6">
@@ -378,17 +378,17 @@ export default function KilnDetails() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {telemetry.length > 0 ? (
                 telemetry.map((item) => (
                   <tr key={item.telemetryId}>
-                    <td className="px-4 py-3 text-neutral-300 sm:px-6">
+                    <td className="px-4 py-3 text-secondary sm:px-6">
                       {new Date(item.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-center font-mono text-neutral-200 sm:px-6">
+                    <td className="px-4 py-3 text-center font-mono text-content sm:px-6">
                       {item.temperature.toFixed(1)} °C
                     </td>
-                    <td className="px-4 py-3 text-center text-neutral-300 sm:px-6">
+                    <td className="px-4 py-3 text-center text-secondary sm:px-6">
                       {item.switchState ? "Encendido" : "Apagado"}
                     </td>
                   </tr>
@@ -397,7 +397,7 @@ export default function KilnDetails() {
                 <tr>
                   <td
                     colSpan="3"
-                    className="px-6 py-10 text-center text-neutral-500"
+                    className="px-6 py-10 text-center text-muted"
                   >
                     {telemetryLoading
                       ? "Cargando telemetría..."

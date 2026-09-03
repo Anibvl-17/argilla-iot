@@ -1,0 +1,28 @@
+@layer base {
+  html {
+    background-color: var(--app);
+    color: var(--content);
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  :where(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  :where(input, textarea)::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+}

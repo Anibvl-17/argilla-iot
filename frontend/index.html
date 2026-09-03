@@ -1,9 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        let theme = "light";
+        try {
+          if (localStorage.getItem("argilla-theme") === "dark") theme = "dark";
+        } catch {
+          // Storage puede estar bloqueado; se mantiene por defecto claro.
+        }
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <title>Argilla Hornos</title>
 
     <!-- Pinyon Script -->

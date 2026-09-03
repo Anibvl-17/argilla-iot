@@ -12,7 +12,7 @@ export default function FieldError({ error, field = null, id }) {
       {messages.map((item, index) => (
         <p
           key={`${item.field || "general"}-${index}`}
-          className="text-sm font-medium text-amber-400"
+          className="text-sm font-medium text-warning"
         >
           {item.message}
         </p>

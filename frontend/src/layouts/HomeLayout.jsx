@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { SidebarItem } from "@components/SidebarItem";
 import ProfileModal from "@components/ProfileModal";
+import ThemeToggle from "@components/ThemeToggle";
 import argillaIcon from "@assets/argilla-icon-light.png";
 import {
   LuChartNoAxesCombined,
@@ -19,16 +20,16 @@ export default function HomeLayout() {
   const userRole = user.role;
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-[#0a0a0a] font-sans text-white xl:flex-row">
+    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-app font-sans text-content xl:flex-row">
       {/* Sidebar */}
-      <aside className="flex w-full shrink-0 flex-col border-b border-neutral-800 bg-[#141414] xl:w-64 xl:border-b-0 xl:border-r">
+      <aside className="flex w-full shrink-0 flex-col border-b border-nav-border bg-nav text-nav-content xl:w-64 xl:border-b-0 xl:border-r">
         {/* Logo*/}
         <div className="hidden h-14 shrink-0 items-center gap-3 px-3 sm:h-16 sm:px-4 xl:flex xl:h-20 xl:px-6">
           <div className="w-8 h-8 rounded-full flex items-center justify-center">
             <img src={argillaIcon} alt="Logo" />
           </div>
           <p className="hidden font-[Pinyon_Script] text-2xl sm:block">
-            <span className="text-red-500">a</span>rgilla
+            <span className="text-nav-accent">a</span>rgilla
           </p>
         </div>
 
@@ -70,25 +71,29 @@ export default function HomeLayout() {
 
       {/* Vista central */}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:h-dvh">
-        <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-neutral-800 px-3 py-2 sm:px-4 md:min-h-20 md:px-8">
+        <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-3 py-2 sm:px-4 md:min-h-20 md:px-8">
           <h2 className="min-w-0 truncate text-base font-semibold sm:text-xl">
             {user.role === "ADMIN" ? (
               "Panel Administrativo"
             ) : (
               <>
                 Hola,{" "}
-                <span className="text-red-500 text-shadow-sm">{user.name}</span>
+                <span className="text-accent">{user.name}</span>
               </>
             )}
           </h2>
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen(true)}
-            className="flex items-center gap-2 rounded-md border border-neutral-700/80 bg-neutral-900 px-3 py-2 text-sm transition-colors hover:bg-neutral-800 sm:px-4 hover:cursor-pointer"
-          >
-            <LuUser className="text-lg" />
-            <span className="hidden sm:inline">Mi perfil</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(true)}
+              className="flex items-center gap-2 rounded-md border border-control-border bg-surface px-3 py-2 text-sm transition-colors hover:bg-surface-hover sm:px-4 hover:cursor-pointer"
+              aria-label="Mi perfil"
+            >
+              <LuUser className="text-lg" />
+              <span className="hidden sm:inline">Mi perfil</span>
+            </button>
+          </div>
         </header>
 
         {/* Area de contenido */}

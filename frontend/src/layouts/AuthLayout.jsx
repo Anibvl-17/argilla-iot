@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
-import argillaIcon from "@assets/argilla-icon-light.png";
+import argillaIconLight from "@assets/argilla-icon-light.png";
+import argillaIconDark from "@assets/argilla-icon.png";
+import ThemeToggle from "@components/ThemeToggle";
+import { useTheme } from "@context/ThemeContext";
 import kiln from "@assets/kiln-illustration.webp";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 
 const AuthLayout = () => {
+  const { theme } = useTheme();
   const [mode, setMode] = useState("login");
 
   const renderDecorativeSquares = (prefix) => {
@@ -27,27 +31,33 @@ const AuthLayout = () => {
   return (
     <main className="flex min-h-dvh w-full min-w-0 overflow-x-hidden font-sans">
       {/* Columna izquierda */}
-      <section className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-[#0a0a0a] px-4 py-5 text-white not-lg:bg-linear-to-b not-lg:from-red-700/30 not-lg:to-30% not-lg:to-[#0a0a0a] sm:px-10 sm:py-8 md:px-16 lg:w-1/2 lg:px-12 xl:px-24">
+      <section className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-app px-4 py-5 text-content sm:px-10 sm:py-8 md:px-16 lg:w-1/2 lg:px-12 xl:px-24">
         {/* Logo */}
-        <div className="mb-8 flex shrink-0 items-center gap-3 sm:mb-12 lg:mb-4 2xl:absolute 2xl:left-12 2xl:top-8">
-          <div className="not-lg:hidden w-10 h-10 rounded-full flex items-center justify-center">
-            <img src={argillaIcon} />
+        <header className="mb-8 flex shrink-0 items-center justify-between gap-3 sm:mb-12 lg:mb-4">
+          <div className="flex items-center gap-3">
+            <div className="hidden h-10 w-10 items-center justify-center sm:flex">
+              <img
+                src={theme === "light" ? argillaIconDark : argillaIconLight}
+                alt="Logo de Argillá"
+              />
+            </div>
+            <p className="font-[Pinyon_Script] text-3xl">
+              <span className="text-accent">a</span>rgilla
+            </p>
           </div>
-          <p className="font-[Pinyon_Script] text-3xl not-lg:m-auto">
-            <span className="text-red-500">a</span>rgilla
-          </p>
-        </div>
+          <ThemeToggle />
+        </header>
 
         {/* Contenedor formulario */}
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-2 sm:py-4">
           {mode === "login" ? <Login /> : <Register setMode={setMode} />}
-          <p className="mt-6 text-center text-neutral-400 sm:mt-8">
+          <p className="mt-6 text-center text-muted sm:mt-8">
             {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
             <button
               onClick={() =>
                 mode === "login" ? setMode("register") : setMode("login")
               }
-              className="text-neutral-300 underline hover:text-red-400 transition-colors"
+              className="text-secondary underline hover:text-accent transition-colors"
             >
               {mode === "login" ? "Crea una cuenta" : "Inicia sesión"}
             </button>
@@ -56,7 +66,7 @@ const AuthLayout = () => {
       </section>
 
       {/* Columna derecha, visible en pantallas grandes */}
-      <section className="relative hidden overflow-hidden bg-[#450a0a] lg:flex lg:w-1/2 lg:items-center lg:justify-center [@media(max-height:699px)]:hidden">
+      <section className="relative hidden overflow-hidden bg-[#450a0a] text-white lg:flex lg:w-1/2 lg:items-center lg:justify-center [@media(max-height:699px)]:hidden">
         {/* Decoraciones superior derecho */}
         <div className="absolute top-0 right-0 p-12 flex flex-wrap gap-3 w-48 justify-end opacity-40">
           {topSquares}

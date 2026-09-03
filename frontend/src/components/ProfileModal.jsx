@@ -94,7 +94,7 @@ export default function ProfileModal({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-2 backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -103,18 +103,18 @@ export default function ProfileModal({ onClose }) {
       <section
         aria-labelledby="profile-modal-title"
         aria-modal="true"
-        className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-neutral-800 bg-[#141414] shadow-2xl sm:max-h-[calc(100dvh-2rem)]"
+        className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-border bg-surface shadow-dialog sm:max-h-[calc(100dvh-2rem)]"
         role="dialog"
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-800/60 bg-[#0a0a0a] px-4 py-3 sm:px-6 sm:py-4">
-          <h3 id="profile-modal-title" className="text-xl font-bold text-white">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+          <h3 id="profile-modal-title" className="text-xl font-bold text-content">
             Mi perfil
           </h3>
           <button
             type="button"
             aria-label="Cerrar modal"
             onClick={onClose}
-            className="rounded-md p-1 text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-white"
+            className="rounded-md p-1 text-muted transition-colors hover:bg-surface-hover hover:text-content"
           >
             <svg
               width="20"
@@ -131,48 +131,48 @@ export default function ProfileModal({ onClose }) {
 
         <div className="p-4 sm:p-6">
           {loadingProfile && (
-            <p className="py-8 text-center text-sm text-neutral-400">
+            <p className="py-8 text-center text-sm text-muted">
               Cargando perfil...
             </p>
           )}
 
           {!loadingProfile && profile && (
             <>
-              <dl className="flex flex-col gap-6 rounded-xl border border-neutral-800 bg-[#0a0a0a] p-4">
+              <dl className="flex flex-col gap-6 rounded-xl border border-border bg-surface-muted p-4">
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
                     Nombre
                   </dt>
-                  <dd className="mt-1 wrap-break-word text-neutral-100">
+                  <dd className="mt-1 wrap-break-word text-content">
                     {profile.name}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
                     Email
                   </dt>
-                  <dd className="mt-1 wrap-break-word text-neutral-100">
+                  <dd className="mt-1 wrap-break-word text-content">
                     {profile.email}
                   </dd>
                 </div>
                 <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
                     Cuenta creada
                   </dt>
-                  <dd className="mt-1 wrap-break-word text-neutral-100">
+                  <dd className="mt-1 wrap-break-word text-content">
                     {formattedDate}
                   </dd>
                 </div>
               </dl>
 
               <form onSubmit={handleSubmit} className="mt-4 pt-2 space-y-4">
-                <h4 className="font-semibold text-white">Cambiar contraseña</h4>
+                <h4 className="font-semibold text-content">Cambiar contraseña</h4>
 
-                <label className="block font-medium text-sm text-neutral-400">
+                <label className="block font-medium text-sm text-muted">
                   Contraseña actual
                   <input
                     autoComplete="current-password"
-                    className="mt-2 w-full rounded-lg border-2 border-neutral-700 bg-[#0a0a0a] px-3 py-2.5 text-white outline-none transition-colors focus:border-red-600"
+                    className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none transition-colors focus:border-focus"
                     minLength={6}
                     name="currentPassword"
                     onChange={handlePasswordChange}
@@ -196,11 +196,11 @@ export default function ProfileModal({ onClose }) {
                   />
                 </label>
 
-                <label className="block font-medium text-sm text-neutral-400">
+                <label className="block font-medium text-sm text-muted">
                   Nueva contraseña
                   <input
                     autoComplete="new-password"
-                    className="mt-2 w-full rounded-lg border-2 border-neutral-700 bg-[#0a0a0a] px-3 py-2.5 text-white outline-none transition-colors focus:border-red-600"
+                    className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none transition-colors focus:border-focus"
                     minLength={6}
                     name="newPassword"
                     onChange={handlePasswordChange}
@@ -228,7 +228,7 @@ export default function ProfileModal({ onClose }) {
                 <button
                   type="submit"
                   disabled={savingPassword || loggingOut}
-                  className="w-full rounded-lg bg-red-700 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {savingPassword ? "Guardando..." : "Cambiar contraseña"}
                 </button>
@@ -238,19 +238,19 @@ export default function ProfileModal({ onClose }) {
 
           {!loadingProfile && !profile && profileError && (
             <p
-              className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+              className="rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-accent"
               role="alert"
             >
               {profileError}
             </p>
           )}
 
-          <div className="mt-6 border-t border-neutral-800 pt-5">
+          <div className="mt-6 border-t border-border pt-5">
             <button
               type="button"
               disabled={loggingOut || savingPassword}
               onClick={handleLogout}
-              className="w-full rounded-lg border border-neutral-700 py-2.5 text-sm font-medium text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg border border-control-border py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover hover:text-content disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loggingOut ? "Cerrando sesión..." : "Cerrar sesión"}
             </button>
