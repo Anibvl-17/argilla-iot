@@ -200,10 +200,6 @@ class ControllerSimulator {
           );
           return;
         }
-
-        console.log(
-          `[SIM:${this.controllerId.slice(-6)}] Temp ${payload.value}°C (relay: ${this.relayState})`,
-        );
       },
     );
   }
