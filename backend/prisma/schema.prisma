@@ -62,13 +62,15 @@ enum SwitchType {
 }
 
 model User {
-  userId       Int      @id @default(autoincrement())
-  email        String   @unique
+  userId       Int       @id @default(autoincrement())
+  email        String    @unique
   passwordHash String
   name         String
   phone        String?
-  role         UserRole @default(CLIENT)
-  createdAt    DateTime @default(now())
+  role         UserRole  @default(CLIENT)
+  createdAt    DateTime  @default(now())
+  isActive     Boolean   @default(true)
+  anonymizedAt DateTime?
 
   programs                    Program[]
   controllers                 Controller[]
@@ -99,6 +101,8 @@ model Controller {
   deviceSecretHash      String
   pairingPinHash        String?
   pairingPinExpiresAt   DateTime?
+  pairingFailedAttempts Int                      @default(0)
+  pairingBlockedUntil   DateTime?
   temperature           Float?
   operationalStatus     OperationalStatus        @default(OPERATIONAL)
   connectionStatus      ConnectionStatus         @default(OFFLINE)
@@ -130,7 +134,7 @@ model Kiln {
   deliveredAt                 DateTime?
   operationalStatus           OperationalStatus @default(OPERATIONAL)
   manufacturer                String            @default("Argillá")
-  heatingCircuitConfiguration Json              @default("{\"type\":\"ROOT\",\"connectionType\":\"PARALLEL\",\"elements\":[]}") @db.JsonB
+  heatingCircuitConfiguration Json              @db.JsonB
 
   user               User?               @relation(fields: [userId], references: [userId], onDelete: SetNull)
   controller         Controller?         @relation(fields: [controllerId], references: [controllerId], onDelete: SetNull)
