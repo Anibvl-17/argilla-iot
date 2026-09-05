@@ -4,6 +4,9 @@ import { prisma } from "../config/prisma.js";
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
 const MQTT_USER = process.env.MQTT_USER || "";
 const MQTT_PASS = process.env.MQTT_PASS || "";
+const SEED_DEVICE_SECRET =
+  process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
+const SIMULATOR_PAIRING_PIN = process.env.SIMULATOR_PAIRING_PIN || "";
 
 const TEMP_INTERVAL_MS = parsePositiveInt(
   process.env.SIMULATOR_TEMP_INTERVAL_MS,
@@ -63,6 +66,8 @@ class ControllerSimulator {
       cmd: `controller/${this.controllerId}/cmd`,
       status: `controller/${this.controllerId}/status`,
       state: `controller/${this.controllerId}/state`,
+      pairingPin: `controller/${this.controllerId}/pairing-pin`,
+      pairingStatus: `controller/${this.controllerId}/pairing-status`,
     };
 
     this.client = mqtt.connect(MQTT_URL, {
@@ -98,11 +103,22 @@ class ControllerSimulator {
           );
         }
       });
+      this.client.subscribe(this.topics.pairingStatus, { qos: 1 });
+      if (/^\d{6}$/.test(SIMULATOR_PAIRING_PIN)) this.publishPairingPin();
 
       this.startTemperatureLoop();
     });
 
     this.client.on("message", (topic, payloadBuffer) => {
+      if (topic === this.topics.pairingStatus) {
+        try {
+          const status = JSON.parse(payloadBuffer.toString());
+          console.log(`[SIM:${this.controllerId.slice(-6)}] Pairing -> ${status.status}`);
+        } catch {
+          console.warn(`[SIM:${this.controllerId.slice(-6)}] Respuesta de pairing inválida`);
+        }
+        return;
+      }
       if (topic !== this.topics.cmd) return;
 
       const command = parseCommand(payloadBuffer);
@@ -199,6 +215,17 @@ class ControllerSimulator {
           return;
         }
       },
+    );
+  }
+
+  publishPairingPin() {
+    this.client.publish(
+      this.topics.pairingPin,
+      JSON.stringify({
+        pin: SIMULATOR_PAIRING_PIN,
+        deviceSecret: `${SEED_DEVICE_SECRET}:${this.controllerId}`,
+      }),
+      { qos: 1, retain: false },
     );
   }
 

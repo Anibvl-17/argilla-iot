@@ -1,0 +1,56 @@
+const relayStateByController = new Map();
+
+export function setSwitchState(controllerId, switchState) {
+  const normalized = String(switchState || "").toUpperCase();
+  if (normalized === "ON" || normalized === "OFF") {
+    relayStateByController.set(controllerId, normalized === "ON");
+  }
+}
+
+export function getSwitchState(controllerId) {
+  return relayStateByController.get(controllerId) ?? false;
+}
+
+export function clearSwitchState(controllerId) {
+  relayStateByController.delete(controllerId);
+}
+
+export function presentUser(user) {
+  if (!user) return user;
+  const { passwordHash: _passwordHash, ...safeUser } = user;
+  return safeUser;
+}
+
+export function presentController(controller, { hideControllerId = false } = {}) {
+  if (!controller) return controller;
+
+  const {
+    deviceSecretHash: _deviceSecretHash,
+    pairingPinHash: _pairingPinHash,
+    controllerId,
+    user,
+    kiln,
+    ...safeController
+  } = controller;
+
+  return {
+    ...safeController,
+    ...(hideControllerId ? {} : { controllerId }),
+    controllerCode: controllerId.slice(-6),
+    switchState: getSwitchState(controllerId),
+    ...(user === undefined ? {} : { user: presentUser(user) }),
+    ...(kiln === undefined ? {} : { kiln: presentKiln(kiln) }),
+  };
+}
+
+export function presentKiln(kiln) {
+  if (!kiln) return kiln;
+  const { controller, user, ...safeKiln } = kiln;
+  return {
+    ...safeKiln,
+    ...(controller === undefined
+      ? {}
+      : { controller: presentController(controller) }),
+    ...(user === undefined ? {} : { user: presentUser(user) }),
+  };
+}

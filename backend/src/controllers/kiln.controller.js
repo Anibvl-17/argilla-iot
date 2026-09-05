@@ -12,7 +12,6 @@ import {
   getOwnedKilnTelemetry,
   getAdminKilnById,
   getAdminKilnTelemetry,
-  renameUserKiln,
   linkControllerToKiln,
   linkUserToKiln,
   remove,
@@ -68,30 +67,6 @@ export async function getUserKiln(req, res) {
     return handleSuccess(res, 200, "Horno obtenido exitosamente", kiln);
   } catch (error) {
     return handleErrorServer(res, 500, "Error al obtener horno", error.message);
-  }
-}
-
-export async function renameOwnedKiln(req, res) {
-  try {
-    const kilnId = Number(req.params.kilnId);
-    if (!Number.isInteger(kilnId) || kilnId < 1) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    const kiln = await renameUserKiln(req.user.id, kilnId, req.body.name);
-
-    if (!kiln) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    return handleSuccess(res, 200, "Nombre actualizado exitosamente", kiln);
-  } catch (error) {
-    return handleErrorServer(
-      res,
-      500,
-      "Error al actualizar nombre del horno",
-      error.message,
-    );
   }
 }
 
@@ -238,26 +213,11 @@ export async function getAdminKilnTelemetryHistory(req, res) {
 export async function linkController(req, res) {
   try {
     const { kilnId } = req.params;
-    const { partialControllerId, pin } = req.body;
-
-    if (!pin) {
-      return handleErrorClient(res, 400, "El PIN es requerido", null, "pin");
-    }
-
-    if (!partialControllerId) {
-      return handleErrorClient(
-        res,
-        400,
-        "El ID del controlador es requerido",
-        null,
-        "partialControllerId",
-      );
-    }
+    const { controllerId } = req.body;
 
     const updatedKiln = await linkControllerToKiln(
       parseInt(kilnId),
-      partialControllerId,
-      pin,
+      controllerId,
     );
     void emitAdminSummary();
 
@@ -268,15 +228,12 @@ export async function linkController(req, res) {
       updatedKiln,
     );
   } catch (error) {
-    const field = /pin|credencial/i.test(error.message)
-      ? "pin"
-      : "partialControllerId";
     return handleErrorClient(
       res,
-      400,
+      409,
       "No se pudo vincular el controlador",
       error.message,
-      field,
+      "controllerId",
     );
   }
 }
@@ -350,9 +307,7 @@ export async function linkUser(req, res) {
 export async function unlinkUser(req, res) {
   try {
     const { kilnId } = req.params;
-    const { userId } = req.body;
-
-    await unlinkUserFromKiln(parseInt(userId), parseInt(kilnId));
+    await unlinkUserFromKiln(parseInt(kilnId));
     void emitAdminSummary();
 
     return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
@@ -381,7 +336,7 @@ export async function editKiln(req, res) {
     );
   } catch (error) {
     if (error.code === "INCOMPATIBLE_CONTROLLER_AMPERAGE") {
-      return handleErrorClient(res, 409, error.message, null, "amps");
+      return handleErrorClient(res, 409, error.message, null, "nominalCurrent");
     }
 
     if (error.code === "P2025") {
@@ -406,6 +361,9 @@ export async function removeKiln(req, res) {
 
     return handleSuccess(res, 200, "Horno eliminado exitosamente");
   } catch (error) {
+    if (error.code === "P2003") {
+      return handleErrorClient(res, 409, "El horno conserva información histórica");
+    }
     return handleErrorServer(
       res,
       500,

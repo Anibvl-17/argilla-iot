@@ -4,14 +4,15 @@ import {
   handleSuccess,
 } from "../handlers/response.handler.js";
 import {
-  changeUserPassword,
+  anonymizeUser,
   createUser,
-  deleteUser,
   getUserProfile,
+  setUserActive,
+  updateOwnProfile,
   updateUser,
   getUsersPage,
 } from "../services/user.service.js";
-import { emitAdminSummary } from "../realtime/socket.js";
+import { disconnectUserSockets, emitAdminSummary } from "../realtime/socket.js";
 
 export async function addUser(req, res) {
   try {
@@ -44,13 +45,7 @@ export async function addUser(req, res) {
 export async function editProfile(req, res) {
   try {
     const userId = req.user.id;
-    const { currentPassword, newPassword } = req.body;
-
-    const updatedUser = await changeUserPassword(
-      userId,
-      currentPassword,
-      newPassword,
-    );
+    const updatedUser = await updateOwnProfile(userId, req.body);
 
     return handleSuccess(
       res,
@@ -137,6 +132,10 @@ export async function editUser(req, res) {
       return handleErrorClient(res, 404, "Usuario no encontrado");
     }
 
+    if (["USER_ANONYMIZED", "LAST_ACTIVE_ADMIN"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
+    }
+
     return handleErrorServer(
       res,
       500,
@@ -159,13 +158,18 @@ export async function removeUser(req, res) {
       );
     }
 
-    await deleteUser(parseInt(userId));
+    const user = await anonymizeUser(parseInt(userId), currentUserId);
+    disconnectUserSockets(Number(userId));
     void emitAdminSummary();
 
-    return handleSuccess(res, 200, "Usuario eliminado exitosamente");
+    return handleSuccess(res, 200, "Usuario anonimizado exitosamente", user);
   } catch (error) {
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Usuario no encontrado");
+    }
+
+    if (["SELF_ANONYMIZATION", "LAST_ACTIVE_ADMIN"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
     }
 
     return handleErrorServer(
@@ -179,7 +183,10 @@ export async function removeUser(req, res) {
 
 export async function getAllUsers(req, res) {
   try {
-    const users = await getUsersPage(req.query);
+    const users = await getUsersPage({
+      ...req.query,
+      roleFilter: req.user.role === "TECHNICIAN" ? "CLIENT" : undefined,
+    });
 
     // Implementado solo en caso excepcional. En la práctica no debería ocurrir
     // Siempre existe al menos admin en base de datos
@@ -191,5 +198,29 @@ export async function getAllUsers(req, res) {
       "Error al obtener todos los usuarios",
       error.message,
     );
+  }
+}
+
+export async function changeUserStatus(req, res) {
+  try {
+    const user = await setUserActive(
+      Number(req.params.userId),
+      req.body.isActive,
+      req.user.id,
+    );
+    if (!user.isActive) disconnectUserSockets(Number(req.params.userId));
+    void emitAdminSummary();
+    return handleSuccess(
+      res,
+      200,
+      user.isActive ? "Usuario reactivado exitosamente" : "Usuario desactivado exitosamente",
+      user,
+    );
+  } catch (error) {
+    if (error.code === "P2025") return handleErrorClient(res, 404, error.message);
+    if (["SELF_DEACTIVATION", "USER_ANONYMIZED", "LAST_ACTIVE_ADMIN"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(res, 500, "Error al cambiar estado del usuario", error.message);
   }
 }

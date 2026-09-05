@@ -1,11 +1,9 @@
 "use strict";
 
-import jwt from "jsonwebtoken";
 import {
   handleErrorClient,
   handleErrorServer,
 } from "../handlers/response.handler.js";
-import { JWT_SECRET } from "../config/configEnv.js";
 import { ROLE_NAMES } from "../constants/user.constants.js";
 
 /**

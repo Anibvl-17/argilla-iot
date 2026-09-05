@@ -1,15 +1,12 @@
 import { Router } from "express";
 import {
-  clearControllerPin,
   createController,
   editController,
-  generateControllerPin,
   getAccessibleControllers,
   getAllControllers,
   removeController,
   sendControllerCommand,
   linkUserToController,
-  unlinkUserFromController,
 } from "../controllers/controller.controller.js";
 import { authenticateJWT } from "../middlewares/authentication.middleware.js";
 import { verifyRoles } from "../middlewares/authorization.middleware.js";
@@ -19,8 +16,7 @@ import {
   createControllerValidation,
   editControllerValidation,
   controllerCommandValidation,
-  linkUserValidation,
-  unlinkUserValidation,
+  pairControllerValidation,
 } from "../validations/controller.validation.js";
 
 const router = Router();
@@ -29,40 +25,36 @@ router.use(authenticateJWT);
 
 router.get("/accessible", getAccessibleControllers);
 
-router.patch("/:uuid/pin", generateControllerPin);
-router.delete("/:uuid/pin", clearControllerPin);
-
 router.post(
   "/:controllerId/command",
   validateSchema(controllerCommandValidation),
   sendControllerCommand,
 );
 
-router.use(verifyRoles([ROLES.ADMIN]));
+router.patch(
+  "/claim",
+  verifyRoles([ROLES.CLIENT]),
+  validateSchema(pairControllerValidation),
+  linkUserToController,
+);
 
-router.get("/all", getAllControllers);
+router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllControllers);
 router.post(
   "/create",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(createControllerValidation),
   createController,
 );
 router.patch(
   "/:controllerId/edit",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(editControllerValidation),
   editController,
 );
-router.delete("/:controllerId/delete", removeController);
-
-router.patch(
-  "/claim",
-  validateSchema(linkUserValidation),
-  linkUserToController,
-);
-
-router.patch(
-  "/:controllerId/release",
-  validateSchema(unlinkUserValidation),
-  unlinkUserFromController,
+router.delete(
+  "/:controllerId/delete",
+  verifyRoles([ROLES.ADMIN]),
+  removeController,
 );
 
 export default router;

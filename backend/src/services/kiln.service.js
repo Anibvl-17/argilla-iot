@@ -1,30 +1,32 @@
 import { prisma } from "../config/prisma.js";
-import bcrypt from "bcrypt";
 import {
-  normalizeKilnInput,
-  presentController as presentControllerCompat,
-  presentKiln as presentKilnCompat,
-} from "../utils/legacyCompatibility.js";
+  presentController as presentControllerEntity,
+  presentKiln as presentKilnEntity,
+} from "../utils/entityPresentation.js";
+
+function normalizeDates(data) {
+  return {
+    ...data,
+    ...(data.manufacturedAt !== undefined
+      ? { manufacturedAt: new Date(data.manufacturedAt) }
+      : {}),
+    ...(data.deliveredAt !== undefined
+      ? { deliveredAt: data.deliveredAt ? new Date(data.deliveredAt) : null }
+      : {}),
+  };
+}
 
 export async function createKiln(kilnData) {
   const kiln = await prisma.kiln.create({
-    data: normalizeKilnInput(kilnData),
+    data: normalizeDates(kilnData),
   });
 
-  return presentKilnCompat(kiln);
+  return presentKilnEntity(kiln);
 }
 
-/**
- * Actualiza los datos propios de un Horno, es decir: nombre, litros, fases,
- * voltaje, amperaje
- *
- * @param {number} kilnId El ID del Horno
- * @param {object} data Los datos que se actualizaran (name, liters, phases,
- *                      volts, amps)
- * @returns El Horno con los datos actualizados
- */
+/** Actualiza únicamente los metadatos canónicos editables de un horno. */
 export async function edit(kilnId, data) {
-  const normalizedData = normalizeKilnInput(data);
+  const normalizedData = normalizeDates(data);
   const currentKiln = await prisma.kiln.findUnique({
     where: { kilnId },
     include: { controller: { select: { switchCurrentCapacity: true } } },
@@ -56,7 +58,7 @@ export async function edit(kilnId, data) {
     data: normalizedData,
   });
 
-  return presentKilnCompat(kiln);
+  return presentKilnEntity(kiln);
 }
 
 /**
@@ -98,7 +100,7 @@ export async function getAllKilns() {
     include: { user: true, controller: true },
   });
 
-  return kilns.map(presentKilnCompat);
+  return kilns.map(presentKilnEntity);
 }
 
 export async function getKilnsPage({
@@ -158,7 +160,7 @@ export async function getKilnsPage({
     ]);
 
   return {
-    items: items.map(presentKilnCompat),
+    items: items.map(presentKilnEntity),
     pagination: {
       page: safePage,
       pageSize: safePageSize,
@@ -173,8 +175,14 @@ const controllerSelection = {
   controllerId: true,
   temperature: true,
   connectionStatus: true,
+  activityStatus: true,
+  operationalStatus: true,
   switchType: true,
   switchCurrentCapacity: true,
+  manufacturedAt: true,
+  deliveredAt: true,
+  firmwareVersion: true,
+  firmwareUpdatedAt: true,
 };
 
 function presentController(controller) {
@@ -182,7 +190,7 @@ function presentController(controller) {
 
   const { controllerId } = controller;
   return {
-    ...presentControllerCompat(controller, { hideControllerId: true }),
+    ...presentControllerEntity(controller, { hideControllerId: true }),
     controllerCode: controllerId.slice(-6),
   };
 }
@@ -190,7 +198,7 @@ function presentController(controller) {
 function presentKiln(kiln) {
   const { controller, ...kilnWithoutController } = kiln;
   return {
-    ...presentKilnCompat(kilnWithoutController),
+    ...presentKilnEntity(kilnWithoutController),
     controller: presentController(controller),
   };
 }
@@ -206,6 +214,11 @@ export async function getKilnsByUserId(userId) {
         phaseCount: true,
         nominalVoltage: true,
         nominalCurrent: true,
+        manufacturedAt: true,
+        deliveredAt: true,
+        operationalStatus: true,
+        manufacturer: true,
+        heatingCircuitConfiguration: true,
         controller: { select: controllerSelection },
       },
       orderBy: { kilnId: "asc" },
@@ -233,6 +246,11 @@ export async function getUserKilnById(userId, kilnId) {
       phaseCount: true,
       nominalVoltage: true,
       nominalCurrent: true,
+      manufacturedAt: true,
+      deliveredAt: true,
+      operationalStatus: true,
+      manufacturer: true,
+      heatingCircuitConfiguration: true,
       controller: { select: controllerSelection },
     },
   });
@@ -258,6 +276,11 @@ export async function renameUserKiln(userId, kilnId, name) {
       phaseCount: true,
       nominalVoltage: true,
       nominalCurrent: true,
+      manufacturedAt: true,
+      deliveredAt: true,
+      operationalStatus: true,
+      manufacturer: true,
+      heatingCircuitConfiguration: true,
       controller: { select: controllerSelection },
     },
   });
@@ -283,7 +306,7 @@ export async function getOwnedKilnController(userId, kilnId) {
 
   if (!kiln || !kiln.controller) return null;
 
-  return presentControllerCompat(kiln.controller);
+  return presentControllerEntity(kiln.controller);
 }
 
 export async function getOwnedKilnTelemetry(
@@ -330,7 +353,7 @@ export async function getAdminKilnById(kilnId) {
     include: { user: true, controller: true },
   });
 
-  return presentKilnCompat(kiln);
+  return presentKilnEntity(kiln);
 }
 
 export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
@@ -364,87 +387,35 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   };
 }
 
-/**
- * Vincula un Controlador a un Horno, asociando la UUID del Controlador al Horno
- *
- * @param {number} kilnId ID del Horno
- * @param {string} partialControllerId Ultimos 6 caracteres del UUID del Controlador
- * @param {number} pin Pin de 6 digitos
- * @returns El Horno con el controlador asociado, o Error
- */
-export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
-  return await prisma.$transaction(async (tx) => {
-    const kiln = await tx.kiln.findUnique({
-      where: { kilnId },
-    });
-
+export async function linkControllerToKiln(kilnId, controllerId) {
+  return prisma.$transaction(async (tx) => {
+    const [kiln, controller] = await Promise.all([
+      tx.kiln.findUnique({ where: { kilnId } }),
+      tx.controller.findUnique({ where: { controllerId }, include: { kiln: true } }),
+    ]);
     if (!kiln) throw new Error("Horno no encontrado");
-
-    const controller = await tx.controller.findFirst({
-      where: { controllerId: { endsWith: partialControllerId } },
-      include: { kiln: true },
-    });
-
-    // ---- Clausulas de Guarda ----
-    const pairingIsValid =
-      controller?.pairingPinHash &&
-      controller.pairingPinExpiresAt &&
-      controller.pairingPinExpiresAt.getTime() > Date.now() &&
-      (await bcrypt.compare(String(pin), controller.pairingPinHash));
-
-    if (!pairingIsValid) {
-      throw new Error("Credenciales incorrectas");
-    }
-
-    if (controller.kiln) {
-      throw new Error("El controlador ya está vinculado a otro horno");
-    }
-
-    if (kiln.controllerId) {
+    if (!controller) throw new Error("Controlador no encontrado");
+    if (kiln.controllerId && kiln.controllerId !== controllerId) {
       throw new Error("El horno ya tiene un controlador vinculado");
     }
-
+    if (controller.kiln && controller.kiln.kilnId !== kilnId) {
+      throw new Error("El controlador ya está vinculado a otro horno");
+    }
+    if (kiln.userId !== controller.userId) {
+      throw new Error("El horno y el controlador deben tener el mismo propietario");
+    }
     if (controller.switchCurrentCapacity < kiln.nominalCurrent) {
-      throw new Error(
-        "La capacidad de amperaje del switch es inferior al amperaje del horno",
-      );
+      throw new Error("La capacidad del controlador es inferior al amperaje del horno");
     }
-
-    if (kiln.userId && controller.userId && kiln.userId !== controller.userId) {
-      throw new Error("Los equipos pertenecen a usuarios distintos");
-    }
-    // ---- Fin Clausulas de Guarda ----
-
-    const finalUserId = kiln.userId || controller.userId || null;
-
-    const updatedKiln = await tx.kiln.update({
+    const updated = await tx.kiln.update({
       where: { kilnId },
-      data: {
-        controllerId: controller.controllerId,
-        userId: finalUserId,
-      },
-      include: { controller: true },
+      data: { controllerId },
+      include: { controller: true, user: true },
     });
-
-    await tx.controller.update({
-      where: { controllerId: controller.controllerId },
-      data: {
-        userId: finalUserId,
-        pairingPinHash: null,
-        pairingPinExpiresAt: null,
-      },
-    });
-
-    return presentKilnCompat(updatedKiln);
+    return presentKilnEntity(updated);
   });
 }
 
-/**
- * Desvincula un Controlador de un Horno
- *
- * @param {number} kilnId ID del Horno
- * @returns
- */
 export async function unlinkControllerFromKiln(kilnId) {
   return await prisma.$transaction(async (tx) => {
     const kiln = await tx.kiln.findUnique({
@@ -457,7 +428,7 @@ export async function unlinkControllerFromKiln(kilnId) {
     }
 
     if (!kiln.controllerId) {
-      return presentKilnCompat(kiln);
+      return presentKilnEntity(kiln);
     }
 
     const updatedKiln = await tx.kiln.update({
@@ -466,95 +437,57 @@ export async function unlinkControllerFromKiln(kilnId) {
       include: { controller: true },
     });
 
-    return presentKilnCompat(updatedKiln);
+    return presentKilnEntity(updatedKiln);
   });
 }
 
-/**
- * Vincula un Usuario a un Horno.
- *
- * @param {number} userId
- * @returns El Horno actualizado
- */
 export async function linkUserToKiln(kilnId, userId) {
-  return await prisma.$transaction(async (tx) => {
-    const kiln = await tx.kiln.findUnique({
-      where: { kilnId },
-      include: { user: true, controller: true },
-    });
-
-    if (!kiln) throw new Error("Horno no encontrado");
-
-    const user = await tx.user.findUnique({ where: { userId } });
-
-    if (!user) throw new Error("Usuario no encontrado");
-
-    // ---- Clausulas de Guarda ----
-    if (kiln.userId !== null) {
-      throw new Error("El horno ya tiene un propietario");
-    }
-
-    if (
-      kiln.controller &&
-      kiln.controller.userId !== null &&
-      kiln.controller.userId !== userId
-    ) {
-      throw new Error("El controlador asociado pertenece a otro usuario");
-    }
-    // ---- Fin Clausulas de Guarda ----
-
-    const claimedKiln = await tx.kiln.update({
-      where: { kilnId },
-      data: { user: { connect: { userId } } },
-    });
-
-    if (kiln.controller) {
-      await tx.controller.update({
-        where: { controllerId: kiln.controllerId },
-        data: { user: { connect: { userId } } },
-      });
-    }
-
-    return presentKilnCompat(claimedKiln);
-  });
-}
-
-/**
- * Desvincula un Horno de un Usuario.
- *
- * @param {number} userId
- * @param {number} kilnId
- * @returns El Horno actualizado
- */
-export async function unlinkUserFromKiln(userId, kilnId) {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const kiln = await tx.kiln.findUnique({
       where: { kilnId },
       include: { controller: true },
     });
-
-    // ---- Clausulas de Guarda ----
-    if (!kiln) {
-      throw new Error("Horno no encontrado");
+    if (!kiln) throw new Error("Horno no encontrado");
+    const user = await tx.user.findUnique({ where: { userId } });
+    if (!user) throw new Error("Usuario no encontrado");
+    if (!user.isActive || user.anonymizedAt || user.role !== "CLIENT") {
+      throw new Error("El propietario debe ser un cliente activo");
     }
-
-    if (kiln.userId !== userId) {
-      throw new Error("Horno no pertenece al usuario");
+    if (!kiln.controller) throw new Error("El horno debe tener un controlador asociado");
+    if (![null, userId].includes(kiln.userId) || ![null, userId].includes(kiln.controller.userId)) {
+      throw new Error("Los equipos pertenecen a otro usuario");
     }
-    // ---- Fin Clausulas de Guarda ----
-
-    const updatedKiln = await tx.kiln.update({
-      where: { kilnId },
-      data: { user: { disconnect: true } },
+    await tx.controller.update({
+      where: { controllerId: kiln.controllerId },
+      data: { userId },
     });
+    const updated = await tx.kiln.update({
+      where: { kilnId },
+      data: { userId },
+      include: { controller: true, user: true },
+    });
+    return presentKilnEntity(updated);
+  });
+}
 
-    if (kiln.controller && kiln.controller.userId === userId) {
+export async function unlinkUserFromKiln(kilnId) {
+  return prisma.$transaction(async (tx) => {
+    const kiln = await tx.kiln.findUnique({
+      where: { kilnId },
+      include: { controller: true },
+    });
+    if (!kiln) throw new Error("Horno no encontrado");
+    if (kiln.controller) {
       await tx.controller.update({
         where: { controllerId: kiln.controllerId },
-        data: { user: { disconnect: true } },
+        data: { userId: null },
       });
     }
-
-    return presentKilnCompat(updatedKiln);
+    const updatedKiln = await tx.kiln.update({
+      where: { kilnId },
+      data: { userId: null },
+      include: { controller: true },
+    });
+    return presentKilnEntity(updatedKiln);
   });
 }

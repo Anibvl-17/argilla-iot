@@ -1,13 +1,19 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail } from "./user.service.js";
-import { presentUser } from "../utils/legacyCompatibility.js";
+import { presentUser } from "../utils/entityPresentation.js";
 
 export async function login(email, password) {
   const user = await findUserByEmail(email);
 
   if (!user) {
     throw new Error("Credenciales incorrectas");
+  }
+
+  if (!user.isActive || user.anonymizedAt) {
+    const error = new Error("La cuenta está desactivada");
+    error.code = "ACCOUNT_INACTIVE";
+    throw error;
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -28,8 +34,7 @@ export async function login(email, password) {
 }
 
 export async function register(data) {
-  // Evita el paso de rol al registrarse.
-  const { name, email, password } = data;
+  const { name, email, password, phone } = data;
 
-  return createUser({ name, email, password });
+  return createUser({ name, email, password, phone, role: "CLIENT" });
 }

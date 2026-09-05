@@ -14,7 +14,7 @@ export async function loginUser(req, res) {
   } catch (error) {
     handleErrorClient(
       res,
-      401,
+      error.code === "ACCOUNT_INACTIVE" ? 403 : 401,
       "Error al iniciar sesión",
       error.message,
       "password",

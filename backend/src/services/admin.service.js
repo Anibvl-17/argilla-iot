@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import { getRelayState } from "../utils/legacyCompatibility.js";
+import { getSwitchState } from "../utils/entityPresentation.js";
 
 export async function getAdminSummary() {
   const [
@@ -30,7 +30,7 @@ export async function getAdminSummary() {
   ]);
 
   const operationalKilns = kilnsWithController.filter(
-    ({ controllerId }) => getRelayState(controllerId) === "ON",
+    ({ controllerId }) => getSwitchState(controllerId),
   ).length;
 
   return {

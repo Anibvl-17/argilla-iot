@@ -1,8 +1,9 @@
 import mqtt from "mqtt";
 import {
   updateControllerConnectionStatus,
-  updateControllerOperativeStatus,
+  updateControllerSwitchState,
   updateControllerTelemetry,
+  receivePairingPin,
 } from "../services/controller.service.js";
 import {
   emitAdminSummary,
@@ -78,7 +79,7 @@ function parseRelayStatePayload(controllerId, payload) {
 
   const deviceId = String(payload.deviceId || "");
   const relayState = String(
-    payload.relayState || payload.operativeStatus || payload.state || "",
+    payload.relayState || payload.switchState || payload.state || "",
   ).toUpperCase();
 
   if (deviceId && deviceId !== controllerId) return null;
@@ -87,13 +88,37 @@ function parseRelayStatePayload(controllerId, payload) {
   return relayState;
 }
 
-function settlePendingCommand(controllerId, operativeStatus) {
+function settlePendingCommand(controllerId, switchState) {
   const pending = pendingCommands.get(controllerId);
-  if (!pending || pending.command !== operativeStatus) return;
+  if (!pending || pending.command !== switchState) return;
 
   clearTimeout(pending.timer);
   pendingCommands.delete(controllerId);
-  pending.resolve({ controllerId, command: operativeStatus, confirmed: true });
+  pending.resolve({ controllerId, command: switchState, confirmed: true });
+}
+
+function parsePairingPinPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const pin = String(payload.pin || "");
+  const deviceSecret = String(payload.deviceSecret || "");
+  if (!/^\d{6}$/.test(pin) || !deviceSecret) return null;
+  return { pin, deviceSecret };
+}
+
+function publishPairingStatus(controllerId, data) {
+  if (!mqttClient) return;
+  mqttClient.publish(
+    `controller/${controllerId}/pairing-status`,
+    JSON.stringify(data),
+    { qos: 1, retain: false },
+  );
+}
+
+export function publishPairingBlockStatus(controllerId, blockedUntil) {
+  publishPairingStatus(controllerId, {
+    status: "BLOCKED",
+    blockedUntil: blockedUntil.toISOString(),
+  });
 }
 
 function toTelemetryEvent(controller) {
@@ -101,9 +126,9 @@ function toTelemetryEvent(controller) {
     controllerId: controller.controllerId,
     controllerCode: controller.controllerId.slice(-6),
     kilnId: controller.kiln?.kilnId ?? null,
-    operativeStatus: controller.operativeStatus,
+    switchState: controller.switchState,
     connectionStatus: controller.connectionStatus,
-    temp: controller.temp,
+    temperature: controller.temperature,
     telemetrySaved: Boolean(controller.telemetrySaved),
   };
 }
@@ -122,6 +147,7 @@ export function connectMqtt() {
     client.subscribe("controller/+/status", { qos: 1 });
     client.subscribe("controller/+/state", { qos: 1 });
     client.subscribe("controller/+/temp", { qos: 1 });
+    client.subscribe("controller/+/pairing-pin", { qos: 1 });
   });
 
   client.on("message", async (topic, payloadBuffer) => {
@@ -148,18 +174,18 @@ export function connectMqtt() {
       }
 
       if (type === "state") {
-        const operativeStatus = parseRelayStatePayload(controllerId, payload);
-        if (!operativeStatus) return;
+        const switchState = parseRelayStatePayload(controllerId, payload);
+        if (!switchState) return;
 
-        const controller = await updateControllerOperativeStatus(
+        const controller = await updateControllerSwitchState(
           controllerId,
-          operativeStatus,
+          switchState,
         );
         emitControllerTelemetry(
           controller.userId,
           toTelemetryEvent(controller),
         );
-        settlePendingCommand(controllerId, operativeStatus);
+        settlePendingCommand(controllerId, switchState);
         void emitAdminSummary();
         return;
       }
@@ -179,7 +205,34 @@ export function connectMqtt() {
         void emitAdminSummary();
         return;
       }
+
+      if (type === "pairing-pin") {
+        const pairing = parsePairingPinPayload(payload);
+        if (!pairing) {
+          publishPairingStatus(controllerId, { status: "REJECTED", reason: "INVALID_REQUEST" });
+          return;
+        }
+        const result = await receivePairingPin(
+          controllerId,
+          pairing.pin,
+          pairing.deviceSecret,
+        );
+        publishPairingStatus(controllerId, {
+          status: result.status,
+          expiresAt: result.expiresAt.toISOString(),
+        });
+        return;
+      }
     } catch (error) {
+      if (type === "pairing-pin") {
+        publishPairingStatus(controllerId, {
+          status: error.code === "PAIRING_BLOCKED" ? "BLOCKED" : "REJECTED",
+          ...(error.blockedUntil
+            ? { blockedUntil: error.blockedUntil.toISOString() }
+            : { reason: "PAIRING_REJECTED" }),
+        });
+        return;
+      }
       if (error.code === "P2025") {
         if (!unregisteredControllerFound) {
           console.warn(
