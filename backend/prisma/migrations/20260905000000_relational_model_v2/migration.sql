@@ -1,6 +1,8 @@
--- This migration intentionally resets the application data. The previous
--- telemetry model cannot be represented as firing-cycle history without
--- inventing business data, and the reset was explicitly selected for v2.
+-- Esta migracion elimina los datos de forma intencional.
+-- Esto se debe a la implementación de nuevas formas de registro de historial,
+-- información que no se puede generar arbitrariamente y nuevos módulos.
+--
+-- Modificación realizada posterior a la entrega del MVP.
 DROP TABLE IF EXISTS "MaintenanceRecord" CASCADE;
 DROP TABLE IF EXISTS "SupportTicket" CASCADE;
 DROP TABLE IF EXISTS "SupportReason" CASCADE;
