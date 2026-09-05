@@ -4,6 +4,18 @@ import "dotenv/config";
 
 const prisma = new PrismaClient();
 const PASSWORD_ROUNDS = 10;
+const DEVICE_SECRET_ROUNDS = 10;
+const seedDeviceSecret =
+  process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
+
+const supportReasons = [
+  { code: "FIRING_PROBLEM", name: "Problema de quema" },
+  { code: "TEMPERATURE", name: "Problema de temperatura" },
+  { code: "CONTROLLER", name: "Problema con controlador" },
+  { code: "ELECTRICAL", name: "Problema eléctrico" },
+  { code: "CONNECTIVITY", name: "Problema de conectividad" },
+  { code: "OTHER", name: "Otro" },
+];
 
 const admin = {
   email: process.env.SEED_ADMIN_EMAIL || "admin@argilla.test",
@@ -327,9 +339,15 @@ const orphanKilns = [
 
 const kilnDefaults = {
   liters: 40,
-  phases: 1,
-  volts: 220,
-  amps: 20,
+  phaseCount: 1,
+  nominalVoltage: 220,
+  nominalCurrent: 20,
+  manufacturer: "Argillá",
+  heatingCircuitConfiguration: {
+    type: "ROOT",
+    connectionType: "PARALLEL",
+    elements: [],
+  },
 };
 
 async function createUserIfMissing({ email, name, role, password }) {
@@ -338,11 +356,15 @@ async function createUserIfMissing({ email, name, role, password }) {
   return prisma.user.upsert({
     where: { email },
     update: { name, role },
-    create: { email, name, role, password: hashedPassword },
+    create: { email, name, role, passwordHash: hashedPassword },
   });
 }
 
 async function createControllerIfMissing(controllerId, data = {}) {
+  const deviceSecretHash = await bcrypt.hash(
+    `${seedDeviceSecret}:${controllerId}`,
+    DEVICE_SECRET_ROUNDS,
+  );
   const controller = await prisma.controller.findUnique({
     where: { controllerId },
   });
@@ -352,9 +374,12 @@ async function createControllerIfMissing(controllerId, data = {}) {
       where: { controllerId },
       data: {
         userId: data.userId ?? null,
-        pin: data.pin ?? null,
+        pairingPinHash: null,
+        pairingPinExpiresAt: null,
         switchType: data.switchType ?? "CONTACTOR",
-        switchAmps: data.switchAmps ?? 25,
+        switchCurrentCapacity: data.switchAmps ?? 25,
+        deviceSecretHash,
+        firmwareVersion: data.firmwareVersion ?? "DEMO-1.0.0",
       },
     });
   }
@@ -363,20 +388,35 @@ async function createControllerIfMissing(controllerId, data = {}) {
     data: {
       controllerId,
       userId: data.userId ?? null,
-      pin: data.pin ?? null,
+      deviceSecretHash,
       switchType: data.switchType ?? "CONTACTOR",
-      switchAmps: data.switchAmps ?? 25,
+      switchCurrentCapacity: data.switchAmps ?? 25,
+      firmwareVersion: data.firmwareVersion ?? "DEMO-1.0.0",
     },
   });
 }
 
 async function createKilnIfMissing(name, data, aliases = []) {
+  const kilnData = {
+    userId: data.userId ?? null,
+    controllerId: data.controllerId ?? null,
+    liters: data.liters ?? kilnDefaults.liters,
+    phaseCount: data.phaseCount ?? data.phases ?? kilnDefaults.phaseCount,
+    nominalVoltage:
+      data.nominalVoltage ?? data.volts ?? kilnDefaults.nominalVoltage,
+    nominalCurrent:
+      data.nominalCurrent ?? data.amps ?? kilnDefaults.nominalCurrent,
+    manufacturer: data.manufacturer ?? kilnDefaults.manufacturer,
+    heatingCircuitConfiguration:
+      data.heatingCircuitConfiguration ??
+      kilnDefaults.heatingCircuitConfiguration,
+  };
   const existing = await prisma.kiln.findFirst({
     where: { name: { in: [name, ...aliases] } },
     orderBy: { kilnId: "asc" },
   });
 
-  let controllerId = data.controllerId ?? null;
+  let controllerId = kilnData.controllerId;
   if (controllerId) {
     const controller = await prisma.controller.findUnique({
       where: { controllerId },
@@ -398,9 +438,9 @@ async function createKilnIfMissing(name, data, aliases = []) {
       where: { kilnId: existing.kilnId },
       data: {
         ...kilnDefaults,
-        ...data,
+        ...kilnData,
         name,
-        userId: data.userId ?? null,
+        userId: kilnData.userId,
         controllerId,
       },
     });
@@ -409,15 +449,23 @@ async function createKilnIfMissing(name, data, aliases = []) {
   return prisma.kiln.create({
     data: {
       ...kilnDefaults,
-      ...data,
+      ...kilnData,
       name,
-      userId: data.userId ?? null,
+      userId: kilnData.userId,
       controllerId,
     },
   });
 }
 
 async function main() {
+  for (const reason of supportReasons) {
+    await prisma.supportReason.upsert({
+      where: { code: reason.code },
+      update: { name: reason.name, isActive: true },
+      create: reason,
+    });
+  }
+
   await createUserIfMissing({
     email: admin.email,
     name: admin.name,
@@ -430,7 +478,7 @@ async function main() {
     seededUsers[user.key] = await createUserIfMissing({
       ...user,
       password: demoPassword,
-      role: "USER",
+      role: "CLIENT",
     });
   }
 

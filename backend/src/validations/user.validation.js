@@ -12,7 +12,10 @@ export const createUserValidation = z
       .string()
       .min(6, "La contraseña debe tener al menos 6 caracteres"),
     role: z
-      .enum([ROLES.ADMIN, ROLES.USER], "Debe ingresar un rol válido")
+      .enum(
+        [ROLES.ADMIN, ROLES.TECHNICIAN, ROLES.CLIENT, "USER"],
+        "Debe ingresar un rol válido",
+      )
       .optional(),
   })
   .strict();
@@ -44,7 +47,10 @@ export const updateUserValidation = z
       .max(128, "La contraseña debe tener máximo 128 caracteres")
       .optional(),
     role: z
-      .enum([ROLES.ADMIN, ROLES.USER], "Debe ingresar un rol válido")
+      .enum(
+        [ROLES.ADMIN, ROLES.TECHNICIAN, ROLES.CLIENT, "USER"],
+        "Debe ingresar un rol válido",
+      )
       .optional(),
   })
   .strict();

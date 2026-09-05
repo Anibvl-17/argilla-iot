@@ -1,6 +1,10 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
 import { ROLES } from "../constants/user.constants.js";
+import {
+  normalizeRole,
+  presentUser,
+} from "../utils/legacyCompatibility.js";
 
 export async function createUser(data) {
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -8,30 +12,31 @@ export async function createUser(data) {
   const newUser = await prisma.user.create({
     data: {
       email: data.email,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
       name: data.name,
-      role: data.role ?? ROLES.USER,
+      phone: data.phone,
+      role: normalizeRole(data.role ?? ROLES.CLIENT),
     },
   });
 
-  delete newUser.password;
-
-  return newUser;
+  return presentUser(newUser);
 }
 
 export async function updateUser(userId, data) {
+  const updateData = { ...data };
+
   if (data.password) {
-    data.password = await bcrypt.hash(data.password, 10);
+    updateData.passwordHash = await bcrypt.hash(data.password, 10);
+    delete updateData.password;
   }
+  if (data.role) updateData.role = normalizeRole(data.role);
 
   const updatedUser = await prisma.user.update({
     where: { userId },
-    data,
+    data: updateData,
   });
 
-  delete updatedUser.password;
-
-  return updatedUser;
+  return presentUser(updatedUser);
 }
 
 export async function deleteUser(userId) {
@@ -47,7 +52,7 @@ export async function findUserById(userId) {
 }
 
 export async function getUserProfile(userId) {
-  return await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { userId },
     select: {
       userId: true,
@@ -55,8 +60,11 @@ export async function getUserProfile(userId) {
       email: true,
       role: true,
       createdAt: true,
+      phone: true,
     },
   });
+
+  return presentUser(user);
 }
 
 export async function changeUserPassword(userId, currentPassword, newPassword) {
@@ -68,29 +76,36 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
     throw error;
   }
 
-  const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+  const passwordMatches = await bcrypt.compare(
+    currentPassword,
+    user.passwordHash,
+  );
   if (!passwordMatches) {
     const error = new Error("La contraseña actual es incorrecta");
     error.code = "INVALID_CURRENT_PASSWORD";
     throw error;
   }
 
-  const password = await bcrypt.hash(newPassword, 10);
-  return await prisma.user.update({
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const updatedUser = await prisma.user.update({
     where: { userId },
-    data: { password },
+    data: { passwordHash },
     select: {
       userId: true,
       name: true,
       email: true,
       role: true,
       createdAt: true,
+      phone: true,
     },
   });
+
+  return presentUser(updatedUser);
 }
 
 export async function getAllUsers() {
-  return await prisma.user.findMany({ omit: { password: true } });
+  const users = await prisma.user.findMany({ omit: { passwordHash: true } });
+  return users.map(presentUser);
 }
 
 export async function getUsersPage({
@@ -105,9 +120,13 @@ export async function getUsersPage({
   const upperSearch = normalizedSearch.toUpperCase();
   const roleSearch = upperSearch.startsWith("ADMIN")
     ? ROLES.ADMIN
-    : upperSearch.startsWith("USU") || upperSearch === ROLES.USER
-      ? ROLES.USER
-      : undefined;
+    : upperSearch.startsWith("TEC")
+      ? ROLES.TECHNICIAN
+      : upperSearch.startsWith("USU") ||
+          upperSearch.startsWith("CLI") ||
+          upperSearch === "USER"
+        ? ROLES.CLIENT
+        : undefined;
   const where = normalizedSearch
     ? {
         OR: [
@@ -124,7 +143,7 @@ export async function getUsersPage({
   const [items, total, scopeTotal] = await prisma.$transaction([
     prisma.user.findMany({
       where,
-      omit: { password: true },
+      omit: { passwordHash: true },
       orderBy: { userId: "asc" },
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
@@ -134,7 +153,7 @@ export async function getUsersPage({
   ]);
 
   return {
-    items,
+    items: items.map(presentUser),
     pagination: {
       page: safePage,
       pageSize: safePageSize,

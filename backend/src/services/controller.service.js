@@ -1,16 +1,16 @@
 import { prisma } from "../config/prisma.js";
 import { CONTROLLER_LINK_STATUS } from "../constants/controller.constants.js";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
+import {
+  clearRelayState,
+  normalizeControllerInput,
+  presentController,
+  setRelayState,
+} from "../utils/legacyCompatibility.js";
 
-const parsedTelemetrySampleSeconds = Number.parseInt(
-  process.env.TELEMETRY_SAMPLE_SECONDS || "",
-  10,
-);
-const TELEMETRY_SAMPLE_SECONDS =
-  Number.isFinite(parsedTelemetrySampleSeconds) &&
-  parsedTelemetrySampleSeconds > 0
-    ? parsedTelemetrySampleSeconds
-    : 5;
+const HASH_ROUNDS = 10;
+const PAIRING_PIN_TTL_MS = 15 * 60 * 1000;
 
 function getControllerLinkStatus(controller) {
   if (controller.kiln && controller.user) {
@@ -36,7 +36,7 @@ function decorateController(controller) {
   const linkStatus = getControllerLinkStatus(controller);
 
   return {
-    ...controller,
+    ...presentController(controller),
     linkStatus,
     status: linkStatus,
   };
@@ -51,15 +51,23 @@ function decorateControllers(controllers) {
  * controlador físico para ser vinculado posteriormente.
  */
 export async function create(data) {
-  const controller = await prisma.controller.create({ data });
+  const deviceSecret = crypto.randomBytes(32).toString("base64url");
+  const deviceSecretHash = await bcrypt.hash(deviceSecret, HASH_ROUNDS);
+  const controller = await prisma.controller.create({
+    data: {
+      ...normalizeControllerInput(data),
+      deviceSecretHash,
+    },
+  });
 
-  return decorateController(controller);
+  return { ...decorateController(controller), deviceSecret };
 }
 
 export async function edit(controllerId, data) {
+  const normalizedData = normalizeControllerInput(data);
   const currentController = await prisma.controller.findUnique({
     where: { controllerId },
-    include: { kiln: { select: { amps: true } } },
+    include: { kiln: { select: { nominalCurrent: true } } },
   });
 
   if (!currentController) {
@@ -70,11 +78,11 @@ export async function edit(controllerId, data) {
 
   if (
     currentController.kiln &&
-    data.switchAmps != null &&
-    data.switchAmps < currentController.kiln.amps
+    normalizedData.switchCurrentCapacity != null &&
+    normalizedData.switchCurrentCapacity < currentController.kiln.nominalCurrent
   ) {
     const error = new Error(
-      `El horno vinculado requiere al menos ${currentController.kiln.amps}A. Desvincula el controlador del horno antes de reducir su amperaje.`,
+      `El horno vinculado requiere al menos ${currentController.kiln.nominalCurrent}A. Desvincula el controlador del horno antes de reducir su amperaje.`,
     );
     error.code = "INCOMPATIBLE_KILN_AMPERAGE";
     throw error;
@@ -82,7 +90,7 @@ export async function edit(controllerId, data) {
 
   const controller = await prisma.controller.update({
     where: { controllerId },
-    data,
+    data: normalizedData,
   });
 
   return decorateController(controller);
@@ -108,6 +116,7 @@ export async function remove(controllerId) {
   await prisma.controller.delete({
     where: { controllerId },
   });
+  clearRelayState(controllerId);
 
   return true;
 }
@@ -120,11 +129,13 @@ export async function remove(controllerId) {
  */
 export async function generatePin(uuid) {
   const pin = crypto.randomInt(100000, 1000000);
+  const pairingPinHash = await bcrypt.hash(String(pin), HASH_ROUNDS);
 
   await prisma.controller.update({
     where: { controllerId: uuid },
     data: {
-      pin,
+      pairingPinHash,
+      pairingPinExpiresAt: new Date(Date.now() + PAIRING_PIN_TTL_MS),
     },
   });
 
@@ -138,91 +149,75 @@ export async function generatePin(uuid) {
  * @returns El Controlador actualizado
  */
 export async function clearPin(id) {
-  return await prisma.controller.update({
+  const controller = await prisma.controller.update({
     where: { controllerId: id },
     data: {
-      pin: null,
+      pairingPinHash: null,
+      pairingPinExpiresAt: null,
     },
   });
+
+  return presentController(controller);
 }
 
 export async function updateControllerTelemetry(controllerId, data) {
-  return await prisma.$transaction(async (tx) => {
-    const controller = await tx.controller.update({
-      where: { controllerId },
-      data,
-      select: {
-        controllerId: true,
-        userId: true,
-        operativeStatus: true,
-        connectionStatus: true,
-        temp: true,
-        kiln: { select: { kilnId: true } },
-      },
-    });
-
-    let telemetrySaved = false;
-
-    if (data.temp != null && controller.kiln) {
-      const lastTelemetry = await tx.telemetry.findFirst({
-        where: { kilnId: controller.kiln.kilnId },
-        orderBy: { timestamp: "desc" },
-        select: { timestamp: true },
-      });
-      const elapsedSeconds = lastTelemetry
-        ? (Date.now() - lastTelemetry.timestamp.getTime()) / 1000
-        : Number.POSITIVE_INFINITY;
-
-      if (elapsedSeconds >= TELEMETRY_SAMPLE_SECONDS) {
-        await tx.telemetry.create({
-          data: {
-            kilnId: controller.kiln.kilnId,
-            temperature: data.temp,
-            switchState: controller.operativeStatus === "ON",
-          },
-        });
-        telemetrySaved = true;
-      }
-    }
-
-    return { ...controller, telemetrySaved };
+  const controller = await prisma.controller.update({
+    where: { controllerId },
+    data: { temperature: data.temperature },
+    select: {
+      controllerId: true,
+      userId: true,
+      connectionStatus: true,
+      temperature: true,
+      switchCurrentCapacity: true,
+      kiln: { select: { kilnId: true } },
+    },
   });
+
+  if (data.relayState) setRelayState(controllerId, data.relayState);
+  // la telemetria ahora corresponde a un ciclo de quema, la persistencia se 
+  // implementará más adelante
+  return { ...presentController(controller), telemetrySaved: false };
 }
 
 export async function updateControllerConnectionStatus(
   controllerId,
   connectionStatus,
 ) {
-  return await prisma.controller.update({
+  const controller = await prisma.controller.update({
     where: { controllerId },
     data: { connectionStatus },
     select: {
       controllerId: true,
       userId: true,
-      operativeStatus: true,
       connectionStatus: true,
-      temp: true,
+      temperature: true,
+      switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
     },
   });
+
+  return presentController(controller);
 }
 
 export async function updateControllerOperativeStatus(
   controllerId,
   operativeStatus,
 ) {
-  return await prisma.controller.update({
+  const controller = await prisma.controller.findUniqueOrThrow({
     where: { controllerId },
-    data: { operativeStatus },
     select: {
       controllerId: true,
       userId: true,
-      operativeStatus: true,
       connectionStatus: true,
-      temp: true,
+      temperature: true,
+      switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
     },
   });
+
+  setRelayState(controllerId, operativeStatus);
+  return presentController(controller);
 }
 
 export async function getControllerCommandTarget(controllerId) {
@@ -287,7 +282,6 @@ export async function getControllersPage({
       : safeConnectionStatus
         ? { connectionStatus: safeConnectionStatus }
         : {}),
-    ...(safeOperativeStatus ? { operativeStatus: safeOperativeStatus } : {}),
     ...(kilnStatus === "linked" ? { kiln: { isNot: null } } : {}),
     ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
   };
@@ -299,8 +293,12 @@ export async function getControllersPage({
         where,
         include: { kiln: true, user: true },
         orderBy: { controllerId: "asc" },
-        skip: (safePage - 1) * safePageSize,
-        take: safePageSize,
+        ...(safeOperativeStatus
+          ? {}
+          : {
+              skip: (safePage - 1) * safePageSize,
+              take: safePageSize,
+            }),
       }),
       prisma.controller.count({ where }),
       prisma.controller.count({ where: scopeWhere }),
@@ -319,13 +317,27 @@ export async function getControllersPage({
       }),
     ]);
 
+  const decoratedItems = decorateControllers(items);
+  const statusFilteredItems = safeOperativeStatus
+    ? decoratedItems.filter(
+        (controller) => controller.operativeStatus === safeOperativeStatus,
+      )
+    : decoratedItems;
+  const filteredTotal = safeOperativeStatus ? statusFilteredItems.length : total;
+  const visibleItems = safeOperativeStatus
+    ? statusFilteredItems.slice(
+        (safePage - 1) * safePageSize,
+        safePage * safePageSize,
+      )
+    : statusFilteredItems;
+
   return {
-    items: decorateControllers(items),
+    items: visibleItems,
     pagination: {
       page: safePage,
       pageSize: safePageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+      total: filteredTotal,
+      totalPages: Math.max(1, Math.ceil(filteredTotal / safePageSize)),
     },
     summary: { total: scopeTotal, linkedToKiln, linkedToUser, fullyLinked },
   };
@@ -347,7 +359,13 @@ export async function linkControllerToUser(partialControllerId, userId, pin) {
       include: { kiln: true },
     });
 
-    if (!controller || controller.pin !== pin) {
+    const pairingIsValid =
+      controller?.pairingPinHash &&
+      controller.pairingPinExpiresAt &&
+      controller.pairingPinExpiresAt.getTime() > Date.now() &&
+      (await bcrypt.compare(String(pin), controller.pairingPinHash));
+
+    if (!pairingIsValid) {
       throw new Error("Credenciales incorrectas");
     }
 
@@ -376,7 +394,8 @@ export async function linkControllerToUser(partialControllerId, userId, pin) {
       where: { controllerId: controller.controllerId },
       data: {
         user: { connect: { userId } },
-        pin: null,
+        pairingPinHash: null,
+        pairingPinExpiresAt: null,
       },
     });
 
@@ -387,7 +406,7 @@ export async function linkControllerToUser(partialControllerId, userId, pin) {
       });
     }
 
-    return claimedController;
+    return presentController(claimedController);
   });
 }
 
@@ -425,6 +444,6 @@ export async function unlinkUserFromController(userId, controllerId) {
       });
     }
 
-    return updatedController;
+    return presentController(updatedController);
   });
 }

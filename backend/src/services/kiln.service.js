@@ -1,15 +1,17 @@
 import { prisma } from "../config/prisma.js";
+import bcrypt from "bcrypt";
+import {
+  normalizeKilnInput,
+  presentController as presentControllerCompat,
+  presentKiln as presentKilnCompat,
+} from "../utils/legacyCompatibility.js";
 
 export async function createKiln(kilnData) {
-  return await prisma.kiln.create({
-    data: {
-      name: kilnData.name,
-      liters: kilnData.liters,
-      phases: kilnData.phases,
-      volts: kilnData.volts,
-      amps: kilnData.amps,
-    },
+  const kiln = await prisma.kiln.create({
+    data: normalizeKilnInput(kilnData),
   });
+
+  return presentKilnCompat(kiln);
 }
 
 /**
@@ -22,9 +24,10 @@ export async function createKiln(kilnData) {
  * @returns El Horno con los datos actualizados
  */
 export async function edit(kilnId, data) {
+  const normalizedData = normalizeKilnInput(data);
   const currentKiln = await prisma.kiln.findUnique({
     where: { kilnId },
-    include: { controller: { select: { switchAmps: true } } },
+    include: { controller: { select: { switchCurrentCapacity: true } } },
   });
 
   if (!currentKiln) {
@@ -35,22 +38,25 @@ export async function edit(kilnId, data) {
 
   if (
     currentKiln.controller &&
-    data.amps != null &&
-    data.amps > currentKiln.controller.switchAmps
+    normalizedData.nominalCurrent != null &&
+    normalizedData.nominalCurrent >
+      currentKiln.controller.switchCurrentCapacity
   ) {
     const error = new Error(
-      `El controlador vinculado soporta hasta ${currentKiln.controller.switchAmps}A. Desvincula el controlador del horno antes de aumentar su amperaje.`,
+      `El controlador vinculado soporta hasta ${currentKiln.controller.switchCurrentCapacity}A. Desvincula el controlador del horno antes de aumentar su amperaje.`,
     );
     error.code = "INCOMPATIBLE_CONTROLLER_AMPERAGE";
     throw error;
   }
 
-  return await prisma.kiln.update({
+  const kiln = await prisma.kiln.update({
     where: {
       kilnId,
     },
-    data, // liters, phases, volts, amps
+    data: normalizedData,
   });
+
+  return presentKilnCompat(kiln);
 }
 
 /**
@@ -88,9 +94,11 @@ export async function remove(kilnId) {
 }
 
 export async function getAllKilns() {
-  return await prisma.kiln.findMany({
+  const kilns = await prisma.kiln.findMany({
     include: { user: true, controller: true },
   });
+
+  return kilns.map(presentKilnCompat);
 }
 
 export async function getKilnsPage({
@@ -150,7 +158,7 @@ export async function getKilnsPage({
     ]);
 
   return {
-    items,
+    items: items.map(presentKilnCompat),
     pagination: {
       page: safePage,
       pageSize: safePageSize,
@@ -163,27 +171,27 @@ export async function getKilnsPage({
 
 const controllerSelection = {
   controllerId: true,
-  temp: true,
-  operativeStatus: true,
+  temperature: true,
   connectionStatus: true,
   switchType: true,
-  switchAmps: true,
+  switchCurrentCapacity: true,
 };
 
 function presentController(controller) {
   if (!controller) return null;
 
-  const { controllerId, ...safeController } = controller;
+  const { controllerId } = controller;
   return {
-    ...safeController,
+    ...presentControllerCompat(controller, { hideControllerId: true }),
     controllerCode: controllerId.slice(-6),
   };
 }
 
 function presentKiln(kiln) {
+  const { controller, ...kilnWithoutController } = kiln;
   return {
-    ...kiln,
-    controller: presentController(kiln.controller),
+    ...presentKilnCompat(kilnWithoutController),
+    controller: presentController(controller),
   };
 }
 
@@ -195,9 +203,9 @@ export async function getKilnsByUserId(userId) {
         kilnId: true,
         name: true,
         liters: true,
-        phases: true,
-        volts: true,
-        amps: true,
+        phaseCount: true,
+        nominalVoltage: true,
+        nominalCurrent: true,
         controller: { select: controllerSelection },
       },
       orderBy: { kilnId: "asc" },
@@ -222,9 +230,9 @@ export async function getUserKilnById(userId, kilnId) {
       kilnId: true,
       name: true,
       liters: true,
-      phases: true,
-      volts: true,
-      amps: true,
+      phaseCount: true,
+      nominalVoltage: true,
+      nominalCurrent: true,
       controller: { select: controllerSelection },
     },
   });
@@ -247,9 +255,9 @@ export async function renameUserKiln(userId, kilnId, name) {
       kilnId: true,
       name: true,
       liters: true,
-      phases: true,
-      volts: true,
-      amps: true,
+      phaseCount: true,
+      nominalVoltage: true,
+      nominalCurrent: true,
       controller: { select: controllerSelection },
     },
   });
@@ -265,9 +273,9 @@ export async function getOwnedKilnController(userId, kilnId) {
       controller: {
         select: {
           controllerId: true,
-          temp: true,
-          operativeStatus: true,
+          temperature: true,
           connectionStatus: true,
+          switchCurrentCapacity: true,
         },
       },
     },
@@ -275,7 +283,7 @@ export async function getOwnedKilnController(userId, kilnId) {
 
   if (!kiln || !kiln.controller) return null;
 
-  return kiln.controller;
+  return presentControllerCompat(kiln.controller);
 }
 
 export async function getOwnedKilnTelemetry(
@@ -297,12 +305,12 @@ export async function getOwnedKilnTelemetry(
 
   const [items, total] = await prisma.$transaction([
     prisma.telemetry.findMany({
-      where: { kilnId },
+      where: { firingCycle: { kilnId } },
       orderBy: { timestamp: "desc" },
       skip,
       take: safePageSize,
     }),
-    prisma.telemetry.count({ where: { kilnId } }),
+    prisma.telemetry.count({ where: { firingCycle: { kilnId } } }),
   ]);
 
   return {
@@ -317,10 +325,12 @@ export async function getOwnedKilnTelemetry(
 }
 
 export async function getAdminKilnById(kilnId) {
-  return await prisma.kiln.findUnique({
+  const kiln = await prisma.kiln.findUnique({
     where: { kilnId },
     include: { user: true, controller: true },
   });
+
+  return presentKilnCompat(kiln);
 }
 
 export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
@@ -335,12 +345,12 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   const safePageSize = Math.min(50, Math.max(1, pageSize));
   const [items, total] = await prisma.$transaction([
     prisma.telemetry.findMany({
-      where: { kilnId },
+      where: { firingCycle: { kilnId } },
       orderBy: { timestamp: "desc" },
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
     }),
-    prisma.telemetry.count({ where: { kilnId } }),
+    prisma.telemetry.count({ where: { firingCycle: { kilnId } } }),
   ]);
 
   return {
@@ -376,7 +386,13 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
     });
 
     // ---- Clausulas de Guarda ----
-    if (!controller || controller.pin !== pin) {
+    const pairingIsValid =
+      controller?.pairingPinHash &&
+      controller.pairingPinExpiresAt &&
+      controller.pairingPinExpiresAt.getTime() > Date.now() &&
+      (await bcrypt.compare(String(pin), controller.pairingPinHash));
+
+    if (!pairingIsValid) {
       throw new Error("Credenciales incorrectas");
     }
 
@@ -388,7 +404,7 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
       throw new Error("El horno ya tiene un controlador vinculado");
     }
 
-    if (controller.switchAmps < kiln.amps) {
+    if (controller.switchCurrentCapacity < kiln.nominalCurrent) {
       throw new Error(
         "La capacidad de amperaje del switch es inferior al amperaje del horno",
       );
@@ -414,11 +430,12 @@ export async function linkControllerToKiln(kilnId, partialControllerId, pin) {
       where: { controllerId: controller.controllerId },
       data: {
         userId: finalUserId,
-        pin: null,
+        pairingPinHash: null,
+        pairingPinExpiresAt: null,
       },
     });
 
-    return updatedKiln;
+    return presentKilnCompat(updatedKiln);
   });
 }
 
@@ -440,7 +457,7 @@ export async function unlinkControllerFromKiln(kilnId) {
     }
 
     if (!kiln.controllerId) {
-      return kiln;
+      return presentKilnCompat(kiln);
     }
 
     const updatedKiln = await tx.kiln.update({
@@ -449,7 +466,7 @@ export async function unlinkControllerFromKiln(kilnId) {
       include: { controller: true },
     });
 
-    return updatedKiln;
+    return presentKilnCompat(updatedKiln);
   });
 }
 
@@ -498,7 +515,7 @@ export async function linkUserToKiln(kilnId, userId) {
       });
     }
 
-    return claimedKiln;
+    return presentKilnCompat(claimedKiln);
   });
 }
 
@@ -538,6 +555,6 @@ export async function unlinkUserFromKiln(userId, kilnId) {
       });
     }
 
-    return updatedKiln;
+    return presentKilnCompat(updatedKiln);
   });
 }

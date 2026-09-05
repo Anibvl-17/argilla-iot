@@ -1,10 +1,11 @@
 import { prisma } from "../config/prisma.js";
+import { getRelayState } from "../utils/legacyCompatibility.js";
 
 export async function getAdminSummary() {
   const [
     registeredKilns,
     linkedKilns,
-    operationalKilns,
+    kilnsWithController,
     registeredControllers,
     linkedControllers,
     registeredUsers,
@@ -15,8 +16,9 @@ export async function getAdminSummary() {
         OR: [{ userId: { not: null } }, { controllerId: { not: null } }],
       },
     }),
-    prisma.kiln.count({
-      where: { controller: { is: { operativeStatus: "ON" } } },
+    prisma.kiln.findMany({
+      where: { controllerId: { not: null } },
+      select: { controllerId: true },
     }),
     prisma.controller.count(),
     prisma.controller.count({
@@ -26,6 +28,10 @@ export async function getAdminSummary() {
     }),
     prisma.user.count(),
   ]);
+
+  const operationalKilns = kilnsWithController.filter(
+    ({ controllerId }) => getRelayState(controllerId) === "ON",
+  ).length;
 
   return {
     kilns: {

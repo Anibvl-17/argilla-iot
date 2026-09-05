@@ -41,7 +41,7 @@ function parseCommand(payloadBuffer) {
 
 async function getRegisteredControllerIds() {
   const controllers = await prisma.controller.findMany({
-    select: { controllerId: true, temp: true, operativeStatus: true },
+    select: { controllerId: true, temperature: true },
   });
 
   return controllers;
@@ -51,12 +51,10 @@ class ControllerSimulator {
   constructor(controller) {
     this.controllerId = controller.controllerId;
     this.currentTemp =
-      typeof controller.temp === "number" ? controller.temp : TEMP_START;
-    this.relayState =
-      controller.operativeStatus === "ON" ||
-      controller.operativeStatus === "OFF"
-        ? controller.operativeStatus
-        : "OFF";
+      typeof controller.temperature === "number"
+        ? controller.temperature
+        : TEMP_START;
+    this.relayState = "OFF";
     this.tempTimer = null;
     this.shuttingDown = false;
 

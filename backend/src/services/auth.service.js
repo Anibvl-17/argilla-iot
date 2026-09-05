@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail } from "./user.service.js";
+import { presentUser } from "../utils/legacyCompatibility.js";
 
 export async function login(email, password) {
   const user = await findUserByEmail(email);
@@ -9,7 +10,7 @@ export async function login(email, password) {
     throw new Error("Credenciales incorrectas");
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
 
   if (!isMatch) {
     throw new Error("Credenciales incorrectas");
@@ -23,8 +24,7 @@ export async function login(email, password) {
   };
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
 
-  delete user.password;
-  return { user, token };
+  return { user: presentUser(user), token };
 }
 
 export async function register(data) {

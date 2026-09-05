@@ -52,8 +52,8 @@ function parseTempPayload(controllerId, payload) {
   if (timestamp && Number.isNaN(timestamp.getTime())) return null;
 
   return {
-    temp: value,
-    operativeStatus: relayState,
+    temperature: value,
+    relayState,
   };
 }
 
@@ -140,8 +140,8 @@ export function connectMqtt() {
           controller.userId,
           toTelemetryEvent(controller),
         );
-        if (data.operativeStatus) {
-          settlePendingCommand(controllerId, data.operativeStatus);
+        if (data.relayState) {
+          settlePendingCommand(controllerId, data.relayState);
           void emitAdminSummary();
         }
         return;
