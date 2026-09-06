@@ -24,6 +24,13 @@ export const CONTROLLER_ACTIVITY_LABELS = {
   ERROR: "Error",
 };
 
+export const CONTROLLER_ACTIVITY_STYLES = {
+  IDLE: "default",
+  FIRING: "danger",
+  PAUSED: "info",
+  ERROR: "warning",
+};
+
 export const OPERATIONAL_STATUS_LABELS = {
   OPERATIONAL: "Operativo",
   MAINTENANCE: "En mantención",
@@ -34,9 +41,9 @@ export const OPERATIONAL_STATUS_OPTIONS = Object.entries(
   OPERATIONAL_STATUS_LABELS,
 ).map(([value, label]) => ({ value, label }));
 
-export const CONTROLLER_OPERATION_LABELS = {
-  ON: "Encendido",
-  OFF: "Apagado",
+export const FIRING_COMMAND_LABELS = {
+  ON: "Iniciar quema",
+  OFF: "Detener Quema",
 };
 
 export const CONTROLLER_CONNECTION_LABELS = {
@@ -52,8 +59,8 @@ export function formatEnumLabel(value, labels = {}) {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-export function getControllerOperationLabel(status) {
-  return status === true || status === "ON" ? "Encendido" : "Apagado";
+export function getFiringCommandLabel(command) {
+  return FIRING_COMMAND_LABELS[command] || "Controlar quema";
 }
 
 export function getControllerConnectionLabel(status) {

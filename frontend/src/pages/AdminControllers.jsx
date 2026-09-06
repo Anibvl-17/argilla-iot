@@ -16,9 +16,10 @@ import Pagination from "@components/Pagination";
 import { useAuth } from "@context/AuthContext";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
+  CONTROLLER_ACTIVITY_STYLES,
   getControllerActivityLabel,
   getControllerConnectionLabel,
-  getControllerOperationLabel,
+  getFiringCommandLabel,
   getOperationalStatusLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
@@ -84,12 +85,6 @@ const defaultController = {
 };
 
 const connectionStyle = { ONLINE: "info", OFFLINE: "default" };
-const activityStyle = {
-  IDLE: "default",
-  FIRING: "success",
-  PAUSED: "warning",
-  ERROR: "danger",
-};
 const operationalStyle = {
   OPERATIONAL: "success",
   MAINTENANCE: "warning",
@@ -279,9 +274,7 @@ export default function AdminControllers() {
     );
     setCommandLoadingId("");
     if (!result.success) return toast.error(result.message);
-    toast.success(
-      `Comando ${getControllerOperationLabel(command).toLowerCase()} confirmado.`,
-    );
+    toast.success(command === "ON" ? "Quema iniciada." : "Quema detenida.");
   }
 
   async function confirmDelete() {
@@ -310,7 +303,7 @@ export default function AdminControllers() {
         <button type="button" onClick={() => openEditModal(controller)} className={buttonClass} title="Editar controlador"><LuPencil className="text-base" /> {withLabels && "Editar"}</button>
         {isAdmin && (
           <>
-            <button type="button" disabled={!controller.kiln || controller.connectionStatus !== "ONLINE" || commandLoadingId === controller.controllerId} onClick={() => handleCommand(controller)} className={`${buttonClass} disabled:opacity-40`} title={controller.switchState ? "Apagar" : "Encender"}><LuPower className="text-base" /> {withLabels && (controller.switchState ? "Apagar" : "Encender")}</button>
+            <button type="button" disabled={!controller.kiln || controller.connectionStatus !== "ONLINE" || commandLoadingId === controller.controllerId} onClick={() => handleCommand(controller)} className={`${buttonClass} disabled:opacity-40`} title={getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}><LuPower className="text-base" /> {withLabels && getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}</button>
             <button type="button" onClick={() => { setSelectedController(controller); setIsAlertOpen(true); }} className={buttonClass} title="Eliminar controlador"><LuTrash2 className="text-base" /> {withLabels && "Eliminar"}</button>
           </>
         )}
@@ -447,7 +440,7 @@ export default function AdminControllers() {
                       <td className="hidden px-6 py-5 lg:table-cell">
                         <span className="flex justify-center">
                           <Badge
-                            style={activityStyle[controller.activityStatus]}
+                            style={CONTROLLER_ACTIVITY_STYLES[controller.activityStatus]}
                             text={getControllerActivityLabel(
                               controller.activityStatus,
                             )}
@@ -510,7 +503,6 @@ export default function AdminControllers() {
                             <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Propietario</dt><dd className="mt-1">{controller.user?.name || <span className="italic text-muted">Sin propietario</span>}</dd></div>
                             <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Horno</dt><dd className="mt-1">{controller.kiln?.name || <span className="italic text-muted">Sin horno asociado</span>}</dd></div>
                             <div className="sm:hidden"><dt className="text-xs font-bold uppercase text-muted">Temperatura</dt><dd className="mt-1">{controller.temperature == null ? <span className="italic text-muted">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}</dd></div>
-                            <div className="lg:hidden"><dt className="text-xs font-bold uppercase text-muted">Actividad</dt><dd className="mt-1">{getControllerActivityLabel(controller.activityStatus)}</dd></div>
                             <div className="xl:hidden"><dt className="text-xs font-bold uppercase text-muted">Estado operacional</dt><dd className="mt-1">{getOperationalStatusLabel(controller.operationalStatus)}</dd></div>
                             <div>
                               <dt className="text-xs font-bold uppercase text-muted">
@@ -523,11 +515,11 @@ export default function AdminControllers() {
                             </div>
                             <div>
                               <dt className="text-xs font-bold uppercase text-muted">
-                                Estado del switch
+                                Actividad
                               </dt>
                               <dd className="mt-1">
-                                {getControllerOperationLabel(
-                                  controller.switchState,
+                                {getControllerActivityLabel(
+                                  controller.activityStatus,
                                 )}
                               </dd>
                             </div>
@@ -587,7 +579,9 @@ export default function AdminControllers() {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-3 py-2.5 text-sm text-secondary hover:bg-surface-hover disabled:opacity-40"
                               >
                                 <LuPower className="text-base" />
-                                {controller.switchState ? "Apagar" : "Encender"}
+                                {getFiringCommandLabel(
+                                  controller.switchState ? "OFF" : "ON",
+                                )}
                               </button>
                               <button
                                 type="button"

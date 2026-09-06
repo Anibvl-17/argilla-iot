@@ -19,7 +19,10 @@ import ControllerStatus from "@components/ControllerStatus";
 import { Badge } from "@components/Badge";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
-import { SWITCH_LABELS } from "../constants/controller.constants";
+import {
+  getFiringCommandLabel,
+  SWITCH_LABELS,
+} from "../constants/controller.constants";
 import { pairController } from "@services/controller.service";
 
 function applyTelemetry(controller, telemetry) {
@@ -243,8 +246,8 @@ export default function Home() {
                         ? "Controlador desconectado"
                         : kiln.controller
                           ? kiln.controller.switchState
-                            ? "Apagar horno"
-                            : "Encender horno"
+                            ? "Detener quema del horno"
+                            : "Iniciar quema del horno"
                           : "Requiere controlador"
                     }
                     className={
@@ -257,9 +260,9 @@ export default function Home() {
                     <LuPower />
                     {commandLoadingId === String(kiln.kilnId)
                       ? "Enviando..."
-                      : kiln.controller?.switchState
-                        ? "Apagar"
-                        : "Encender"}
+                      : getFiringCommandLabel(
+                          kiln.controller?.switchState ? "OFF" : "ON",
+                        )}
                   </button>
                   <Link
                     to={`/kilns/${kiln.kilnId}`}

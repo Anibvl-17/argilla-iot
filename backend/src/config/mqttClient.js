@@ -128,6 +128,7 @@ function toTelemetryEvent(controller) {
     kilnId: controller.kiln?.kilnId ?? null,
     switchState: controller.switchState,
     connectionStatus: controller.connectionStatus,
+    activityStatus: controller.activityStatus,
     temperature: controller.temperature,
     telemetrySaved: Boolean(controller.telemetrySaved),
   };

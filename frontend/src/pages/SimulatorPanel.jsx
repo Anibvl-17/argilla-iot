@@ -8,6 +8,7 @@ import {
 import {
   getControllerActivityLabel,
   getControllerConnectionLabel,
+  getFiringCommandLabel,
   getSwitchLabel,
 } from "@constants/controller.constants";
 
@@ -101,7 +102,9 @@ export default function SimulatorPanel() {
                 onClick={() => command(controller)}
                 className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-on-action disabled:opacity-40"
               >
-                {controller.switchState ? "Apagar" : "Encender"}
+                {getFiringCommandLabel(
+                  controller.switchState ? "OFF" : "ON",
+                )}
               </button>
             )}
           </article>

@@ -15,8 +15,9 @@ import {
 } from "@services/kiln.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
+  getControllerActivityLabel,
   getControllerConnectionLabel,
-  getControllerOperationLabel,
+  getFiringCommandLabel,
 } from "@constants/controller.constants";
 import { SWITCH_LABELS } from "../constants/controller.constants";
 import { toast } from "sonner";
@@ -206,8 +207,8 @@ export default function KilnDetails() {
                 }
               />
               <Detail
-                label="Estado operativo"
-                value={getControllerOperationLabel(controller.switchState)}
+                label="Actividad"
+                value={getControllerActivityLabel(controller.activityStatus)}
               />
               <Detail
                 label="Conexión"
@@ -234,7 +235,7 @@ export default function KilnDetails() {
             <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-content">
-                  Control del switch
+                  Control de quema
                 </h3>
                 {commandError && (
                   <p className="mt-1 text-sm text-accent">{commandError}</p>
@@ -258,9 +259,7 @@ export default function KilnDetails() {
                   <LuPower />
                   {commandSending
                     ? "Enviando..."
-                    : nextCommand === "ON"
-                      ? "Encender"
-                      : "Apagar"}
+                    : getFiringCommandLabel(nextCommand)}
                 </button>
               </div>
             </div>
@@ -288,7 +287,7 @@ export default function KilnDetails() {
                   Temperatura
                 </th>
                 <th className="px-4 py-3 text-center font-medium sm:px-6">
-                  Estado
+                  Relé
                 </th>
               </tr>
             </thead>
@@ -303,7 +302,7 @@ export default function KilnDetails() {
                       {item.temperature.toFixed(1)} °C
                     </td>
                     <td className="px-4 py-3 text-center text-secondary sm:px-6">
-                      {item.switchState ? "Encendido" : "Apagado"}
+                      {item.switchState ? "Activo" : "Inactivo"}
                     </td>
                   </tr>
                 ))

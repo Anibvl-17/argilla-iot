@@ -1,12 +1,8 @@
 import { Badge } from "@components/Badge";
-import { getControllerActivityLabel } from "@constants/controller.constants";
-
-const activityStyles = {
-  IDLE: "default",
-  FIRING: "danger",
-  PAUSED: "info",
-  ERROR: "warning",
-};
+import {
+  CONTROLLER_ACTIVITY_STYLES,
+  getControllerActivityLabel,
+} from "@constants/controller.constants";
 
 export default function ControllerStatus({ controller }) {
   if (!controller) {
@@ -15,7 +11,7 @@ export default function ControllerStatus({ controller }) {
 
   return (
     <Badge
-      style={activityStyles[controller.activityStatus] || "default"}
+      style={CONTROLLER_ACTIVITY_STYLES[controller.activityStatus] || "default"}
       text={getControllerActivityLabel(controller.activityStatus)}
     />
   );

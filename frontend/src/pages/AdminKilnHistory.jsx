@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Pagination from "@components/Pagination";
 import { Badge } from "@components/Badge";
+import ControllerStatus from "@components/ControllerStatus";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import { getAdminKiln, getAdminKilnTelemetry } from "@services/kiln.service";
 import {
   getControllerConnectionLabel,
-  getControllerOperationLabel,
 } from "@constants/controller.constants";
 import { LuArrowLeft, LuHistory } from "react-icons/lu";
 
@@ -125,10 +125,7 @@ export default function AdminKilnHistory() {
             }
           />
           {controller?.connectionStatus === "ONLINE" && (
-            <Badge
-              style={controller.switchState ? "success" : "default"}
-              text={getControllerOperationLabel(controller.switchState)}
-            />
+            <ControllerStatus controller={controller} />
           )}
         </div>
       </header>
@@ -153,7 +150,7 @@ export default function AdminKilnHistory() {
           <div>
             <h2 className="font-semibold">Historial de temperatura</h2>
             <p className="mt-1 text-sm text-muted">
-              Registros paginados de temperatura y estado del switch.
+              Registros paginados de temperatura y estado del relé.
             </p>
           </div>
         </div>
@@ -166,7 +163,7 @@ export default function AdminKilnHistory() {
                   Temperatura
                 </th>
                 <th className="px-3 py-3 text-center font-medium sm:px-6">
-                  Estado
+                  Relé
                 </th>
               </tr>
             </thead>
@@ -181,7 +178,7 @@ export default function AdminKilnHistory() {
                       {item.temperature.toFixed(1)} °C
                     </td>
                     <td className="px-3 py-3 text-center text-secondary sm:px-6">
-                      {item.switchState ? "Encendido" : "Apagado"}
+                      {item.switchState ? "Activo" : "Inactivo"}
                     </td>
                   </tr>
                 ))

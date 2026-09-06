@@ -220,11 +220,17 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
 export async function updateControllerTelemetry(controllerId, data) {
   const controller = await prisma.controller.update({
     where: { controllerId },
-    data: { temperature: data.temperature },
+    data: {
+      temperature: data.temperature,
+      ...(data.relayState
+        ? { activityStatus: data.relayState === "ON" ? "FIRING" : "IDLE" }
+        : {}),
+    },
     select: {
       controllerId: true,
       userId: true,
       connectionStatus: true,
+      activityStatus: true,
       temperature: true,
       switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
@@ -242,6 +248,7 @@ export async function updateControllerConnectionStatus(controllerId, connectionS
       controllerId: true,
       userId: true,
       connectionStatus: true,
+      activityStatus: true,
       temperature: true,
       switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
@@ -251,12 +258,14 @@ export async function updateControllerConnectionStatus(controllerId, connectionS
 }
 
 export async function updateControllerSwitchState(controllerId, switchState) {
-  const controller = await prisma.controller.findUniqueOrThrow({
+  const controller = await prisma.controller.update({
     where: { controllerId },
+    data: { activityStatus: switchState === "ON" ? "FIRING" : "IDLE" },
     select: {
       controllerId: true,
       userId: true,
       connectionStatus: true,
+      activityStatus: true,
       temperature: true,
       switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
