@@ -134,7 +134,6 @@ export async function getKilnsPage({
           ...(Number.isInteger(numericSearch)
             ? [{ kilnId: numericSearch }]
             : []),
-          { name: { contains: normalizedSearch, mode: "insensitive" } },
           {
             manufacturer: {
               contains: normalizedSearch,

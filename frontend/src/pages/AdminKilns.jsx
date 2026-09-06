@@ -467,7 +467,7 @@ export default function AdminKilns() {
       <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
         <div className="border-b border-border p-4">
           <p className="mb-2 text-sm text-muted md:text-base">
-            Busca por nombre, fabricante, propietario o controlador.
+            Busca por ID de horno, fabricante, propietario o controlador.
           </p>
           <div className="grid gap-3 sm:grid-cols-[minmax(16rem,24rem)_14rem]">
             <div className="relative">
@@ -486,7 +486,7 @@ export default function AdminKilns() {
               </svg>
               <input
                 type="search"
-                placeholder="Horno mural, Argillá, Camila..."
+                placeholder="6, Argillá, Camila, A1B2C3..."
                 value={searchTerm}
                 onChange={(event) => {
                   setSearchTerm(event.target.value);
