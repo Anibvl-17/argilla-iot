@@ -18,6 +18,10 @@ export default function HomeLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userRole = user.role;
 
+  const isClient = user.role === "CLIENT";
+  const isTechnician = user.role === "TECHNICIAN";
+  const isAdmin = user.role === "ADMIN";
+
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-app font-sans text-content xl:flex-row">
       {/* Sidebar */}
@@ -37,37 +41,38 @@ export default function HomeLayout() {
           className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${["ADMIN", "TECHNICIAN"].includes(userRole) ? "grid-cols-5" : "grid-cols-2"}`}
         >
           {/* Opciones usuario */}
-          {userRole === "CLIENT" && (
+          {isClient && (
             <>
               <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
             </>
           )}
 
           {/* Opciones admin */}
-          {["ADMIN", "TECHNICIAN"].includes(userRole) && (
-            <>
-              <SidebarItem
-                path="/management"
-                title="Resumen"
-                icon={LuChartNoAxesCombined}
-              />
-              <SidebarItem
-                path="/management/users"
-                title="Usuarios"
-                icon={LuUsers}
-              />
-              <SidebarItem
-                path="/management/kilns"
-                title="Hornos"
-                icon={LuFlame}
-              />
-              <SidebarItem
-                path="/management/controllers"
-                title="Controladores"
-                icon={LuCircuitBoard}
-              />
-            </>
-          )}
+          {isAdmin ||
+            (isTechnician && (
+              <>
+                <SidebarItem
+                  path="/management"
+                  title="Resumen"
+                  icon={LuChartNoAxesCombined}
+                />
+                <SidebarItem
+                  path="/management/users"
+                  title="Usuarios"
+                  icon={LuUsers}
+                />
+                <SidebarItem
+                  path="/management/kilns"
+                  title="Hornos"
+                  icon={LuFlame}
+                />
+                <SidebarItem
+                  path="/management/controllers"
+                  title="Controladores"
+                  icon={LuCircuitBoard}
+                />
+              </>
+            ))}
           <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
         </nav>
       </aside>
@@ -76,12 +81,10 @@ export default function HomeLayout() {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:h-dvh">
         <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-3 py-2 sm:px-4 md:min-h-20 md:px-8">
           <h2 className="min-w-0 truncate text-base font-semibold sm:text-xl">
-            {["ADMIN", "TECHNICIAN"].includes(user.role) ? (
-              "Gestión de equipos"
-            ) : (
+            {isAdmin && "Panel administrativo"}
+            {(isTechnician || isClient) && (
               <>
-                Hola,{" "}
-                <span className="text-accent">{user.name}</span>
+                Hola, <span className="text-accent">{user.name}</span>
               </>
             )}
           </h2>
