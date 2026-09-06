@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { SidebarItem } from "@components/SidebarItem";
 import ProfileModal from "@components/ProfileModal";
-import ThemeToggle from "@components/ThemeToggle";
 import argillaIcon from "@assets/argilla-icon-light.png";
 import {
   LuChartNoAxesCombined,
@@ -87,7 +86,6 @@ export default function HomeLayout() {
             )}
           </h2>
           <div className="flex shrink-0 items-center gap-2">
-            <ThemeToggle />
             <button
               type="button"
               onClick={() => setIsProfileOpen(true)}
