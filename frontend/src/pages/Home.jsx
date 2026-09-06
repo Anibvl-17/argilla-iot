@@ -16,6 +16,7 @@ import {
 } from "@services/kiln.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import ControllerStatus from "@components/ControllerStatus";
+import { Badge } from "@components/Badge";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
 import { SWITCH_LABELS } from "../constants/controller.constants";
@@ -212,11 +213,16 @@ export default function Home() {
                           : "justify-center")
                       }
                     >
-                      <p className="text-sm text-muted">
-                        {getControllerConnectionLabel(
+                      <Badge
+                        style={
+                          kiln.controller.connectionStatus === "ONLINE"
+                            ? "info"
+                            : "default"
+                        }
+                        text={getControllerConnectionLabel(
                           kiln.controller.connectionStatus,
                         )}
-                      </p>
+                      />
                       {kiln.controller?.connectionStatus === "ONLINE" && (
                         <ControllerStatus controller={kiln.controller} />
                       )}
@@ -288,7 +294,9 @@ export default function Home() {
                     <LuRadio className="text-accent" /> Controlador ...
                     {controller.controllerCode}
                   </div>
-                  <ControllerStatus controller={controller} />
+                  {controller.connectionStatus === "ONLINE" && (
+                    <ControllerStatus controller={controller} />
+                  )}
                 </div>
                 <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -315,9 +323,16 @@ export default function Home() {
                   <div>
                     <dt className="text-muted">Conexión</dt>
                     <dd className="mt-1">
-                      {getControllerConnectionLabel(
-                        controller.connectionStatus,
-                      )}
+                      <Badge
+                        style={
+                          controller.connectionStatus === "ONLINE"
+                            ? "info"
+                            : "default"
+                        }
+                        text={getControllerConnectionLabel(
+                          controller.connectionStatus,
+                        )}
+                      />
                     </dd>
                   </div>
                 </dl>

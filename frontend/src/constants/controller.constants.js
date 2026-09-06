@@ -19,9 +19,9 @@ export const SWITCH_LABELS = {
 
 export const CONTROLLER_ACTIVITY_LABELS = {
   IDLE: "Detenido",
-  FIRING: "En quema",
+  FIRING: "Quemando",
   PAUSED: "Pausado",
-  ERROR: "Con error",
+  ERROR: "Error",
 };
 
 export const OPERATIONAL_STATUS_LABELS = {
