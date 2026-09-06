@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   LuBox,
   LuFlame,
@@ -35,6 +36,7 @@ export default function Home() {
   const [pairing, setPairing] = useState({ partialControllerId: "", pin: "" });
   const [pairingLoading, setPairingLoading] = useState(false);
   const [pairingError, setPairingError] = useState("");
+  const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -100,7 +102,21 @@ export default function Home() {
       return;
     }
     setPairing({ partialControllerId: "", pin: "" });
+    setIsPairingModalOpen(false);
     setReloadKey((value) => value + 1);
+    toast.success("Horno agregado exitosamente.");
+  }
+
+  function openPairingModal() {
+    setPairingError("");
+    setIsPairingModalOpen(true);
+  }
+
+  function closePairingModal() {
+    if (pairingLoading) return;
+    setIsPairingModalOpen(false);
+    setPairing({ partialControllerId: "", pin: "" });
+    setPairingError("");
   }
 
   if (loading) {
@@ -124,64 +140,23 @@ export default function Home() {
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-7 sm:gap-10">
       <section>
-        <div className="mb-6">
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Mis hornos
-          </h1>
-          <p className="mt-2 text-secondary">
-            Revisa el estado y la información principal de tus hornos.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handlePairing}
-          className="mb-6 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-        >
-          <label className="text-sm font-medium text-muted">
-            Últimos 6 caracteres del controlador
-            <input
-              className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content uppercase"
-              value={pairing.partialControllerId}
-              onChange={(event) =>
-                setPairing((current) => ({
-                  ...current,
-                  partialControllerId: event.target.value
-                    .replace(/[^0-9a-f]/gi, "")
-                    .slice(0, 6),
-                }))
-              }
-              pattern="[0-9a-fA-F]{6}"
-              required
-            />
-          </label>
-          <label className="text-sm font-medium text-muted">
-            PIN temporal
-            <input
-              className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
-              inputMode="numeric"
-              value={pairing.pin}
-              onChange={(event) =>
-                setPairing((current) => ({
-                  ...current,
-                  pin: event.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
-              }
-              pattern="\d{6}"
-              required
-            />
-          </label>
+        <div className="mb-6 flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+              Mis hornos
+            </h1>
+            <p className="mt-2 text-secondary">
+              Revisa el estado y la información principal de tus hornos.
+            </p>
+          </div>
           <button
-            disabled={pairingLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action disabled:opacity-60"
+            type="button"
+            onClick={openPairingModal}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
           >
-            <LuPlus /> {pairingLoading ? "Vinculando..." : "Agregar horno"}
+            <LuPlus /> Agregar horno
           </button>
-        </form>
-        {pairingError && (
-          <p className="-mt-3 mb-6 rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-danger">
-            {pairingError}
-          </p>
-        )}
+        </div>
 
         {!hasEquipment ? (
           <div className="rounded-2xl border border-dashed border-control-border bg-surface-muted px-4 py-10 text-center sm:px-6 sm:py-16">
@@ -350,6 +325,124 @@ export default function Home() {
             ))}
           </div>
         </section>
+      )}
+
+      {isPairingModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm sm:p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closePairingModal();
+          }}
+          role="presentation"
+        >
+          <section
+            aria-labelledby="pairing-modal-title"
+            aria-modal="true"
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-border bg-surface shadow-dialog"
+            role="dialog"
+          >
+            <header className="flex items-center justify-between border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+              <h2
+                id="pairing-modal-title"
+                className="text-xl font-bold text-content"
+              >
+                Agregar horno
+              </h2>
+              <button
+                type="button"
+                aria-label="Cerrar modal"
+                disabled={pairingLoading}
+                onClick={closePairingModal}
+                className="rounded-md p-1 text-muted transition-colors hover:bg-surface-hover hover:text-content disabled:opacity-40"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </header>
+
+            <form onSubmit={handlePairing} className="space-y-5 p-4 sm:p-6">
+              <p className="rounded-lg border border-border bg-surface-muted p-4 text-sm leading-relaxed text-secondary">
+                Enciende el controlador y solicita un PIN de vinculación desde
+                el dispositivo. Luego ingresa los últimos seis caracteres de su
+                identificador y el PIN temporal de seis dígitos. El PIN expira
+                después de 15 minutos.
+              </p>
+
+              <label className="block text-sm font-medium text-muted">
+                ID del controlador (últimos 6 caracteres)
+                <input
+                  autoFocus
+                  className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono uppercase text-content outline-none focus:border-focus"
+                  placeholder="A1B2C3"
+                  value={pairing.partialControllerId}
+                  onChange={(event) =>
+                    setPairing((current) => ({
+                      ...current,
+                      partialControllerId: event.target.value
+                        .replace(/[^0-9a-f]/gi, "")
+                        .slice(0, 6),
+                    }))
+                  }
+                  pattern="[0-9a-fA-F]{6}"
+                  maxLength={6}
+                  required
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-muted">
+                PIN temporal
+                <input
+                  className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono text-content outline-none focus:border-focus"
+                  inputMode="numeric"
+                  placeholder="123456"
+                  value={pairing.pin}
+                  onChange={(event) =>
+                    setPairing((current) => ({
+                      ...current,
+                      pin: event.target.value.replace(/\D/g, "").slice(0, 6),
+                    }))
+                  }
+                  pattern="\d{6}"
+                  maxLength={6}
+                  required
+                />
+              </label>
+
+              {pairingError && (
+                <p className="rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-danger">
+                  {pairingError}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 border-t border-border pt-5">
+                <button
+                  type="button"
+                  disabled={pairingLoading}
+                  onClick={closePairingModal}
+                  className="rounded-lg border border-control-border px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={pairingLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:opacity-60"
+                >
+                  <LuPlus />
+                  {pairingLoading ? "Vinculando..." : "Agregar horno"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
     </div>
   );
