@@ -369,15 +369,44 @@ export default function Home() {
             </header>
 
             <form onSubmit={handlePairing} className="space-y-5 p-4 sm:p-6">
-              <p className="rounded-lg border border-border bg-surface-muted p-4 text-sm leading-relaxed text-secondary">
-                Enciende el controlador y solicita un PIN de vinculación desde
-                el dispositivo. Luego ingresa los últimos seis caracteres de su
-                identificador y el PIN temporal de seis dígitos. El PIN expira
-                después de 15 minutos.
+              <p className="rounded-lg text-sm leading-relaxed text-secondary">
+                Agrega tu horno en 3 simples pasos:
+              </p>
+
+              <ol className="space-y-3 text-sm text-secondary">
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    1
+                  </span>
+                  <span>
+                    Enciende el controlador y solicita un PIN de vinculación
+                    desde el dispositivo.
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    2
+                  </span>
+                  <span>
+                    Ingresa el identificador del controlador.
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    3
+                  </span>
+                  <span>
+                    Ingresa el PIN de vinculación que aparece en el dispositivo.
+                  </span>
+                </li>
+              </ol>
+
+              <p className="text-xs text-secondary">
+                El PIN expira en 15 minutos. Después de 10 intentos fallidos, la vinculación se bloqueará temporalmente por 2 horas.
               </p>
 
               <label className="block text-sm font-medium text-muted">
-                ID del controlador (últimos 6 caracteres)
+                Identificador del controlador
                 <input
                   autoFocus
                   className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono uppercase text-content outline-none focus:border-focus"
@@ -398,7 +427,7 @@ export default function Home() {
               </label>
 
               <label className="block text-sm font-medium text-muted">
-                PIN temporal
+                PIN de vinculación
                 <input
                   className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono text-content outline-none focus:border-focus"
                   inputMode="numeric"
@@ -422,23 +451,30 @@ export default function Home() {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-3 border-t border-border pt-5">
+              <div className="flex flex-row justify-end gap-3 border-t border-border pt-5">
                 <button
                   type="button"
                   disabled={pairingLoading}
                   onClick={closePairingModal}
-                  className="rounded-lg border border-control-border px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-60"
+                  className="flex-1 rounded-lg border border-control-border px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-60"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={pairingLoading}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  className="flex-2 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   <LuPlus />
                   {pairingLoading ? "Vinculando..." : "Agregar horno"}
                 </button>
+              </div>
+
+              <div className="border-t border-border text-center pt-4">
+                <p className="text-sm text-muted">
+                  ¿No puedes vincular tu horno?{" "}
+                  <a href="#" className="underline transition-all hover:cursor-pointer hover:text-accent">Solicita ayuda aquí</a>
+                </p>
               </div>
             </form>
           </section>
