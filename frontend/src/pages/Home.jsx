@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { LuBox, LuFlame, LuMoveRight, LuPower, LuRadio } from "react-icons/lu";
+import {
+  LuBox,
+  LuFlame,
+  LuMoveRight,
+  LuPlus,
+  LuPower,
+  LuRadio,
+} from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
 import {
   getMyKilns,
@@ -11,6 +18,7 @@ import ControllerStatus from "@components/ControllerStatus";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
 import { SWITCH_LABELS } from "../constants/controller.constants";
+import { pairController } from "@services/controller.service";
 
 function applyTelemetry(controller, telemetry) {
   return controller?.controllerCode === telemetry.controllerCode
@@ -24,6 +32,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [pairing, setPairing] = useState({ partialControllerId: "", pin: "" });
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingError, setPairingError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -36,7 +48,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const handleTelemetry = useCallback((telemetry) => {
     setData((current) => ({
@@ -55,7 +67,7 @@ export default function Home() {
   async function handleKilnCommand(kiln) {
     if (!kiln.controller) return;
 
-    const command = kiln.controller.operativeStatus === "ON" ? "OFF" : "ON";
+    const command = kiln.controller.switchState ? "OFF" : "ON";
     setCommandLoadingId(String(kiln.kilnId));
     const result = await sendMyKilnControllerCommand(kiln.kilnId, command);
     setCommandLoadingId("");
@@ -65,13 +77,35 @@ export default function Home() {
     }
   }
 
-  if (user.role === ROLES.ADMIN) return <Navigate to="/admin" replace />;
+  if ([ROLES.ADMIN, ROLES.TECHNICIAN].includes(user.role)) {
+    return <Navigate to="/management" replace />;
+  }
+
+  async function handlePairing(event) {
+    event.preventDefault();
+    setPairingLoading(true);
+    setPairingError("");
+    const result = await pairController(
+      pairing.partialControllerId,
+      pairing.pin,
+    );
+    setPairingLoading(false);
+    if (!result.success) {
+      const details = result.data?.errorDetails;
+      setPairingError(
+        typeof details === "object" && details?.blockedUntil
+          ? `Vinculación bloqueada hasta ${new Date(details.blockedUntil).toLocaleString("es-CL")}`
+          : details || result.message,
+      );
+      return;
+    }
+    setPairing({ partialControllerId: "", pin: "" });
+    setReloadKey((value) => value + 1);
+  }
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-muted">
-        Cargando tus hornos...
-      </div>
+      <div className="py-20 text-center text-muted">Cargando tus hornos...</div>
     );
   }
 
@@ -99,6 +133,56 @@ export default function Home() {
           </p>
         </div>
 
+        <form
+          onSubmit={handlePairing}
+          className="mb-6 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        >
+          <label className="text-sm font-medium text-muted">
+            Últimos 6 caracteres del controlador
+            <input
+              className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content uppercase"
+              value={pairing.partialControllerId}
+              onChange={(event) =>
+                setPairing((current) => ({
+                  ...current,
+                  partialControllerId: event.target.value
+                    .replace(/[^0-9a-f]/gi, "")
+                    .slice(0, 6),
+                }))
+              }
+              pattern="[0-9a-fA-F]{6}"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-muted">
+            PIN temporal
+            <input
+              className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
+              inputMode="numeric"
+              value={pairing.pin}
+              onChange={(event) =>
+                setPairing((current) => ({
+                  ...current,
+                  pin: event.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
+              pattern="\d{6}"
+              required
+            />
+          </label>
+          <button
+            disabled={pairingLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action disabled:opacity-60"
+          >
+            <LuPlus /> {pairingLoading ? "Vinculando..." : "Agregar horno"}
+          </button>
+        </form>
+        {pairingError && (
+          <p className="-mt-3 mb-6 rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-danger">
+            {pairingError}
+          </p>
+        )}
+
         {!hasEquipment ? (
           <div className="rounded-2xl border border-dashed border-control-border bg-surface-muted px-4 py-10 text-center sm:px-6 sm:py-16">
             <LuFlame className="mx-auto mb-4 text-4xl text-muted" />
@@ -122,9 +206,7 @@ export default function Home() {
                 className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel  transition-colors hover:border-control-border sm:p-6"
               >
                 <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-border">
-                  <span className="rounded-xl text-muted">
-                    {kiln.name}
-                  </span>
+                  <span className="rounded-xl text-muted">{kiln.name}</span>
 
                   <span className="flex items-center justify-center gap-1 text-muted">
                     <LuBox />
@@ -135,7 +217,10 @@ export default function Home() {
                 <h2 className="truncate text-center">
                   {kiln.controller ? (
                     <span className="text-4xl/relaxed tracking-wide font-bold text-content">
-                      {kiln.controller?.temp.toFixed(1)} °C
+                      {kiln.controller.temperature == null
+                        ? "--"
+                        : kiln.controller.temperature.toFixed(1)}{" "}
+                      °C
                     </span>
                   ) : (
                     <p className="text-secondary">Sin controlador asociado</p>
@@ -176,14 +261,14 @@ export default function Home() {
                       kiln.controller?.connectionStatus === "OFFLINE"
                         ? "Controlador desconectado"
                         : kiln.controller
-                          ? kiln.controller.operativeStatus === "ON"
+                          ? kiln.controller.switchState
                             ? "Apagar horno"
                             : "Encender horno"
                           : "Requiere controlador"
                     }
                     className={
                       "flex flex-1 items-center justify-center gap-2 rounded-lg border border-control-border px-3 py-2.5 text-sm text-content transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-disabled hover:cursor-pointer " +
-                      (kiln.controller?.operativeStatus === "ON"
+                      (kiln.controller?.switchState
                         ? "enabled:hover:bg-danger-soft enabled:hover:text-accent enabled:hover:border-danger-border"
                         : "enabled:hover:bg-success-soft enabled:hover:text-success enabled:hover:border-success-border")
                     }
@@ -191,7 +276,7 @@ export default function Home() {
                     <LuPower />
                     {commandLoadingId === String(kiln.kilnId)
                       ? "Enviando..."
-                      : kiln.controller?.operativeStatus === "ON"
+                      : kiln.controller?.switchState
                         ? "Apagar"
                         : "Encender"}
                   </button>
@@ -234,10 +319,10 @@ export default function Home() {
                   <div>
                     <dt className="text-muted">Temperatura</dt>
                     <dd className="mt-1">
-                      {controller.temp == null ||
+                      {controller.temperature == null ||
                       controller.connectionStatus !== "ONLINE"
                         ? "No disponible"
-                        : `${controller.temp.toFixed(1)} °C`}
+                        : `${controller.temperature.toFixed(1)} °C`}
                     </dd>
                   </div>
                   <div>
@@ -248,7 +333,9 @@ export default function Home() {
                   </div>
                   <div>
                     <dt className="text-muted">Capacidad</dt>
-                    <dd className="mt-1">{controller.switchAmps} A</dd>
+                    <dd className="mt-1">
+                      {controller.switchCurrentCapacity} A
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted">Conexión</dt>

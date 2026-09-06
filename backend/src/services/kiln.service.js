@@ -107,17 +107,40 @@ export async function getKilnsPage({
   page = 1,
   pageSize = 10,
   search = "",
+  operationalStatusFilter,
 } = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
   const numericSearch = Number(normalizedSearch);
-  const where = normalizedSearch
-    ? {
-        OR: [
+  const allowedOperationalStatuses = [
+    "OPERATIONAL",
+    "MAINTENANCE",
+    "OUT_OF_SERVICE",
+  ];
+  const normalizedOperationalStatus = allowedOperationalStatuses.includes(
+    operationalStatusFilter,
+  )
+    ? operationalStatusFilter
+    : undefined;
+  const filterWhere = normalizedOperationalStatus
+    ? { operationalStatus: normalizedOperationalStatus }
+    : {};
+  const where = {
+    ...filterWhere,
+    ...(normalizedSearch
+      ? {
+          OR: [
           ...(Number.isInteger(numericSearch)
             ? [{ kilnId: numericSearch }]
             : []),
+          { name: { contains: normalizedSearch, mode: "insensitive" } },
+          {
+            manufacturer: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
           {
             user: {
               is: {
@@ -140,9 +163,10 @@ export async function getKilnsPage({
               },
             },
           },
-        ],
-      }
-    : {};
+          ],
+        }
+      : {}),
+  };
 
   const [items, total, scopeTotal, withoutController, withoutOwner] =
     await prisma.$transaction([
@@ -154,9 +178,11 @@ export async function getKilnsPage({
         take: safePageSize,
       }),
       prisma.kiln.count({ where }),
-      prisma.kiln.count(),
-      prisma.kiln.count({ where: { controller: { is: null } } }),
-      prisma.kiln.count({ where: { user: { is: null } } }),
+      prisma.kiln.count({ where: filterWhere }),
+      prisma.kiln.count({
+        where: { ...filterWhere, controller: { is: null } },
+      }),
+      prisma.kiln.count({ where: { ...filterWhere, user: { is: null } } }),
     ]);
 
   return {

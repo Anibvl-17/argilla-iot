@@ -6,11 +6,11 @@ export default function ControllerStatus({ controller }) {
     return <Badge text="Sin controlador" />;
   }
 
-  const isOn = controller.operativeStatus === "ON";
+  const isOn = Boolean(controller.switchState);
   return (
     <Badge
       style={isOn ? "success" : "default"}
-      text={getControllerOperationLabel(controller.operativeStatus)}
+      text={getControllerOperationLabel(controller.switchState)}
     />
   );
 }

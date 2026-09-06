@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@context/AuthContext";
 import { logout } from "@services/auth.service";
-import { changePassword, getProfile } from "@services/user.service";
+import { getProfile, updateProfile } from "@services/user.service";
 import FieldError from "./FieldError";
 import {
   clearFormError,
@@ -20,7 +20,7 @@ export default function ProfileModal({ onClose }) {
   const [profile, setProfile] = useState(null);
   const [passwords, setPasswords] = useState(emptyPasswords);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [passwordError, setPasswordError] = useState(null);
@@ -59,25 +59,33 @@ export default function ProfileModal({ onClose }) {
     setPasswordError((current) => clearFormError(current, name));
   };
 
+  const handleProfileChange = (event) => {
+    const { name, value } = event.target;
+    setProfile((current) => ({ ...current, [name]: value }));
+    setPasswordError((current) => clearFormError(current, name));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSavingPassword(true);
+    setSavingProfile(true);
     setPasswordError(null);
 
-    const result = await changePassword(
-      passwords.currentPassword,
-      passwords.newPassword,
-    );
+    const result = await updateProfile({
+      name: profile.name.trim(),
+      phone: profile.phone?.trim() || null,
+      ...(passwords.currentPassword || passwords.newPassword ? passwords : {}),
+    });
 
-    setSavingPassword(false);
+    setSavingProfile(false);
     if (!result.success) {
       setPasswordError(normalizeFormError(result));
       return;
     }
 
     setPasswords(emptyPasswords);
+    setUser((current) => ({ ...current, name: result.data.name }));
     onClose();
-    toast.success("Contraseña actualizada exitosamente.");
+    toast.success("Perfil actualizado exitosamente.");
   };
 
   const handleLogout = async () => {
@@ -137,38 +145,55 @@ export default function ProfileModal({ onClose }) {
           )}
 
           {!loadingProfile && profile && (
-            <>
-              <dl className="flex flex-col gap-6 rounded-xl border border-border bg-surface-muted p-4">
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                    Nombre
-                  </dt>
-                  <dd className="mt-1 wrap-break-word text-content">
-                    {profile.name}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                    Email
-                  </dt>
-                  <dd className="mt-1 wrap-break-word text-content">
-                    {profile.email}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                    Cuenta creada
-                  </dt>
-                  <dd className="mt-1 wrap-break-word text-content">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-medium text-muted sm:col-span-2">
+                  Nombre
+                  <input
+                    className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none focus:border-focus"
+                    name="name"
+                    minLength={2}
+                    maxLength={150}
+                    required
+                    value={profile.name}
+                    onChange={handleProfileChange}
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-muted sm:col-span-2">
+                  Correo electrónico
+                  <input
+                    className="mt-2 w-full rounded-lg border-2 border-control-border bg-surface-muted px-3 py-2.5 text-muted outline-none"
+                    readOnly
+                    value={profile.email}
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-muted">
+                  Teléfono
+                  <input
+                    className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none focus:border-focus"
+                    name="phone"
+                    value={profile.phone || ""}
+                    onChange={handleProfileChange}
+                  />
+                </label>
+
+                <div className="text-sm font-medium text-muted">
+                  Cuenta creada
+                  <p className="mt-2 rounded-lg border-2 border-control-border bg-surface-muted px-3 py-2.5 font-normal text-content">
                     {formattedDate}
-                  </dd>
+                  </p>
                 </div>
-              </dl>
+              </div>
 
-              <form onSubmit={handleSubmit} className="mt-4 pt-2 space-y-4">
-                <h4 className="font-semibold text-content">Cambiar contraseña</h4>
+              <div className="border-t border-border pt-4">
+                <h4 className="font-semibold text-content">
+                  Cambiar contraseña (opcional)
+                </h4>
+              </div>
 
-                <label className="block font-medium text-sm text-muted">
+                <label className="block text-sm font-medium text-muted">
                   Contraseña actual
                   <input
                     autoComplete="current-password"
@@ -176,7 +201,6 @@ export default function ProfileModal({ onClose }) {
                     minLength={6}
                     name="currentPassword"
                     onChange={handlePasswordChange}
-                    required
                     type="password"
                     value={passwords.currentPassword}
                     aria-invalid={
@@ -196,7 +220,7 @@ export default function ProfileModal({ onClose }) {
                   />
                 </label>
 
-                <label className="block font-medium text-sm text-muted">
+                <label className="block text-sm font-medium text-muted">
                   Nueva contraseña
                   <input
                     autoComplete="new-password"
@@ -204,7 +228,6 @@ export default function ProfileModal({ onClose }) {
                     minLength={6}
                     name="newPassword"
                     onChange={handlePasswordChange}
-                    required
                     type="password"
                     value={passwords.newPassword}
                     aria-invalid={
@@ -227,13 +250,12 @@ export default function ProfileModal({ onClose }) {
 
                 <button
                   type="submit"
-                  disabled={savingPassword || loggingOut}
+                  disabled={savingProfile || loggingOut}
                   className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {savingPassword ? "Guardando..." : "Cambiar contraseña"}
+                  {savingProfile ? "Guardando..." : "Guardar cambios"}
                 </button>
               </form>
-            </>
           )}
 
           {!loadingProfile && !profile && profileError && (
@@ -248,7 +270,7 @@ export default function ProfileModal({ onClose }) {
           <div className="mt-6 border-t border-border pt-5">
             <button
               type="button"
-              disabled={loggingOut || savingPassword}
+              disabled={loggingOut || savingProfile}
               onClick={handleLogout}
               className="w-full rounded-lg border border-control-border py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover hover:text-content disabled:cursor-not-allowed disabled:opacity-60"
             >

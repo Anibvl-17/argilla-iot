@@ -29,7 +29,11 @@ instance.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status;
-    if ((error.response && status === 401) || status === 403) {
+    const message = error.response?.data?.message || "";
+    const authenticationFailure =
+      status === 401 ||
+      (status === 403 && /token|cuenta está desactivada/i.test(message));
+    if (error.response && authenticationFailure) {
       const isLoginRequest = error.config.url.includes("/login");
 
       if (!isLoginRequest) {

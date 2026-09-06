@@ -185,11 +185,12 @@ export async function getAllUsers(req, res) {
   try {
     const users = await getUsersPage({
       ...req.query,
-      roleFilter: req.user.role === "TECHNICIAN" ? "CLIENT" : undefined,
+      roleFilter:
+        req.user.role === "TECHNICIAN"
+          ? "CLIENT"
+          : req.query.roleFilter,
     });
 
-    // Implementado solo en caso excepcional. En la práctica no debería ocurrir
-    // Siempre existe al menos admin en base de datos
     return handleSuccess(res, 200, "Usuarios obtenidos exitosamente", users);
   } catch (error) {
     return handleErrorServer(

@@ -151,23 +151,38 @@ export async function updateOwnProfile(userId, data) {
   return presentUser(await prisma.user.update({ where: { userId }, data: updateData }));
 }
 
-export async function getUsersPage({ page = 1, pageSize = 10, search = "", roleFilter } = {}) {
+export async function getUsersPage({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  roleFilter,
+  statusFilter,
+} = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
   const numericSearch = Number(normalizedSearch);
-  const roleSearch = Object.values(ROLES).find((role) =>
-    role.startsWith(normalizedSearch.toUpperCase()),
-  );
+  const normalizedRoleFilter = Object.values(ROLES).includes(roleFilter)
+    ? roleFilter
+    : undefined;
+  const normalizedStatusFilter = ["ACTIVE", "INACTIVE"].includes(statusFilter)
+    ? statusFilter
+    : undefined;
+  const filterWhere = {
+    ...(normalizedRoleFilter ? { role: normalizedRoleFilter } : {}),
+    ...(normalizedStatusFilter
+      ? { isActive: normalizedStatusFilter === "ACTIVE" }
+      : {}),
+  };
   const where = {
-    ...(roleFilter ? { role: roleFilter } : {}),
+    ...filterWhere,
     ...(normalizedSearch
       ? {
           OR: [
             ...(Number.isInteger(numericSearch) ? [{ userId: numericSearch }] : []),
             { name: { contains: normalizedSearch, mode: "insensitive" } },
             { email: { contains: normalizedSearch, mode: "insensitive" } },
-            ...(roleSearch ? [{ role: roleSearch }] : []),
+            { phone: { contains: normalizedSearch, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -180,7 +195,7 @@ export async function getUsersPage({ page = 1, pageSize = 10, search = "", roleF
       take: safePageSize,
     }),
     prisma.user.count({ where }),
-    prisma.user.count({ where: roleFilter ? { role: roleFilter } : {} }),
+    prisma.user.count({ where: filterWhere }),
   ]);
   return {
     items: items.map(presentUser),

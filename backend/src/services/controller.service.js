@@ -273,18 +273,89 @@ export function getControllerCommandTarget(controllerId) {
   });
 }
 
-export async function getControllersPage({ userId, page = 1, pageSize = 10, search = "", connectionStatus, kilnStatus } = {}) {
+export async function getControllersPage({
+  userId,
+  page = 1,
+  pageSize = 10,
+  search = "",
+  connectionStatus,
+  kilnStatus,
+  operationalStatusFilter,
+} = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
-  const where = {
+  const normalizedControllerSearch = normalizedSearch.replace(/^\.\.\./, "");
+  const kilnIdSearch = normalizedSearch.startsWith("#")
+    ? Number(normalizedSearch.slice(1).trim())
+    : null;
+  const normalizedOperationalStatus = [
+    "OPERATIONAL",
+    "MAINTENANCE",
+    "OUT_OF_SERVICE",
+  ].includes(operationalStatusFilter)
+    ? operationalStatusFilter
+    : undefined;
+  const scopeWhere = {
     ...(userId != null ? { userId } : {}),
-    ...(normalizedSearch ? { controllerId: { contains: normalizedSearch, mode: "insensitive" } } : {}),
+    ...(normalizedOperationalStatus
+      ? { operationalStatus: normalizedOperationalStatus }
+      : {}),
+  };
+  const searchWhere = normalizedSearch
+    ? normalizedSearch.startsWith("#")
+      ? {
+          kiln: {
+            is: {
+              kilnId:
+                Number.isInteger(kilnIdSearch) && kilnIdSearch > 0
+                  ? kilnIdSearch
+                  : -1,
+            },
+          },
+        }
+      : {
+          OR: [
+            ...(normalizedControllerSearch
+              ? [
+                  {
+                    controllerId: {
+                      endsWith: normalizedControllerSearch,
+                      mode: "insensitive",
+                    },
+                  },
+                ]
+              : []),
+            {
+              user: {
+                is: {
+                  OR: [
+                    {
+                      name: {
+                        contains: normalizedSearch,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      email: {
+                        contains: normalizedSearch,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        }
+    : {};
+  const where = {
+    ...scopeWhere,
+    ...searchWhere,
     ...(["ONLINE", "OFFLINE"].includes(connectionStatus) ? { connectionStatus } : {}),
     ...(kilnStatus === "linked" ? { kiln: { isNot: null } } : {}),
     ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
   };
-  const scopeWhere = userId != null ? { userId } : {};
   const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] = await prisma.$transaction([
     prisma.controller.findMany({ where, include: { kiln: true, user: true }, orderBy: { controllerId: "asc" }, skip: (safePage - 1) * safePageSize, take: safePageSize }),
     prisma.controller.count({ where }),

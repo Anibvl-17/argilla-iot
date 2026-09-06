@@ -71,9 +71,7 @@ export default function AdminKilnHistory() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-muted">
-        Cargando horno...
-      </div>
+      <div className="py-20 text-center text-muted">Cargando horno...</div>
     );
   }
 
@@ -83,7 +81,7 @@ export default function AdminKilnHistory() {
         <p className="font-semibold">No fue posible cargar el historial.</p>
         <p className="mt-2 text-sm text-danger">{error}</p>
         <Link
-          to="/admin/kilns"
+          to="/management/kilns"
           className="mt-5 inline-flex items-center gap-2 text-sm text-content"
         >
           <LuArrowLeft /> Volver a hornos
@@ -97,7 +95,7 @@ export default function AdminKilnHistory() {
   return (
     <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5">
       <Link
-        to="/admin/kilns"
+        to="/management/kilns"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-content"
       >
         <LuArrowLeft /> Volver a hornos
@@ -128,10 +126,8 @@ export default function AdminKilnHistory() {
           />
           {controller?.connectionStatus === "ONLINE" && (
             <Badge
-              style={
-                controller.operativeStatus === "ON" ? "success" : "default"
-              }
-              text={getControllerOperationLabel(controller.operativeStatus)}
+              style={controller.switchState ? "success" : "default"}
+              text={getControllerOperationLabel(controller.switchState)}
             />
           )}
         </div>
@@ -139,8 +135,8 @@ export default function AdminKilnHistory() {
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <Metric label="Capacidad" value={`${kiln.liters} L`} />
-        <Metric label="Amperaje" value={`${kiln.amps} A`} />
-        <Metric label="Voltaje" value={`${kiln.volts} V`} />
+        <Metric label="Amperaje" value={`${kiln.nominalCurrent} A`} />
+        <Metric label="Voltaje" value={`${kiln.nominalVoltage} V`} />
         <Metric
           label="Controlador"
           value={
@@ -191,10 +187,7 @@ export default function AdminKilnHistory() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="3"
-                    className="px-6 py-12 text-center text-muted"
-                  >
+                  <td colSpan="3" className="px-6 py-12 text-center text-muted">
                     {telemetryLoading
                       ? "Cargando historial..."
                       : "Sin registros de telemetría."}

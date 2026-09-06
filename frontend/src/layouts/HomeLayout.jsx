@@ -35,31 +35,35 @@ export default function HomeLayout() {
 
         {/* Navegación Principal */}
         <nav
-          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${userRole === "ADMIN" ? "grid-cols-5" : "grid-cols-2"}`}
+          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${["ADMIN", "TECHNICIAN"].includes(userRole) ? "grid-cols-5" : "grid-cols-2"}`}
         >
           {/* Opciones usuario */}
-          {userRole === "USER" && (
+          {userRole === "CLIENT" && (
             <>
               <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
             </>
           )}
 
           {/* Opciones admin */}
-          {userRole === "ADMIN" && (
+          {["ADMIN", "TECHNICIAN"].includes(userRole) && (
             <>
               <SidebarItem
-                path="/admin"
+                path="/management"
                 title="Resumen"
                 icon={LuChartNoAxesCombined}
               />
               <SidebarItem
-                path="/admin/users"
+                path="/management/users"
                 title="Usuarios"
                 icon={LuUsers}
               />
-              <SidebarItem path="/admin/kilns" title="Hornos" icon={LuFlame} />
               <SidebarItem
-                path="/admin/controllers"
+                path="/management/kilns"
+                title="Hornos"
+                icon={LuFlame}
+              />
+              <SidebarItem
+                path="/management/controllers"
                 title="Controladores"
                 icon={LuCircuitBoard}
               />
@@ -73,8 +77,8 @@ export default function HomeLayout() {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:h-dvh">
         <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-3 py-2 sm:px-4 md:min-h-20 md:px-8">
           <h2 className="min-w-0 truncate text-base font-semibold sm:text-xl">
-            {user.role === "ADMIN" ? (
-              "Panel Administrativo"
+            {["ADMIN", "TECHNICIAN"].includes(user.role) ? (
+              "Gestión de equipos"
             ) : (
               <>
                 Hola,{" "}
