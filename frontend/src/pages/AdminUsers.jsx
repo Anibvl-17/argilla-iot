@@ -369,7 +369,9 @@ export default function AdminUsers() {
                 <th className="hidden px-6 py-4 text-center xl:table-cell">
                   Fecha de Registro
                 </th>
-                <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
+                {isAdmin && (
+                  <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -417,7 +419,8 @@ export default function AdminUsers() {
                         <td className="hidden px-6 py-5 text-center text-secondary xl:table-cell">
                           {new Date(user.createdAt).toLocaleDateString("es-CL")}
                         </td>
-                        <td className="px-3 py-5 sm:px-6">
+                        {isAdmin && (
+                          <td className="px-3 py-5 sm:px-6">
                           <div className="flex justify-center gap-2">
                             <button
                               type="button"
@@ -456,7 +459,8 @@ export default function AdminUsers() {
                               {renderAdminActions(user)}
                             </div>
                           </div>
-                        </td>
+                          </td>
+                        )}
                       </tr>
                       {expandedUserId === user.userId && (
                         <tr className="bg-surface-muted lg:hidden">
@@ -514,14 +518,20 @@ export default function AdminUsers() {
                 })}
               {!loading && users.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                  <td
+                    colSpan={isAdmin ? 7 : 6}
+                    className="px-6 py-12 text-center text-muted"
+                  >
                     No se encontraron usuarios.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                  <td
+                    colSpan={isAdmin ? 7 : 6}
+                    className="px-6 py-12 text-center text-muted"
+                  >
                     Cargando usuarios...
                   </td>
                 </tr>
