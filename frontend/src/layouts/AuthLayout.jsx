@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import argillaIconLight from "@assets/argilla-icon-light.png";
 import argillaIconDark from "@assets/argilla-icon.png";
-import ThemeToggle from "@components/ThemeToggle";
 import { useTheme } from "@context/ThemeContext";
 import kiln from "@assets/kiln-illustration.webp";
 import Login from "../pages/Login";
@@ -29,11 +28,11 @@ const AuthLayout = () => {
   const bottomSquares = useMemo(() => renderDecorativeSquares("bottom"), []);
 
   return (
-    <main className="flex min-h-dvh w-full min-w-0 overflow-x-hidden font-sans">
+    <main className="flex min-h-dvh w-full min-w-0 overflow-x-hidden font-sans lg:h-dvh lg:min-h-0 lg:overflow-hidden">
       {/* Columna izquierda */}
-      <section className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-app px-4 py-5 text-content sm:px-10 sm:py-8 md:px-16 lg:w-1/2 lg:px-12 xl:px-24">
+      <section className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-app px-4 py-5 text-content sm:px-10 sm:py-8 md:px-16 lg:h-dvh lg:min-h-0 lg:w-1/2 lg:px-12 xl:px-24">
         {/* Logo */}
-        <header className="mb-8 flex shrink-0 items-center justify-between gap-3 sm:mb-12 lg:mb-4">
+        <header className="mb-8 flex shrink-0 items-center gap-3 sm:mb-12 lg:mb-4">
           <div className="flex items-center gap-3">
             <div className="hidden h-10 w-10 items-center justify-center sm:flex">
               <img
@@ -45,7 +44,6 @@ const AuthLayout = () => {
               <span className="text-accent">a</span>rgilla
             </p>
           </div>
-          <ThemeToggle />
         </header>
 
         {/* Contenedor formulario */}
