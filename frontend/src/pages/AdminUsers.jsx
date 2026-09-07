@@ -531,7 +531,7 @@ export default function AdminUsers() {
                                 <dt className="text-xs font-bold uppercase text-muted">
                                   Dirección
                                 </dt>
-                                <dd className="mt-1 break-words">
+                                <dd className="mt-1 wrap-break-word">
                                   {user.addressLine || (
                                     <span className="italic text-muted">
                                       Sin dirección
