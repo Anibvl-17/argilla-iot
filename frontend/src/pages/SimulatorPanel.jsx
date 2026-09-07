@@ -91,7 +91,7 @@ export default function SimulatorPanel() {
               <div>
                 <dt className="text-muted">Switch</dt>
                 <dd>
-                  {getSwitchLabel(controller.switchType)} ·{" "}
+                  {getSwitchLabel(controller.switchType)}{" "}
                   {controller.switchCurrentCapacity} A
                 </dd>
               </div>
