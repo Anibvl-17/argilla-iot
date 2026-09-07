@@ -11,8 +11,10 @@ import {
   unlinkUserFromKiln,
 } from "../src/services/kiln.service.js";
 import {
+  anonymizeOwnUser,
   anonymizeUser,
   createUser,
+  deactivateOwnUser,
   setUserActive,
 } from "../src/services/user.service.js";
 import { login } from "../src/services/auth.service.js";
@@ -46,20 +48,70 @@ async function verifyInactiveAndAnonymizedUsers(adminId) {
   const user = await createUser({
     email,
     name: "Persona de Verificación",
-    phone: "+56 9 0000 0000",
+    phone: "9 8765 4321",
+    phoneCountryCode: "CL",
+    countryCode: "CL",
+    regionCode: "08",
+    communeCode: "08101",
+    addressLine: "Los Carrera 1234",
     password: "Password123!",
     role: "CLIENT",
   });
   try {
+    assert.equal(user.phone, "+56987654321");
+    assert.equal(user.countryCode, "CL");
+    assert.equal(user.regionCode, "08");
+    assert.equal(user.communeCode, "08101");
+    assert.equal(user.addressLine, "Los Carrera 1234");
     await setUserActive(user.userId, false, adminId);
     await assert.rejects(() => login(email, "Password123!"), { code: "ACCOUNT_INACTIVE" });
     await setUserActive(user.userId, true, adminId);
     const anonymized = await anonymizeUser(user.userId, adminId);
     assert.equal(anonymized.isActive, false);
     assert.ok(anonymized.anonymizedAt);
+    assert.equal(anonymized.phone, null);
+    assert.equal(anonymized.countryCode, null);
+    assert.equal(anonymized.regionCode, null);
+    assert.equal(anonymized.communeCode, null);
+    assert.equal(anonymized.addressLine, null);
     assert.equal("passwordHash" in anonymized, false);
   } finally {
     await prisma.user.deleteMany({ where: { userId: user.userId } });
+  }
+}
+
+async function verifyOwnAccountActions() {
+  const timestamp = Date.now();
+  const deactivated = await createUser({
+    email: `verify-own-deactivate-${timestamp}@argilla.test`,
+    name: "Cuenta a desactivar",
+    password: "Password123!",
+    role: "CLIENT",
+  });
+  const deleted = await createUser({
+    email: `verify-own-delete-${timestamp}@argilla.test`,
+    name: "Cuenta a eliminar",
+    phone: "+56987654321",
+    password: "Password123!",
+    role: "CLIENT",
+  });
+
+  try {
+    const inactive = await deactivateOwnUser(deactivated.userId);
+    assert.equal(inactive.isActive, false);
+
+    const anonymized = await anonymizeOwnUser(deleted.userId);
+    assert.equal(anonymized.isActive, false);
+    assert.ok(anonymized.anonymizedAt);
+    assert.equal(anonymized.phone, null);
+    assert.equal(anonymized.countryCode, null);
+    assert.equal(anonymized.regionCode, null);
+    assert.equal(anonymized.communeCode, null);
+    assert.equal(anonymized.addressLine, null);
+  } finally {
+    await prisma.user.deleteMany({
+      where: { userId: { in: [deactivated.userId, deleted.userId] } },
+    });
   }
 }
 
@@ -127,6 +179,7 @@ async function main() {
   await verifyCircuitValidation();
   const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@argilla.test" } });
   await verifyInactiveAndAnonymizedUsers(admin.userId);
+  await verifyOwnAccountActions();
   await verifyPairing();
   console.log("Service verification passed.");
 }

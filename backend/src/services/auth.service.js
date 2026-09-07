@@ -34,7 +34,5 @@ export async function login(email, password) {
 }
 
 export async function register(data) {
-  const { name, email, password, phone } = data;
-
-  return createUser({ name, email, password, phone, role: "CLIENT" });
+  return createUser({ ...data, role: "CLIENT" });
 }

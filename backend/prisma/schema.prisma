@@ -66,7 +66,11 @@ model User {
   email        String    @unique
   passwordHash String
   name         String
-  phone        String?
+  phone        String?   @db.VarChar(32)
+  countryCode  String?   @db.VarChar(2)
+  regionCode   String?   @db.VarChar(2)
+  communeCode  String?   @db.VarChar(5)
+  addressLine  String?   @db.VarChar(300)
   role         UserRole  @default(CLIENT)
   createdAt    DateTime  @default(now())
   isActive     Boolean   @default(true)

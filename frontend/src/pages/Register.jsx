@@ -11,7 +11,6 @@ import { hasFormError } from "../utils/formError";
 const Register = ({ setMode }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +36,7 @@ const Register = ({ setMode }) => {
         return;
       }
 
-      const result = await register({ name, email, phone: phone || null, password });
+      const result = await register({ name, email, password });
 
       if (result.success) {
         toast.success("¡Cuenta creada exitosamente!", {
@@ -87,23 +86,6 @@ const Register = ({ setMode }) => {
             className="bg-field py-3 px-4 border border-control-border rounded-lg outline-none focus:border-focus focus:bg-field-focus transition-all"
           />
           <FieldError error={error} field="name" id="name-error" />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-secondary font-medium ml-1">Teléfono (opcional)</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={phone}
-            placeholder="+56 9 1234 5678"
-            onChange={(e) => {
-              setPhone(e.target.value);
-              handleInputChange(e);
-            }}
-            className="bg-field py-3 px-4 border border-control-border rounded-lg outline-none focus:border-focus focus:bg-field-focus transition-all"
-          />
-          <FieldError error={error} field="phone" id="phone-error" />
         </div>
 
         {/* Input email */}

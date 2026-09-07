@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "communeCode" VARCHAR(5);

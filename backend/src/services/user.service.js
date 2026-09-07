@@ -3,6 +3,10 @@ import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
 import { ROLES } from "../constants/user.constants.js";
 import { presentUser } from "../utils/entityPresentation.js";
+import {
+  normalizePhoneSearch,
+  normalizeUserContactData,
+} from "../utils/userContact.js";
 
 const HASH_ROUNDS = 10;
 
@@ -14,12 +18,13 @@ function serviceError(code, message) {
 
 export async function createUser(data) {
   const passwordHash = await bcrypt.hash(data.password, HASH_ROUNDS);
+  const contactData = normalizeUserContactData(data);
   const user = await prisma.user.create({
     data: {
       email: data.email,
       passwordHash,
       name: data.name,
-      phone: data.phone ?? null,
+      ...contactData,
       role: data.role ?? ROLES.CLIENT,
     },
   });
@@ -44,7 +49,7 @@ export async function updateUser(userId, data) {
   const updateData = {
     ...(data.name !== undefined ? { name: data.name } : {}),
     ...(data.email !== undefined ? { email: data.email } : {}),
-    ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+    ...normalizeUserContactData(data, current),
     ...(data.role !== undefined ? { role: data.role } : {}),
   };
   if (data.password) {
@@ -75,8 +80,32 @@ export async function setUserActive(userId, isActive, actingUserId) {
   });
 }
 
+export async function deactivateOwnUser(userId) {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { userId } });
+    if (!user) throw serviceError("P2025", "Usuario no encontrado");
+    if (user.anonymizedAt) {
+      throw serviceError("USER_ANONYMIZED", "La cuenta ya fue eliminada");
+    }
+    if (user.role === ROLES.ADMIN && user.isActive) {
+      const activeAdmins = await tx.user.count({
+        where: { role: ROLES.ADMIN, isActive: true, anonymizedAt: null },
+      });
+      if (activeAdmins <= 1) {
+        throw serviceError(
+          "LAST_ACTIVE_ADMIN",
+          "Debe permanecer al menos un administrador activo",
+        );
+      }
+    }
+    return presentUser(
+      await tx.user.update({ where: { userId }, data: { isActive: false } }),
+    );
+  });
+}
+
 async function redactRelatedText(tx, user, replacement) {
-  const tokens = [user.name, user.email, user.phone].filter(Boolean);
+  const tokens = [user.name, user.email, user.phone, user.addressLine].filter(Boolean);
   for (const token of tokens) {
     await tx.$executeRaw`UPDATE "Kiln" SET "name" = replace("name", ${token}, ${replacement}) WHERE "userId" = ${user.userId}`;
     await tx.$executeRaw`UPDATE "Program" SET "name" = replace("name", ${token}, ${replacement}), "description" = CASE WHEN "description" IS NULL THEN NULL ELSE replace("description", ${token}, ${replacement}) END WHERE "userId" = ${user.userId}`;
@@ -85,10 +114,7 @@ async function redactRelatedText(tx, user, replacement) {
   }
 }
 
-export async function anonymizeUser(userId, actingUserId) {
-  if (userId === actingUserId) {
-    throw serviceError("SELF_ANONYMIZATION", "No puedes anonimizar tu propia cuenta");
-  }
+async function anonymizeUserRecord(userId) {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({ where: { userId } });
     if (!user) throw serviceError("P2025", "Usuario no encontrado");
@@ -113,6 +139,10 @@ export async function anonymizeUser(userId, actingUserId) {
         email: `anonymous-${userId}@deleted.invalid`,
         name: `Usuario anonimizado ${userId}`,
         phone: null,
+        countryCode: null,
+        regionCode: null,
+        communeCode: null,
+        addressLine: null,
         passwordHash,
         isActive: false,
         anonymizedAt: new Date(),
@@ -120,6 +150,17 @@ export async function anonymizeUser(userId, actingUserId) {
     });
     return presentUser(updated);
   });
+}
+
+export async function anonymizeUser(userId, actingUserId) {
+  if (userId === actingUserId) {
+    throw serviceError("SELF_ANONYMIZATION", "No puedes anonimizar tu propia cuenta");
+  }
+  return anonymizeUserRecord(userId);
+}
+
+export function anonymizeOwnUser(userId) {
+  return anonymizeUserRecord(userId);
 }
 
 export function findUserByEmail(email) {
@@ -139,7 +180,7 @@ export async function updateOwnProfile(userId, data) {
   if (!user) throw serviceError("P2025", "Usuario no encontrado");
   const updateData = {
     ...(data.name !== undefined ? { name: data.name } : {}),
-    ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+    ...normalizeUserContactData(data, user),
   };
   if (data.newPassword) {
     const matches = await bcrypt.compare(data.currentPassword, user.passwordHash);
@@ -161,6 +202,7 @@ export async function getUsersPage({
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
+  const normalizedPhoneSearch = normalizePhoneSearch(normalizedSearch);
   const numericSearch = Number(normalizedSearch);
   const normalizedRoleFilter = Object.values(ROLES).includes(roleFilter)
     ? roleFilter
@@ -183,6 +225,9 @@ export async function getUsersPage({
             { name: { contains: normalizedSearch, mode: "insensitive" } },
             { email: { contains: normalizedSearch, mode: "insensitive" } },
             { phone: { contains: normalizedSearch, mode: "insensitive" } },
+            ...(normalizedPhoneSearch && normalizedPhoneSearch !== normalizedSearch
+              ? [{ phone: { contains: normalizedPhoneSearch } }]
+              : []),
           ],
         }
       : {}),

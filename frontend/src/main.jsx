@@ -19,6 +19,7 @@ import AuthLayout from "./layouts/AuthLayout";
 import KilnDetails from "@pages/KilnDetails";
 import SimulatorPanel from "./pages/SimulatorPanel";
 import AdminKilnHistory from "@pages/AdminKilnHistory";
+import Profile from "@pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -59,6 +60,10 @@ const router = createBrowserRouter([
           {
             path: "simulator",
             element: <SimulatorPanel />,
+          },
+          {
+            path: "profile",
+            element: <Profile />,
           },
           {
             path: "management",

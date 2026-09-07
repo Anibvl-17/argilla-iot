@@ -92,7 +92,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: tooling
-    command: ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js"]
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run backfill:user-contact && node prisma/seed.js"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-argilla}:${POSTGRES_PASSWORD:-argilla_local_password}@db:5432/${POSTGRES_DB:-argilla}?schema=public
       SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Administrador Argilla}

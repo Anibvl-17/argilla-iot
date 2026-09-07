@@ -37,6 +37,8 @@ export async function registerUser(req, res) {
         null,
         "email",
       );
+    } else if (error.code === "INVALID_USER_CONTACT") {
+      handleErrorClient(res, 400, error.message, null, error.field);
     } else {
       handleErrorServer(res, 500, "Error interno del servidor", error.message);
     }

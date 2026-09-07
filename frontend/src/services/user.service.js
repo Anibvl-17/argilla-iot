@@ -30,6 +30,33 @@ export async function updateProfile(data) {
   }
 }
 
+export async function deactivateOwnAccount() {
+  try {
+    await axios.post("/user/me/deactivate");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error.response?.data?.message || "No se pudo desactivar la cuenta",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function deleteOwnAccount() {
+  try {
+    await axios.delete("/user/me");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "No se pudo eliminar la cuenta",
+      data: error.response?.data,
+    };
+  }
+}
+
 export async function updateUserStatus(userId, isActive) {
   try {
     const response = await axios.patch(`/user/${userId}/status`, { isActive });

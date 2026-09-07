@@ -13,7 +13,9 @@ import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
 import Modal from "@components/Modal";
 import Pagination from "@components/Pagination";
+import UserContactFields from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
+import useUserContactCatalog from "@hooks/useUserContactCatalog";
 import {
   getUserStatus,
   ROLE_LABELS,
@@ -29,6 +31,13 @@ import {
   updateUserStatus,
 } from "@services/user.service";
 import { normalizeFormError } from "../utils/formError";
+import {
+  formatPhoneDisplay,
+  getCommuneName,
+  getCountryName,
+  getRegionName,
+  prepareUserContactPayload,
+} from "../utils/userContact";
 
 const PAGE_SIZE = 10;
 
@@ -44,13 +53,6 @@ const userFields = [
     label: "Correo electrónico",
     type: "email",
     placeholder: "usuario@ejemplo.cl",
-  },
-  {
-    name: "phone",
-    label: "Teléfono",
-    type: "tel",
-    placeholder: "+56 9 1234 5678",
-    required: false,
   },
   { name: "role", label: "Rol", type: "select", options: ROLE_OPTIONS },
   {
@@ -97,6 +99,12 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const {
+    catalog,
+    loading: catalogLoading,
+    error: catalogError,
+    retry: retryCatalog,
+  } = useUserContactCatalog();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -148,13 +156,20 @@ export default function AdminUsers() {
   async function handleSubmit(formData) {
     setLoading(true);
     setModalError(null);
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone?.trim() || null,
-      role: formData.role,
-      ...(formData.password ? { password: formData.password } : {}),
-    };
+    let payload;
+    try {
+      payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        role: formData.role,
+        ...prepareUserContactPayload(formData, catalog),
+        ...(formData.password ? { password: formData.password } : {}),
+      };
+    } catch (error) {
+      setLoading(false);
+      setModalError(normalizeFormError(error));
+      return;
+    }
     const result =
       modalMode === "create"
         ? await createUser(payload)
@@ -396,7 +411,9 @@ export default function AdminUsers() {
                         </td>
                         <td className="hidden px-6 py-5 lg:table-cell">
                           {user.phone ? (
-                            <span className="text-secondary">{user.phone}</span>
+                            <span className="text-secondary">
+                              {formatPhoneDisplay(user.phone)}
+                            </span>
                           ) : (
                             <span className="italic text-muted">
                               Sin teléfono
@@ -421,49 +438,49 @@ export default function AdminUsers() {
                         </td>
                         {isAdmin && (
                           <td className="px-3 py-5 sm:px-6">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedUserId(
-                                  expandedUserId === user.userId
-                                    ? null
-                                    : user.userId,
-                                )
-                              }
-                              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content lg:hidden"
-                              title={
-                                expandedUserId === user.userId
-                                  ? "Ocultar detalles"
-                                  : "Ver detalles"
-                              }
-                            >
-                              {expandedUserId === user.userId ? (
-                                <LuEyeOff className="text-base" />
-                              ) : (
-                                <LuEye className="text-base" />
-                              )}
-                            </button>
-                            {isAdmin && (
+                            <div className="flex justify-center gap-2">
                               <button
                                 type="button"
-                                disabled={Boolean(user.anonymizedAt)}
-                                onClick={() => openEditModal(user)}
-                                className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content disabled:opacity-40 lg:hidden"
-                                title="Editar usuario"
+                                onClick={() =>
+                                  setExpandedUserId(
+                                    expandedUserId === user.userId
+                                      ? null
+                                      : user.userId,
+                                  )
+                                }
+                                className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content"
+                                title={
+                                  expandedUserId === user.userId
+                                    ? "Ocultar detalles"
+                                    : "Ver detalles"
+                                }
                               >
-                                <LuPencil className="text-base" />
+                                {expandedUserId === user.userId ? (
+                                  <LuEyeOff className="text-base" />
+                                ) : (
+                                  <LuEye className="text-base" />
+                                )}
                               </button>
-                            )}
-                            <div className="hidden justify-center gap-2 lg:flex">
-                              {renderAdminActions(user)}
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  disabled={Boolean(user.anonymizedAt)}
+                                  onClick={() => openEditModal(user)}
+                                  className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content disabled:opacity-40 lg:hidden"
+                                  title="Editar usuario"
+                                >
+                                  <LuPencil className="text-base" />
+                                </button>
+                              )}
+                              <div className="hidden justify-center gap-2 lg:flex">
+                                {renderAdminActions(user)}
+                              </div>
                             </div>
-                          </div>
                           </td>
                         )}
                       </tr>
                       {expandedUserId === user.userId && (
-                        <tr className="bg-surface-muted lg:hidden">
+                        <tr className="bg-surface-muted">
                           <td colSpan={7} className="px-4 py-5 sm:px-6">
                             <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                               <div>
@@ -471,9 +488,53 @@ export default function AdminUsers() {
                                   Teléfono
                                 </dt>
                                 <dd className="mt-1">
-                                  {user.phone || (
+                                  {formatPhoneDisplay(user.phone) || (
                                     <span className="italic text-muted">
                                       Sin teléfono
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  País
+                                </dt>
+                                <dd className="mt-1">
+                                  {getCountryName(catalog, user.countryCode)}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Región
+                                </dt>
+                                <dd className="mt-1">
+                                  {user.countryCode === "CL"
+                                    ? getRegionName(catalog, user.regionCode)
+                                    : "No aplica"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Comuna
+                                </dt>
+                                <dd className="mt-1">
+                                  {user.countryCode === "CL"
+                                    ? getCommuneName(
+                                        catalog,
+                                        user.regionCode,
+                                        user.communeCode,
+                                      )
+                                    : "No aplica"}
+                                </dd>
+                              </div>
+                              <div className="col-span-2 sm:col-span-3">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Dirección
+                                </dt>
+                                <dd className="mt-1 break-words">
+                                  {user.addressLine || (
+                                    <span className="italic text-muted">
+                                      Sin dirección
                                     </span>
                                   )}
                                 </dd>
@@ -551,14 +612,39 @@ export default function AdminUsers() {
         onClose={closeModal}
         title={modalMode === "create" ? "Crear usuario" : "Editar usuario"}
         fields={modalMode === "create" ? createUserFields : userFields}
-        initialData={modalMode === "create" ? { role: "CLIENT" } : selectedUser}
+        initialData={
+          modalMode === "create"
+            ? {
+                role: "CLIENT",
+                countryCode: "CL",
+                regionCode: "",
+                communeCode: "",
+                addressLine: "",
+                phone: "",
+                phoneCountryCode: "CL",
+              }
+            : selectedUser
+        }
         submitLabel={
           modalMode === "create" ? "Crear usuario" : "Guardar cambios"
         }
         onSubmit={handleSubmit}
         error={modalError}
         loading={loading}
+        submitDisabled={catalogLoading || !catalog}
         onClearError={setModalError}
+        renderAfterFields={({ formData, setFormData, error, onClearError }) => (
+          <UserContactFields
+            value={formData}
+            onChange={setFormData}
+            error={error}
+            onClearError={onClearError}
+            catalog={catalog}
+            catalogLoading={catalogLoading}
+            catalogError={catalogError}
+            onRetryCatalog={retryCatalog}
+          />
+        )}
       />
 
       <AlertDialog

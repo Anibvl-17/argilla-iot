@@ -18,13 +18,15 @@ export default function Modal({
   loading = false,
   onClearError = () => {},
   renderContent = null,
+  renderAfterFields = null,
+  submitDisabled = false,
 }) {
   const [formData, setFormData] = useState({});
 
   // Sincroniza el estado del formulario cuando se abre el modal o cambia la data inicial (modo Edición)
   useEffect(() => {
     if (isOpen) {
-      const initialFormState = {};
+      const initialFormState = { ...(initialData || {}) };
       fields.forEach((field) => {
         initialFormState[field.name] = initialData
           ? initialData[field.name]
@@ -154,6 +156,14 @@ export default function Modal({
                     </div>
                   );
                 })}
+            {renderAfterFields?.({
+              formData,
+              setFormData,
+              handleChange,
+              onClearError: (field) =>
+                onClearError(clearFormError(normalizedError, field)),
+              error: normalizedError,
+            })}
           </div>
 
           <FieldError error={normalizedError} />
@@ -170,7 +180,7 @@ export default function Modal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || submitDisabled}
               className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-on-action rounded-lg text-sm font-medium transition-colors shadow-card"
             >
               {loading ? (

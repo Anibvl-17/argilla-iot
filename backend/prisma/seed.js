@@ -507,7 +507,7 @@ async function main() {
     name: technician.name,
     password: technician.password,
     role: "TECHNICIAN",
-    phone: "+56 9 5555 0101",
+    phone: "+56955550101",
   });
 
   const seededUsers = {};

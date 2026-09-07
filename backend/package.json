@@ -24,6 +24,8 @@
     "seed": "prisma db seed",
     "verify:model": "node prisma/verifyModel.js",
     "verify:services": "node prisma/verifyServices.js",
+    "backfill:user-contact": "node prisma/backfillUserContact.js",
+    "test": "node --test",
     "simulator": "node src/scripts/runSimulator.js"
   },
   "dependencies": {
@@ -33,6 +35,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "libphonenumber-js": "^1.13.12",
     "morgan": "^1.10.1",
     "mqtt": "^5.14.1",
     "pg": "^8.21.0",

@@ -5,6 +5,8 @@ import { ROLES } from "../constants/user.constants.js";
 import {
   addUser,
   changeUserStatus,
+  deactivateProfile,
+  deleteProfile,
   editProfile,
   editUser,
   getAllUsers,
@@ -25,6 +27,8 @@ router.use(authenticateJWT);
 
 router.get("/me", getProfile);
 router.patch("/me", validateSchema(updateProfileValidation), editProfile);
+router.post("/me/deactivate", deactivateProfile);
+router.delete("/me", deleteProfile);
 
 router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllUsers);
 router.use(verifyRoles([ROLES.ADMIN]));

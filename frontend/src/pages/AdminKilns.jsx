@@ -582,11 +582,11 @@ export default function AdminKilns() {
                         <td className="hidden px-3 py-5 text-center lg:table-cell">
                           <p className="font-medium">{kiln.liters} litros</p>
                         </td>
-                        <td className="hidden px-3 py-5 text-center lg:table-cell">
-                          <p className="font-mono font-medium">
+                        <td className="font-mono hidden px-3 py-5 text-center lg:table-cell">
+                          <p className="font-medium">
                             {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
                           </p>
-                          <p className="mt-1 text-secondary">
+                          <p className="mt-1 text-secondary text-xs">
                             {kiln.phaseCount === 1
                               ? "Monofásico"
                               : "Trifásico"}

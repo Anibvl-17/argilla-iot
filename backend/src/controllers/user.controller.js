@@ -4,8 +4,10 @@ import {
   handleSuccess,
 } from "../handlers/response.handler.js";
 import {
+  anonymizeOwnUser,
   anonymizeUser,
   createUser,
+  deactivateOwnUser,
   getUserProfile,
   setUserActive,
   updateOwnProfile,
@@ -13,6 +15,12 @@ import {
   getUsersPage,
 } from "../services/user.service.js";
 import { disconnectUserSockets, emitAdminSummary } from "../realtime/socket.js";
+
+function handleUserContactError(res, error) {
+  if (error.code !== "INVALID_USER_CONTACT") return false;
+  handleErrorClient(res, 400, error.message, null, error.field);
+  return true;
+}
 
 export async function addUser(req, res) {
   try {
@@ -23,6 +31,7 @@ export async function addUser(req, res) {
 
     return handleSuccess(res, 201, "Usuario creado exitosamente", newUser);
   } catch (error) {
+    if (handleUserContactError(res, error)) return;
     if (error.code === "P2002") {
       return handleErrorClient(
         res,
@@ -54,6 +63,7 @@ export async function editProfile(req, res) {
       updatedUser,
     );
   } catch (error) {
+    if (handleUserContactError(res, error)) return;
     if (error.code === "INVALID_CURRENT_PASSWORD") {
       return handleErrorClient(
         res,
@@ -97,6 +107,52 @@ export async function getProfile(req, res) {
   }
 }
 
+export async function deactivateProfile(req, res) {
+  try {
+    const user = await deactivateOwnUser(req.user.id);
+    disconnectUserSockets(req.user.id);
+    res.clearCookie("jwt-auth");
+    void emitAdminSummary();
+    return handleSuccess(res, 200, "Tu cuenta fue desactivada", user);
+  } catch (error) {
+    if (error.code === "P2025") {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if (["USER_ANONYMIZED", "LAST_ACTIVE_ADMIN"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(
+      res,
+      500,
+      "Error al desactivar la cuenta",
+      error.message,
+    );
+  }
+}
+
+export async function deleteProfile(req, res) {
+  try {
+    const user = await anonymizeOwnUser(req.user.id);
+    disconnectUserSockets(req.user.id);
+    res.clearCookie("jwt-auth");
+    void emitAdminSummary();
+    return handleSuccess(res, 200, "Tu cuenta fue eliminada", user);
+  } catch (error) {
+    if (error.code === "P2025") {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if (error.code === "LAST_ACTIVE_ADMIN") {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(
+      res,
+      500,
+      "Error al eliminar la cuenta",
+      error.message,
+    );
+  }
+}
+
 /**
  * Endpoint para editar un usuario como administrador. A diferencia de editar
  * perfil, esta función permite cambiar roles.
@@ -118,6 +174,7 @@ export async function editUser(req, res) {
       updatedUser,
     );
   } catch (error) {
+    if (handleUserContactError(res, error)) return;
     if (error.code === "P2002") {
       return handleErrorClient(
         res,

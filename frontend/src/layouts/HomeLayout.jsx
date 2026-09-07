@@ -1,8 +1,6 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { SidebarItem } from "@components/SidebarItem";
-import ProfileModal from "@components/ProfileModal";
 import argillaIcon from "@assets/argilla-icon-light.png";
 import {
   LuChartNoAxesCombined,
@@ -15,7 +13,6 @@ import {
 
 export default function HomeLayout() {
   const { user } = useAuth();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userRole = user.role;
 
   const isClient = user.role === "CLIENT";
@@ -48,8 +45,7 @@ export default function HomeLayout() {
           )}
 
           {/* Opciones admin */}
-          {isAdmin ||
-            (isTechnician && (
+          {(isAdmin || isTechnician) && (
               <>
                 <SidebarItem
                   path="/management"
@@ -72,7 +68,7 @@ export default function HomeLayout() {
                   icon={LuCircuitBoard}
                 />
               </>
-            ))}
+            )}
           <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
         </nav>
       </aside>
@@ -89,26 +85,25 @@ export default function HomeLayout() {
             )}
           </h2>
           <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen(true)}
+            <Link
+              to="/profile"
               className="flex items-center gap-2 rounded-md border border-control-border bg-surface px-3 py-2 text-sm transition-colors hover:bg-surface-hover sm:px-4 hover:cursor-pointer"
               aria-label="Mi perfil"
             >
               <LuUser className="text-lg" />
               <span className="hidden sm:inline">Mi perfil</span>
-            </button>
+            </Link>
           </div>
         </header>
 
         {/* Area de contenido */}
-        <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-8">
+        <div
+          data-floating-dropdown-boundary
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-8"
+        >
           <Outlet />
         </div>
       </main>
-      {isProfileOpen && (
-        <ProfileModal onClose={() => setIsProfileOpen(false)} />
-      )}
     </div>
   );
 }
