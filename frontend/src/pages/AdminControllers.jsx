@@ -403,7 +403,9 @@ export default function AdminControllers() {
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="py-4 sm:px-6 text-center">ID</th>
+                <th className="py-4 sm:px-6 text-center gap-2">
+                  ID
+                </th>
                 <th className="hidden px-6 py-4 md:table-cell">Propietario / Horno</th>
                 <th className="hidden px-6 py-4 text-center sm:table-cell">Temperatura</th>
                 <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
@@ -417,8 +419,16 @@ export default function AdminControllers() {
                 controllers.map((controller) => (
                   <Fragment key={controller.controllerId}>
                     <tr className="transition-colors hover:bg-surface-hover">
-                      <td className="py-5 font-mono sm:px-6 text-accent text-center hover:underline hover:cursor-pointer">
-                        <p className="text-sm">...{controller.controllerCode}</p>
+                      <td className="py-5 font-mono sm:px-6 text-accent text-center gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(controller.controllerId.slice(-6));
+                            toast.success("¡ID copiada!");
+                          }}
+                          title="Copiar identificador del controlador"
+                          className="text-sm hover:underline hover:cursor-pointer">
+                          ...{controller.controllerCode}
+                        </button>
                       </td>
                       <td className="hidden px-6 py-5 md:table-cell">
                         {controller.user ? <p>{controller.user.name}</p> : <p className="italic text-muted">Sin propietario</p>}

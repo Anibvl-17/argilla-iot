@@ -569,15 +569,24 @@ export default function AdminKilns() {
                               Sin propietario
                             </span>
                           )}
-                          <p className="mt-1 font-mono text-accent lg:hidden">
+                          <div className="mt-1 font-mono text-accent lg:hidden">
                             {kiln.controller ? (
-                              `...${kiln.controller.controllerCode}`
+                              <button
+                                className="hover:cursor-pointer hover:text-accent"
+                                title="Copiar ID"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(kiln.controller.controllerCode);
+                                  toast.success("¡ID copiada!");
+                                }}
+                              >
+                                ...{kiln.controller.controllerCode}
+                              </button>
                             ) : (
-                              <span className="font-sans italic text-muted">
+                              <p className="font-sans italic text-muted">
                                 Sin controlador
-                              </span>
+                              </p>
                             )}
-                          </p>
+                          </div>
                         </td>
                         <td className="hidden px-3 py-5 text-center lg:table-cell">
                           <p className="font-medium">{kiln.liters} litros</p>
@@ -594,9 +603,16 @@ export default function AdminKilns() {
                         </td>
                         <td className="hidden px-6 py-5 lg:table-cell text-center">
                           {kiln.controller ? (
-                            <p className="font-mono text-accent">
+                            <button
+                                className="font-mono text-accent hover:cursor-pointer hover:underline"
+                                title="Copiar ID"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(kiln.controller.controllerCode);
+                                  toast.success("¡ID copiada!");
+                                }}
+                              >
                               ...{kiln.controller.controllerCode}
-                            </p>
+                            </button>
                           ) : (
                             <span className="italic text-muted">
                               Sin asociar

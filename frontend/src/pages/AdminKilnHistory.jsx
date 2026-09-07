@@ -5,10 +5,9 @@ import { Badge } from "@components/Badge";
 import ControllerStatus from "@components/ControllerStatus";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import { getAdminKiln, getAdminKilnTelemetry } from "@services/kiln.service";
-import {
-  getControllerConnectionLabel,
-} from "@constants/controller.constants";
-import { LuArrowLeft, LuHistory } from "react-icons/lu";
+import { getControllerConnectionLabel } from "@constants/controller.constants";
+import { LuArrowLeft, LuCopy, LuHistory } from "react-icons/lu";
+import { toast } from "sonner";
 
 export default function AdminKilnHistory() {
   const { kilnId } = useParams();
@@ -134,14 +133,33 @@ export default function AdminKilnHistory() {
         <Metric label="Capacidad" value={`${kiln.liters} L`} />
         <Metric label="Amperaje" value={`${kiln.nominalCurrent} A`} />
         <Metric label="Voltaje" value={`${kiln.nominalVoltage} V`} />
-        <Metric
-          label="Controlador"
-          value={
-            controller
-              ? `...${controller.controllerId.slice(-6)}`
-              : "Sin vincular"
-          }
-        />
+        <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
+            Controlador
+          </p>
+          <p
+            className="mt-1 truncate font-mono text-base font-semibold text-content sm:text-xl"
+            title={controller.controllerCode || "Sin vincular"}
+          >
+            {controller ? (
+              <>
+                ...{controller.controllerCode}{" "}
+                <button
+                  className="text-sm hover:cursor-pointer hover:text-accent"
+                  title="Copiar ID"
+                  onClick={() => {
+                    navigator.clipboard.writeText(controller.controllerCode);
+                    toast.success("¡ID copiada!");
+                  }}
+                >
+                  <LuCopy />
+                </button>
+              </>
+            ) : (
+              "Sin vincular"
+            )}
+          </p>
+        </div>
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
