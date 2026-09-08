@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { LuBox, LuFlame, LuMoveRight, LuPower, LuRadio } from "react-icons/lu";
+import { toast } from "sonner";
+import {
+  LuBox,
+  LuFlame,
+  LuMoveRight,
+  LuPlus,
+  LuPower,
+  LuRadio,
+} from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
 import {
   getMyKilns,
@@ -8,9 +16,14 @@ import {
 } from "@services/kiln.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import ControllerStatus from "@components/ControllerStatus";
+import { Badge } from "@components/Badge";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
-import { SWITCH_LABELS } from "../constants/controller.constants";
+import {
+  getFiringCommandLabel,
+  SWITCH_LABELS,
+} from "../constants/controller.constants";
+import { pairController } from "@services/controller.service";
 
 function applyTelemetry(controller, telemetry) {
   return controller?.controllerCode === telemetry.controllerCode
@@ -24,6 +37,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [pairing, setPairing] = useState({ partialControllerId: "", pin: "" });
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingError, setPairingError] = useState("");
+  const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -36,7 +54,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const handleTelemetry = useCallback((telemetry) => {
     setData((current) => ({
@@ -55,7 +73,7 @@ export default function Home() {
   async function handleKilnCommand(kiln) {
     if (!kiln.controller) return;
 
-    const command = kiln.controller.operativeStatus === "ON" ? "OFF" : "ON";
+    const command = kiln.controller.switchState ? "OFF" : "ON";
     setCommandLoadingId(String(kiln.kilnId));
     const result = await sendMyKilnControllerCommand(kiln.kilnId, command);
     setCommandLoadingId("");
@@ -65,13 +83,49 @@ export default function Home() {
     }
   }
 
-  if (user.role === ROLES.ADMIN) return <Navigate to="/admin" replace />;
+  if ([ROLES.ADMIN, ROLES.TECHNICIAN].includes(user.role)) {
+    return <Navigate to="/management" replace />;
+  }
+
+  async function handlePairing(event) {
+    event.preventDefault();
+    setPairingLoading(true);
+    setPairingError("");
+    const result = await pairController(
+      pairing.partialControllerId,
+      pairing.pin,
+    );
+    setPairingLoading(false);
+    if (!result.success) {
+      const details = result.data?.errorDetails;
+      setPairingError(
+        typeof details === "object" && details?.blockedUntil
+          ? `Vinculación bloqueada hasta ${new Date(details.blockedUntil).toLocaleString("es-CL")}`
+          : details || result.message,
+      );
+      return;
+    }
+    setPairing({ partialControllerId: "", pin: "" });
+    setIsPairingModalOpen(false);
+    setReloadKey((value) => value + 1);
+    toast.success("Horno agregado exitosamente.");
+  }
+
+  function openPairingModal() {
+    setPairingError("");
+    setIsPairingModalOpen(true);
+  }
+
+  function closePairingModal() {
+    if (pairingLoading) return;
+    setIsPairingModalOpen(false);
+    setPairing({ partialControllerId: "", pin: "" });
+    setPairingError("");
+  }
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-muted">
-        Cargando tus hornos...
-      </div>
+      <div className="py-20 text-center text-muted">Cargando tus hornos...</div>
     );
   }
 
@@ -90,13 +144,22 @@ export default function Home() {
   return (
     <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-7 sm:gap-10">
       <section>
-        <div className="mb-6">
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Mis hornos
-          </h1>
-          <p className="mt-2 text-secondary">
-            Revisa el estado y la información principal de tus hornos.
-          </p>
+        <div className="mb-6 flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+              Mis hornos
+            </h1>
+            <p className="mt-2 text-secondary">
+              Revisa el estado y la información principal de tus hornos.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openPairingModal}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
+          >
+            <LuPlus /> Agregar horno
+          </button>
         </div>
 
         {!hasEquipment ? (
@@ -122,9 +185,7 @@ export default function Home() {
                 className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel  transition-colors hover:border-control-border sm:p-6"
               >
                 <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-border">
-                  <span className="rounded-xl text-muted">
-                    {kiln.name}
-                  </span>
+                  <span className="rounded-xl text-muted">{kiln.name}</span>
 
                   <span className="flex items-center justify-center gap-1 text-muted">
                     <LuBox />
@@ -135,7 +196,10 @@ export default function Home() {
                 <h2 className="truncate text-center">
                   {kiln.controller ? (
                     <span className="text-4xl/relaxed tracking-wide font-bold text-content">
-                      {kiln.controller?.temp.toFixed(1)} °C
+                      {kiln.controller.temperature == null
+                        ? "--"
+                        : kiln.controller.temperature.toFixed(1)}{" "}
+                      °C
                     </span>
                   ) : (
                     <p className="text-secondary">Sin controlador asociado</p>
@@ -152,11 +216,16 @@ export default function Home() {
                           : "justify-center")
                       }
                     >
-                      <p className="text-sm text-muted">
-                        {getControllerConnectionLabel(
+                      <Badge
+                        style={
+                          kiln.controller.connectionStatus === "ONLINE"
+                            ? "info"
+                            : "default"
+                        }
+                        text={getControllerConnectionLabel(
                           kiln.controller.connectionStatus,
                         )}
-                      </p>
+                      />
                       {kiln.controller?.connectionStatus === "ONLINE" && (
                         <ControllerStatus controller={kiln.controller} />
                       )}
@@ -176,14 +245,14 @@ export default function Home() {
                       kiln.controller?.connectionStatus === "OFFLINE"
                         ? "Controlador desconectado"
                         : kiln.controller
-                          ? kiln.controller.operativeStatus === "ON"
-                            ? "Apagar horno"
-                            : "Encender horno"
+                          ? kiln.controller.switchState
+                            ? "Detener quema del horno"
+                            : "Iniciar quema del horno"
                           : "Requiere controlador"
                     }
                     className={
                       "flex flex-1 items-center justify-center gap-2 rounded-lg border border-control-border px-3 py-2.5 text-sm text-content transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-disabled hover:cursor-pointer " +
-                      (kiln.controller?.operativeStatus === "ON"
+                      (kiln.controller?.switchState
                         ? "enabled:hover:bg-danger-soft enabled:hover:text-accent enabled:hover:border-danger-border"
                         : "enabled:hover:bg-success-soft enabled:hover:text-success enabled:hover:border-success-border")
                     }
@@ -191,9 +260,9 @@ export default function Home() {
                     <LuPower />
                     {commandLoadingId === String(kiln.kilnId)
                       ? "Enviando..."
-                      : kiln.controller?.operativeStatus === "ON"
-                        ? "Apagar"
-                        : "Encender"}
+                      : getFiringCommandLabel(
+                          kiln.controller?.switchState ? "OFF" : "ON",
+                        )}
                   </button>
                   <Link
                     to={`/kilns/${kiln.kilnId}`}
@@ -228,16 +297,18 @@ export default function Home() {
                     <LuRadio className="text-accent" /> Controlador ...
                     {controller.controllerCode}
                   </div>
-                  <ControllerStatus controller={controller} />
+                  {controller.connectionStatus === "ONLINE" && (
+                    <ControllerStatus controller={controller} />
+                  )}
                 </div>
                 <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <dt className="text-muted">Temperatura</dt>
                     <dd className="mt-1">
-                      {controller.temp == null ||
+                      {controller.temperature == null ||
                       controller.connectionStatus !== "ONLINE"
                         ? "No disponible"
-                        : `${controller.temp.toFixed(1)} °C`}
+                        : `${controller.temperature.toFixed(1)} °C`}
                     </dd>
                   </div>
                   <div>
@@ -248,14 +319,23 @@ export default function Home() {
                   </div>
                   <div>
                     <dt className="text-muted">Capacidad</dt>
-                    <dd className="mt-1">{controller.switchAmps} A</dd>
+                    <dd className="mt-1">
+                      {controller.switchCurrentCapacity} A
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted">Conexión</dt>
                     <dd className="mt-1">
-                      {getControllerConnectionLabel(
-                        controller.connectionStatus,
-                      )}
+                      <Badge
+                        style={
+                          controller.connectionStatus === "ONLINE"
+                            ? "info"
+                            : "default"
+                        }
+                        text={getControllerConnectionLabel(
+                          controller.connectionStatus,
+                        )}
+                      />
                     </dd>
                   </div>
                 </dl>
@@ -263,6 +343,160 @@ export default function Home() {
             ))}
           </div>
         </section>
+      )}
+
+      {isPairingModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm sm:p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closePairingModal();
+          }}
+          role="presentation"
+        >
+          <section
+            aria-labelledby="pairing-modal-title"
+            aria-modal="true"
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-border bg-surface shadow-dialog"
+            role="dialog"
+          >
+            <header className="flex items-center justify-between border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+              <h2
+                id="pairing-modal-title"
+                className="text-xl font-bold text-content"
+              >
+                Agregar horno
+              </h2>
+              <button
+                type="button"
+                aria-label="Cerrar modal"
+                disabled={pairingLoading}
+                onClick={closePairingModal}
+                className="rounded-md p-1 text-muted transition-colors hover:bg-surface-hover hover:text-content disabled:opacity-40"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </header>
+
+            <form onSubmit={handlePairing} className="space-y-5 p-4 sm:p-6">
+              <p className="rounded-lg text-sm leading-relaxed text-secondary">
+                Agrega tu horno en 3 simples pasos:
+              </p>
+
+              <ol className="space-y-3 text-sm text-secondary">
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    1
+                  </span>
+                  <span>
+                    Enciende el controlador y solicita un PIN de vinculación
+                    desde el dispositivo.
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    2
+                  </span>
+                  <span>
+                    Ingresa el identificador del controlador.
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
+                    3
+                  </span>
+                  <span>
+                    Ingresa el PIN de vinculación que aparece en el dispositivo.
+                  </span>
+                </li>
+              </ol>
+
+              <p className="text-xs text-secondary">
+                El PIN expira en 15 minutos. Después de 10 intentos fallidos, la vinculación se bloqueará temporalmente por 2 horas.
+              </p>
+
+              <label className="block text-sm font-medium text-muted">
+                Identificador del controlador
+                <input
+                  autoFocus
+                  className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono uppercase text-content outline-none focus:border-focus"
+                  placeholder="A1B2C3"
+                  value={pairing.partialControllerId}
+                  onChange={(event) =>
+                    setPairing((current) => ({
+                      ...current,
+                      partialControllerId: event.target.value
+                        .replace(/[^0-9a-f]/gi, "")
+                        .slice(0, 6),
+                    }))
+                  }
+                  pattern="[0-9a-fA-F]{6}"
+                  maxLength={6}
+                  required
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-muted">
+                PIN de vinculación
+                <input
+                  className="mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 font-mono text-content outline-none focus:border-focus"
+                  inputMode="numeric"
+                  placeholder="123456"
+                  value={pairing.pin}
+                  onChange={(event) =>
+                    setPairing((current) => ({
+                      ...current,
+                      pin: event.target.value.replace(/\D/g, "").slice(0, 6),
+                    }))
+                  }
+                  pattern="\d{6}"
+                  maxLength={6}
+                  required
+                />
+              </label>
+
+              {pairingError && (
+                <p className="rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-danger">
+                  {pairingError}
+                </p>
+              )}
+
+              <div className="flex flex-row justify-end gap-3 border-t border-border pt-5">
+                <button
+                  type="button"
+                  disabled={pairingLoading}
+                  onClick={closePairingModal}
+                  className="flex-1 rounded-lg border border-control-border px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={pairingLoading}
+                  className="flex-2 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover disabled:opacity-60"
+                >
+                  <LuPlus />
+                  {pairingLoading ? "Vinculando..." : "Agregar horno"}
+                </button>
+              </div>
+
+              <div className="border-t border-border text-center pt-4">
+                <p className="text-sm text-muted">
+                  ¿No puedes vincular tu horno?{" "}
+                  <a href="#" className="underline transition-all hover:cursor-pointer hover:text-accent">Solicita ayuda aquí</a>
+                </p>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
     </div>
   );

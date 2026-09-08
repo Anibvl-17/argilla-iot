@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { SidebarItem } from "@components/SidebarItem";
-import ProfileModal from "@components/ProfileModal";
-import ThemeToggle from "@components/ThemeToggle";
 import argillaIcon from "@assets/argilla-icon-light.png";
 import {
   LuChartNoAxesCombined,
@@ -16,8 +13,11 @@ import {
 
 export default function HomeLayout() {
   const { user } = useAuth();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userRole = user.role;
+
+  const isClient = user.role === "CLIENT";
+  const isTechnician = user.role === "TECHNICIAN";
+  const isAdmin = user.role === "ADMIN";
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-app font-sans text-content xl:flex-row">
@@ -35,36 +35,40 @@ export default function HomeLayout() {
 
         {/* Navegación Principal */}
         <nav
-          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${userRole === "ADMIN" ? "grid-cols-5" : "grid-cols-2"}`}
+          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${["ADMIN", "TECHNICIAN"].includes(userRole) ? "grid-cols-5" : "grid-cols-2"}`}
         >
           {/* Opciones usuario */}
-          {userRole === "USER" && (
+          {isClient && (
             <>
               <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
             </>
           )}
 
           {/* Opciones admin */}
-          {userRole === "ADMIN" && (
-            <>
-              <SidebarItem
-                path="/admin"
-                title="Resumen"
-                icon={LuChartNoAxesCombined}
-              />
-              <SidebarItem
-                path="/admin/users"
-                title="Usuarios"
-                icon={LuUsers}
-              />
-              <SidebarItem path="/admin/kilns" title="Hornos" icon={LuFlame} />
-              <SidebarItem
-                path="/admin/controllers"
-                title="Controladores"
-                icon={LuCircuitBoard}
-              />
-            </>
-          )}
+          {(isAdmin || isTechnician) && (
+              <>
+                <SidebarItem
+                  path="/management"
+                  title="Resumen"
+                  icon={LuChartNoAxesCombined}
+                />
+                <SidebarItem
+                  path="/management/users"
+                  title="Usuarios"
+                  icon={LuUsers}
+                />
+                <SidebarItem
+                  path="/management/kilns"
+                  title="Hornos"
+                  icon={LuFlame}
+                />
+                <SidebarItem
+                  path="/management/controllers"
+                  title="Controladores"
+                  icon={LuCircuitBoard}
+                />
+              </>
+            )}
           <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
         </nav>
       </aside>
@@ -73,37 +77,33 @@ export default function HomeLayout() {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:h-dvh">
         <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-3 py-2 sm:px-4 md:min-h-20 md:px-8">
           <h2 className="min-w-0 truncate text-base font-semibold sm:text-xl">
-            {user.role === "ADMIN" ? (
-              "Panel Administrativo"
-            ) : (
+            {isAdmin && "Panel administrativo"}
+            {(isTechnician || isClient) && (
               <>
-                Hola,{" "}
-                <span className="text-accent">{user.name}</span>
+                Hola, <span className="text-accent">{user.name}</span>
               </>
             )}
           </h2>
           <div className="flex shrink-0 items-center gap-2">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen(true)}
+            <Link
+              to="/profile"
               className="flex items-center gap-2 rounded-md border border-control-border bg-surface px-3 py-2 text-sm transition-colors hover:bg-surface-hover sm:px-4 hover:cursor-pointer"
               aria-label="Mi perfil"
             >
               <LuUser className="text-lg" />
               <span className="hidden sm:inline">Mi perfil</span>
-            </button>
+            </Link>
           </div>
         </header>
 
         {/* Area de contenido */}
-        <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-8">
+        <div
+          data-floating-dropdown-boundary
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-8"
+        >
           <Outlet />
         </div>
       </main>
-      {isProfileOpen && (
-        <ProfileModal onClose={() => setIsProfileOpen(false)} />
-      )}
     </div>
   );
 }

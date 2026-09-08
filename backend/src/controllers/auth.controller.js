@@ -14,7 +14,7 @@ export async function loginUser(req, res) {
   } catch (error) {
     handleErrorClient(
       res,
-      401,
+      error.code === "ACCOUNT_INACTIVE" ? 403 : 401,
       "Error al iniciar sesión",
       error.message,
       "password",
@@ -37,6 +37,8 @@ export async function registerUser(req, res) {
         null,
         "email",
       );
+    } else if (error.code === "INVALID_USER_CONTACT") {
+      handleErrorClient(res, 400, error.message, null, error.field);
     } else {
       handleErrorServer(res, 500, "Error interno del servidor", error.message);
     }

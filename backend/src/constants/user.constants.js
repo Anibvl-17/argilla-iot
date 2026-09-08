@@ -1,9 +1,11 @@
 export const ROLES = {
-  USER: "USER",
   ADMIN: "ADMIN",
+  TECHNICIAN: "TECHNICIAN",
+  CLIENT: "CLIENT",
 };
 
 export const ROLE_NAMES = {
-  [ROLES.USER]: "Usuario",
   [ROLES.ADMIN]: "Administrador",
+  [ROLES.TECHNICIAN]: "Técnico",
+  [ROLES.CLIENT]: "Cliente",
 };

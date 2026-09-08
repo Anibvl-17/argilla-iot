@@ -1,97 +1,161 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import {
+  LuCopy,
+  LuEye,
+  LuEyeOff,
+  LuPencil,
+  LuPlus,
+  LuPower,
+  LuTrash2,
+} from "react-icons/lu";
+import { toast } from "sonner";
+import AlertDialog from "@components/AlertDialog";
+import { Badge } from "@components/Badge";
 import Modal from "@components/Modal";
-import FloatingDropdown from "@components/FloatingDropdown";
 import Pagination from "@components/Pagination";
+import { useAuth } from "@context/AuthContext";
+import { useControllerRealtime } from "@hooks/useControllerRealtime";
+import {
+  CONTROLLER_ACTIVITY_STYLES,
+  getControllerActivityLabel,
+  getControllerConnectionLabel,
+  getFiringCommandLabel,
+  getOperationalStatusLabel,
+  getSwitchLabel,
+  OPERATIONAL_STATUS_OPTIONS,
+} from "@constants/controller.constants";
 import {
   createController,
   deleteController,
   getAllControllers,
-  linkUserToController,
   sendAdminControllerCommand,
-  unlinkUserFromController,
   updateController,
 } from "@services/controller.service";
-import {
-  LuPencil,
-  LuEye,
-  LuEyeOff,
-  LuPower,
-  LuTrash2,
-  LuUserRoundMinus,
-  LuUserRoundPlus,
-} from "react-icons/lu";
-import {
-  CONTROLLER_LINK_STATUS,
-  getControllerConnectionLabel,
-  getControllerOperationLabel,
-  SWITCH_LABELS,
-} from "../constants/controller.constants";
-import { getAllUsers } from "@services/user.service";
-import { toast } from "sonner";
-import { Badge } from "@components/Badge";
-import AlertDialog from "../components/AlertDialog";
-import { useControllerRealtime } from "@hooks/useControllerRealtime";
-import {
-  formError,
-  hasFormError,
-  normalizeFormError,
-} from "../utils/formError";
-import FieldError from "@components/FieldError";
+import { normalizeFormError } from "../utils/formError";
 import { getPageAfterDeletion } from "../utils/pagination";
+
+const PAGE_SIZE = 10;
+const today = () => new Date().toISOString().slice(0, 10);
 
 const controllerFields = [
   {
-    name: "switchAmps",
-    label: "Amperaje Switch",
+    name: "switchCurrentCapacity",
+    label: "Capacidad del switch (A)",
     type: "number",
     placeholder: "20",
     inputProps: { min: 1, max: 500, step: 1 },
   },
   {
     name: "switchType",
-    label: "Tipo Switch",
+    label: "Tipo de switch",
     type: "select",
     options: [
-      { value: "SSR", label: "SSR" },
       { value: "CONTACTOR", label: "Contactor" },
+      { value: "SSR", label: "SSR" },
     ],
+  },
+  { name: "manufacturedAt", label: "Fecha de fabricación", type: "date" },
+  {
+    name: "deliveredAt",
+    label: "Fecha de entrega",
+    type: "date",
+    required: false,
+  },
+  {
+    name: "firmwareVersion",
+    label: "Versión de firmware",
+    type: "text",
+    placeholder: "1.0.0",
+  },
+  {
+    name: "firmwareUpdatedAt",
+    label: "Última actualización de firmware",
+    type: "date",
+    required: false,
   },
 ];
 
-const linkUserFields = [{ name: "userId", label: "Usuario", type: "custom" }];
-
-const normalizeControllerFormData = (formData) => ({
-  ...formData,
-  switchAmps: Number(formData.switchAmps),
-});
-
-const LinkStatusStyle = {
-  [CONTROLLER_LINK_STATUS.UNLINKED]: "default",
-  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN]: "info",
-  [CONTROLLER_LINK_STATUS.LINKED_TO_USER]: "info",
-  [CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER]: "success",
+const defaultController = {
+  switchCurrentCapacity: 20,
+  switchType: "CONTACTOR",
+  manufacturedAt: today(),
+  deliveredAt: "",
+  firmwareVersion: "1.0.0",
+  firmwareUpdatedAt: "",
 };
 
-const normalizeSearchTerm = (value) => value.trim().toLowerCase();
-const PAGE_SIZE = 10;
+const connectionStyle = { ONLINE: "info", OFFLINE: "default" };
+const operationalStyle = {
+  OPERATIONAL: "success",
+  MAINTENANCE: "warning",
+  OUT_OF_SERVICE: "danger",
+};
+
+function CredentialDialog({ credential, onClose }) {
+  if (!credential) return null;
+  const copy = async (value, message) => {
+    await navigator.clipboard.writeText(value);
+    toast.success(message);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-60 flex items-center justify-center bg-overlay p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl border-2 border-border bg-surface shadow-dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-border bg-surface-muted px-6 py-4">
+          <h3 className="text-xl font-bold">Controlador creado</h3>
+        </div>
+        <div className="space-y-5 p-6">
+          <p className="rounded-lg border border-warning-border bg-warning-soft p-3 text-sm text-warning">
+            Guarda la credencial del dispositivo ahora. El secreto no volverá a
+            mostrarse.
+          </p>
+          {[
+            ["Identificador", credential.controllerId],
+            ["Secreto del dispositivo", credential.deviceSecret],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <p className="mb-1 text-sm font-medium text-muted">{label}</p>
+              <div className="flex items-center gap-2 rounded-lg border border-control-border bg-field p-3">
+                <code className="min-w-0 flex-1 break-all text-xs">
+                  {value}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copy(value, `${label} copiado.`)}
+                  className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                  title={`Copiar ${label.toLowerCase()}`}
+                >
+                  <LuCopy />
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-action hover:bg-primary-hover"
+          >
+            Ya guardé la credencial
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminControllers() {
+  const { user } = useAuth();
+  const isAdmin = user.role === "ADMIN";
   const [loading, setLoading] = useState(false);
   const [controllers, setControllers] = useState([]);
-  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLinkUserModalOpen, setIsLinkUserModalOpen] = useState(false);
-  const [modalError, setModalError] = useState(null);
-  const [modalMode, setModalMode] = useState("create");
-  const [selectedController, setSelectedController] = useState(null);
-  const [selectedUserToLink, setSelectedUserToLink] = useState(null);
-  const [linkUserError, setLinkUserError] = useState(null);
-  const [linkUserSearchTerm, setLinkUserSearchTerm] = useState("");
-  const [linkPin, setLinkPin] = useState("");
-  const [expandedControllerId, setExpandedControllerId] = useState(null);
-  const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [operationalStatusFilter, setOperationalStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [summary, setSummary] = useState({
@@ -100,316 +164,152 @@ export default function AdminControllers() {
     linkedToUser: 0,
     fullyLinked: 0,
   });
-  const linkUserSearchRef = useRef(null);
+  const [modalMode, setModalMode] = useState("create");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [selectedController, setSelectedController] = useState(null);
+  const [expandedControllerId, setExpandedControllerId] = useState(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [credential, setCredential] = useState(null);
+  const [commandLoadingId, setCommandLoadingId] = useState("");
 
   const fetchControllers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getAllControllers({
-        page,
-        pageSize: PAGE_SIZE,
-        search: searchTerm,
-      });
-      const payload = result.data || {};
-      setControllers(payload.items || []);
-      setTotalPages(payload.pagination?.totalPages || 1);
-      setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, searchTerm]);
+    setLoading(true);
+    const result = await getAllControllers({
+      page,
+      pageSize: PAGE_SIZE,
+      search: searchTerm,
+      operationalStatusFilter: operationalStatusFilter || undefined,
+    });
+    setLoading(false);
+    if (!result.success) return toast.error(result.message);
+    const payload = result.data || {};
+    setControllers(payload.items || []);
+    setTotalPages(payload.pagination?.totalPages || 1);
+    setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
+  }, [operationalStatusFilter, page, searchTerm]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchControllers();
+    const timer = setTimeout(fetchControllers, 200);
+    return () => clearTimeout(timer);
   }, [fetchControllers]);
 
-  const handleTelemetry = useCallback((telemetry) => {
-    setControllers((current) =>
-      current.map((controller) =>
-        controller.controllerId === telemetry.controllerId
-          ? {
-              ...controller,
-              operativeStatus: telemetry.operativeStatus,
-              connectionStatus: telemetry.connectionStatus,
-              temp: telemetry.temp,
-            }
-          : controller,
-      ),
-    );
-  }, []);
+  useControllerRealtime(
+    useCallback((telemetry) => {
+      setControllers((current) =>
+        current.map((controller) =>
+          controller.controllerId === telemetry.controllerId
+            ? { ...controller, ...telemetry }
+            : controller,
+        ),
+      );
+    }, []),
+  );
 
-  useControllerRealtime(handleTelemetry);
-
-  const openCreateModal = () => {
+  function openCreateModal() {
     setModalMode("create");
     setSelectedController(null);
     setModalError(null);
     setIsModalOpen(true);
-  };
+  }
 
-  const openEditModal = (controller) => {
+  function openEditModal(controller) {
     setModalMode("edit");
-    setSelectedController(controller);
+    setSelectedController({
+      ...controller,
+      manufacturedAt: controller.manufacturedAt?.slice(0, 10) || today(),
+      deliveredAt: controller.deliveredAt?.slice(0, 10) || "",
+      firmwareUpdatedAt: controller.firmwareUpdatedAt?.slice(0, 10) || "",
+    });
     setModalError(null);
     setIsModalOpen(true);
-  };
+  }
 
-  const openLinkUserModal = (controller) => {
-    setSelectedController(controller);
-    setLinkUserError(null);
-    setLinkUserSearchTerm("");
-    setSelectedUserToLink(null);
-    setLinkPin("");
-    //setIsLinkControllerModalOpen(false);
-    setIsAlertOpen(false);
-    setIsLinkUserModalOpen(true);
-
-    if (!controller?.user && users.length === 0 && !loading) {
-      fetchUsers();
-    }
-  };
-
-  const closeModal = () => {
+  function closeModal() {
     setIsModalOpen(false);
     setModalError(null);
     setSelectedController(null);
-  };
+  }
 
-  const closeLinkUserModal = () => {
-    setIsLinkUserModalOpen(false);
-    setLinkUserError(null);
-    setLinkUserSearchTerm("");
-    setSelectedUserToLink(null);
-    setLinkPin("");
-    setSelectedController(null);
-  };
-
-  const handleSubmitController = async (formData) => {
-    if (selectedController?.kiln?.amps > parseInt(formData.switchAmps)) {
-      setModalError(
-        formError(
-          `El horno vinculado requiere al menos ${selectedController?.kiln.amps}. Desvincula el controlador del horno antes de reducir su amperaje.`,
-          "switchAmps",
-        ),
-      );
-      return;
-    }
-
+  async function handleSubmit(formData) {
     setLoading(true);
     setModalError(null);
+    const payload = {
+      ...formData,
+      switchCurrentCapacity: Number(formData.switchCurrentCapacity),
+      deliveredAt: formData.deliveredAt || null,
+      firmwareUpdatedAt: formData.firmwareUpdatedAt || null,
+    };
+    const result =
+      modalMode === "create"
+        ? await createController(payload)
+        : await updateController(selectedController.controllerId, payload);
+    setLoading(false);
 
-    try {
-      const data = normalizeControllerFormData(formData);
-      const response =
-        modalMode === "create"
-          ? await createController(data)
-          : await updateController(selectedController.controllerId, data);
-
-      if (response.success) {
-        closeModal();
-        fetchControllers();
-        return;
-      }
-
-      setModalError(normalizeFormError(response));
-    } catch (error) {
-      setModalError(normalizeFormError(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const result = await getAllUsers({ pageSize: 100 });
-      setUsers(result.data?.items || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLinkUserSubmit = async ({ userId }) => {
-    if (!selectedController) {
-      setLinkUserError(
-        formError("Selecciona un controlador antes de enlazar un usuario."),
-      );
+    if (!result.success) {
+      setModalError(normalizeFormError(result));
       return;
     }
 
-    const validationErrors = [];
-    if (
-      !selectedUserToLink ||
-      String(selectedUserToLink.userId) !== String(userId)
-    ) {
-      validationErrors.push({
-        message: "Selecciona un usuario de la lista para continuar.",
-        field: "userId",
+    if (modalMode === "create")
+      setCredential({
+        controllerId: result.data.controllerId,
+        deviceSecret: result.data.deviceSecret,
       });
-    } else if (parseInt(selectedController?.userId) === parseInt(userId)) {
-      validationErrors.push({
-        message: "El controlador ya está vinculado al usuario seleccionado",
-        field: "userId",
-      });
-    }
+    toast.success(
+      modalMode === "create"
+        ? "Controlador creado exitosamente."
+        : "Controlador actualizado exitosamente.",
+    );
+    closeModal();
+    await fetchControllers();
+  }
 
-    if (!/^\d{6}$/.test(linkPin)) {
-      validationErrors.push({
-        message: "El PIN debe contener exactamente 6 dígitos.",
-        field: "pin",
-      });
-    }
+  async function handleCommand(controller) {
+    const command = controller.switchState ? "OFF" : "ON";
+    setCommandLoadingId(controller.controllerId);
+    const result = await sendAdminControllerCommand(
+      controller.controllerId,
+      command,
+    );
+    setCommandLoadingId("");
+    if (!result.success) return toast.error(result.message);
+    toast.success(command === "ON" ? "Quema iniciada." : "Quema detenida.");
+  }
 
-    if (validationErrors.length) {
-      setLinkUserError(normalizeFormError({ errors: validationErrors }));
-      return;
-    }
-
-    try {
-      const response = await linkUserToController(
-        selectedController.controllerId.slice(-6),
-        parseInt(userId),
-        parseInt(linkPin),
-      );
-      if (response.success) {
-        toast.success(
-          `Usuario ${selectedUserToLink.name} enlazado al controlador ID ${selectedController.controllerId.slice(-6)}.`,
-        );
-        fetchControllers();
-        fetchUsers();
-        closeLinkUserModal();
-      } else {
-        setLinkUserError(normalizeFormError(response));
-        return;
-      }
-    } catch (error) {
-      setLinkUserError(normalizeFormError(error));
-    }
-  };
-
-  const handleUnlinkUser = async () => {
-    if (!selectedController?.userId) {
-      setLinkUserError("El controlador no tiene un usuario vinculado.");
-      return;
-    }
-
-    try {
-      const response = await unlinkUserFromController(
-        selectedController.controllerId,
-        parseInt(selectedController.userId),
-      );
-
-      if (response.success) {
-        toast.success(
-          `Usuario desvinculado del controlador ID ${selectedController.controllerId}.`,
-        );
-        fetchControllers();
-        fetchUsers();
-        closeLinkUserModal();
-        return;
-      }
-
-      throw new Error(response.message || "Error al desvincular usuario");
-    } catch (error) {
-      toast.error("Error al desvincular usuario", {
-        description: error.message,
-      });
-    }
-  };
-
-  const handleControllerCommand = async (controller, command) => {
-    const loadingId = `${controller.controllerId}:${command}`;
-    setCommandLoadingId(loadingId);
-
-    try {
-      const response = await sendAdminControllerCommand(
-        controller.controllerId,
-        command,
-      );
-
-      if (response.success) {
-        toast.success(
-          `Comando "${getControllerOperationLabel(command)}" enviado al controlador.`,
-        );
-        return;
-      }
-
-      throw new Error(response.message || "Error al enviar comando");
-    } catch (error) {
-      toast.error("Error al enviar comando", {
-        description: error.message,
-      });
-    } finally {
-      setCommandLoadingId("");
-    }
-  };
-
-  const confirmDelete = async () => {
+  async function confirmDelete() {
     setLoading(true);
-    try {
-      const response = await deleteController(selectedController.controllerId);
+    const result = await deleteController(selectedController.controllerId);
+    setLoading(false);
+    setIsAlertOpen(false);
+    if (!result.success) return toast.error(result.message);
+    const nextPage = getPageAfterDeletion({
+      page,
+      itemsOnPage: controllers.length,
+    });
+    toast.success("Controlador eliminado exitosamente.");
+    setSelectedController(null);
+    if (nextPage !== page) setPage(nextPage);
+    else await fetchControllers();
+  }
 
-      if (response.success) {
-        const nextPage = getPageAfterDeletion({
-          page,
-          itemsOnPage: controllers.length,
-        });
-        toast.success("Controlador eliminado exitosamente.");
-        if (nextPage !== page) {
-          setPage(nextPage);
-        } else {
-          fetchControllers();
-        }
-      }
-    } catch (error) {
-      toast.error("Error al eliminar controlador", error.message);
-    } finally {
-      setIsAlertOpen(false);
-      setSelectedController(null);
-      setLoading(false);
-    }
-  };
+  function renderControllerActions(controller, withLabels = false) {
+    const buttonClass = withLabels
+      ? "inline-flex items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-secondary hover:bg-surface-hover"
+      : "rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content";
 
-  const filteredUsersForLink = users
-    .filter((user) => {
-      if (user.userId === selectedController?.user?.userId) return false;
-      if (user.userId === selectedUserToLink?.userId) return false;
-
-      const search = normalizeSearchTerm(linkUserSearchTerm);
-
-      if (!search) {
-        return false;
-      }
-
-      return (
-        String(user.userId).toLowerCase().includes(search) ||
-        user.name.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search)
-      );
-    })
-    .slice(0, 8);
-
-  const selectedControllerHasOwner = Boolean(selectedController?.user);
-
-  const getControllerLinkStatus = (status) => {
-    if (status === CONTROLLER_LINK_STATUS.UNLINKED) {
-      return "No vinculado";
-    }
-
-    if (
-      status === CONTROLLER_LINK_STATUS.LINKED_TO_KILN ||
-      status === CONTROLLER_LINK_STATUS.LINKED_TO_USER
-    ) {
-      return "Parcial";
-    }
-
-    return "Completo";
-  };
+    return (
+      <>
+        <button type="button" onClick={() => openEditModal(controller)} className={buttonClass} title="Editar controlador"><LuPencil className="text-base" /> {withLabels && "Editar"}</button>
+        {isAdmin && (
+          <>
+            <button type="button" disabled={!controller.kiln || controller.connectionStatus !== "ONLINE" || commandLoadingId === controller.controllerId} onClick={() => handleCommand(controller)} className={`${buttonClass} disabled:opacity-40`} title={getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}><LuPower className="text-base" /> {withLabels && getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}</button>
+            <button type="button" onClick={() => { setSelectedController(controller); setIsAlertOpen(true); }} className={buttonClass} title="Eliminar controlador"><LuTrash2 className="text-base" /> {withLabels && "Eliminar"}</button>
+          </>
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-6 text-content">
@@ -418,61 +318,47 @@ export default function AdminControllers() {
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Controladores
           </h1>
-          <p className="text-secondary mt-1 text-sm">
-            Gestión centralizada de todos los controladores de la plataforma.
+          <p className="mt-1 text-sm text-secondary">
+            Gestión centralizada de los controladores de la plataforma.
           </p>
         </div>
         <button
+          type="button"
           onClick={openCreateModal}
-          className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
         >
-          Añadir Nuevo Controlador
+          <LuPlus /> Crear controlador
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
-        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
-            Total Controladores
-          </p>
-          <p className="text-xl font-bold sm:text-3xl">{summary.total}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
-            Asignados a Horno
-          </p>
-          <p className="text-xl font-bold text-info sm:text-3xl">
-            {summary.linkedToKiln}
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
-            Asignados a Usuario
-          </p>
-          <p className="text-xl font-bold text-info sm:text-3xl">
-            {summary.linkedToUser}
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5">
-          <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
-            Asignados a Horno y Usuario
-          </p>
-          <p className="text-xl font-bold text-success sm:text-3xl">
-            {summary.fullyLinked}
-          </p>
-        </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        {[
+          ["Total controladores", summary.total],
+          ["Sin horno", Math.max(0, summary.total - summary.linkedToKiln)],
+          ["Sin propietario", Math.max(0, summary.total - summary.linkedToUser)],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5"
+          >
+            <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs">
+              {label}
+            </p>
+            <p className={`text-xl font-bold sm:text-3xl text-content`}>{value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
         <div className="border-b border-border p-4">
-          <p className="mb-2 text-sm md:text-base text-muted">
-            Busca controladores por su ID completo o por sus últimos seis
-            caracteres.
+          <p className="mb-2 text-sm text-muted md:text-base">
+            Busca por ID de controlador, propietario o ID de horno agregando el
+            símbolo # al comienzo.
           </p>
-          <div className="relative w-full sm:w-96">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="grid gap-3 sm:grid-cols-[minmax(16rem,24rem)_14rem]">
+            <div className="relative">
               <svg
-                className="h-5 w-5 text-muted"
+                className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-muted"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -484,481 +370,262 @@ export default function AdminControllers() {
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
+              <input
+                type="search"
+                placeholder="A1B2C3, Camila, #6..."
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-lg border border-control-border bg-field py-2.5 pl-10 pr-4 text-sm outline-none focus:border-focus focus:ring-1 focus:ring-focus"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar por ID"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
+            <select
+              aria-label="Filtrar por estado operacional"
+              value={operationalStatusFilter}
+              onChange={(event) => {
+                setOperationalStatusFilter(event.target.value);
                 setPage(1);
               }}
-              className="w-full bg-field border border-control-border text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-focus focus:ring-1 focus:ring-focus transition-all text-content placeholder:text-muted"
-            />
+              className="w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-sm text-content outline-none focus:border-focus focus:ring-1 focus:ring-focus"
+            >
+              <option value="">Todos los estados</option>
+              {OPERATIONAL_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        {/* Tabla */}
-        <div className="overflow-auto">
-          {summary.total > 0 || searchTerm ? (
-            !loading && (
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="flex flex-row items-end gap-2 px-3 py-3 font-medium sm:px-6 sm:py-4"
-                    >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 font-medium sm:px-6 sm:py-4"
-                    >
-                      Propietario / Horno asignado
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 font-medium sm:px-6 sm:py-4"
-                    >
-                      Estado de vinculación
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium lg:table-cell sm:px-6 sm:py-4"
-                    >
-                      Estado
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium lg:table-cell sm:px-6 sm:py-4"
-                    >
-                      Conexión
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium lg:table-cell sm:px-6 sm:py-4"
-                    >
-                      Temperatura
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
-                    >
-                      Amperaje del Switch
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
-                    >
-                      Tipo de Switch
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4"
-                    >
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-border">
-                  {controllers.length > 0 ? (
-                    controllers.map((controller) => (
-                      <Fragment key={controller.controllerId}>
-                        <tr className="hover:bg-surface-hover transition-colors">
-                          {/* ID */}
-                          <td
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                controller.controllerId,
-                              );
-                              toast.success("¡ID copiada!");
-                            }}
-                            className="px-3 py-4 font-mono text-accent hover:underline sm:px-6 sm:py-5 sm:text-base"
-                            title={"Copiar ID: " + controller.controllerId}
-                          >
-                            ...{controller.controllerId.slice(-6)}
-                          </td>
-
-                          {/* Horno asignado */}
-                          <td className="max-w-36 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
-                            <div className="flex flex-col">
-                              {controller.kiln ? (
-                                <span className="font-semibold text-content text-base">
-                                  Horno #{controller.kiln?.kilnId}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted italic">
-                                  Sin horno asignado
-                                </span>
-                              )}
-                              {controller.user ? (
-                                <span className="text-sm text-secondary">
-                                  {controller.user.name}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted italic">
-                                  Sin propietario
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Estado vinculación */}
-                          <td className="px-3 py-4 font-mono text-xs sm:px-6 sm:py-5">
-                            <Badge
-                              style={LinkStatusStyle[controller.linkStatus]}
-                              text={getControllerLinkStatus(
-                                controller.linkStatus,
-                              )}
-                            />
-                          </td>
-
-                          {/* Estado operativo */}
-                          <td className="hidden px-3 py-4 text-center lg:table-cell sm:px-6 sm:py-5">
-                            <span className="flex justify-center">
-                              <Badge
-                                style={
-                                  controller.operativeStatus === "ON"
-                                    ? "success"
-                                    : "default"
-                                }
-                                text={getControllerOperationLabel(
-                                  controller.operativeStatus,
-                                )}
-                              />
-                            </span>
-                          </td>
-
-                          {/* Conexión */}
-                          <td className="hidden px-3 py-4 text-center lg:table-cell sm:px-6 sm:py-5">
-                            <span className="flex justify-center">
-                              <Badge
-                                style={
-                                  controller.connectionStatus === "ONLINE"
-                                    ? "info"
-                                    : "default"
-                                }
-                                text={getControllerConnectionLabel(
-                                  controller.connectionStatus,
-                                )}
-                              />
-                            </span>
-                          </td>
-
-                          {/* Temperatura */}
-                          <td className="hidden px-3 py-4 text-center font-mono text-secondary lg:table-cell sm:px-6 sm:py-5">
-                            {controller.temp == null ? (
-                              <span className="text-muted font-sans italic">
-                                No disponible
-                              </span>
-                            ) : (
-                              `${controller.temp.toFixed(1)} °C`
+        <div className="overflow-hidden">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
+              <tr>
+                <th className="py-4 sm:px-6 text-center gap-2">
+                  ID
+                </th>
+                <th className="hidden px-6 py-4 md:table-cell">Propietario / Horno</th>
+                <th className="hidden px-6 py-4 text-center sm:table-cell">Temperatura</th>
+                <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">Actividad</th>
+                <th className="hidden px-6 py-4 text-center xl:table-cell">Estado</th>
+                <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {!loading &&
+                controllers.map((controller) => (
+                  <Fragment key={controller.controllerId}>
+                    <tr className="transition-colors hover:bg-surface-hover">
+                      <td className="py-5 font-mono sm:px-6 text-accent text-center gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(controller.controllerId.slice(-6));
+                            toast.success("¡ID copiada!");
+                          }}
+                          title="Copiar identificador del controlador"
+                          className="text-sm hover:underline hover:cursor-pointer">
+                          ...{controller.controllerCode}
+                        </button>
+                      </td>
+                      <td className="hidden px-6 py-5 md:table-cell">
+                        {controller.user ? <p>{controller.user.name}</p> : <p className="italic text-muted">Sin propietario</p>}
+                        {controller.kiln ? <p className="mt-1 text-secondary">Horno #{controller.kiln.kilnId}</p> : <p className="mt-1 italic text-muted">Sin horno asociado</p>}
+                      </td>
+                      <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
+                        {controller.temperature == null ? <span className="italic text-muted">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}
+                      </td>
+                      <td className="px-3 py-5 sm:px-6">
+                        <span className="flex justify-center">
+                          <Badge
+                            style={connectionStyle[controller.connectionStatus]}
+                            text={getControllerConnectionLabel(
+                              controller.connectionStatus,
                             )}
-                          </td>
-
-                          {/* Amperaje switch */}
-                          <td className="hidden px-3 py-4 text-center font-mono text-secondary md:table-cell sm:px-6 sm:py-5">
-                            {controller.switchAmps}
-                          </td>
-
-                          {/* Tipo switch */}
-                          <td className="hidden px-3 py-4 text-center md:table-cell sm:px-6 sm:py-5">
-                            <span className="flex items-center justify-center">
-                              <Badge
-                                style="default"
-                                text={SWITCH_LABELS[controller.switchType]}
-                              />
-                            </span>
-                          </td>
-
-                          {/* Botones de Acción */}
-                          <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
-                            <div className="flex justify-center gap-2">
-                              {/* Comando toggle */}
-                              <button
-                                onClick={() =>
-                                  handleControllerCommand(
-                                    controller,
-                                    controller.operativeStatus === "ON"
-                                      ? "OFF"
-                                      : "ON",
-                                  )
-                                }
-                                disabled={
-                                  Boolean(commandLoadingId) ||
-                                  !controller.kiln ||
-                                  controller.connectionStatus !== "ONLINE"
-                                }
-                                className={
-                                  "hidden rounded-lg p-2 text-muted transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 md:inline-flex " +
-                                  (controller.operativeStatus === "ON"
-                                    ? "enabled:hover:text-accent enabled:hover:bg-danger-soft"
-                                    : "enabled:hover:text-success enabled:hover:bg-success-soft")
-                                }
-                                title={
-                                  !controller.kiln
-                                    ? "Requiere horno vinculado"
-                                    : controller.operativeStatus === "ON"
-                                      ? "Apagar horno"
-                                      : "Encender horno"
-                                }
-                              >
-                                <LuPower />
-                              </button>
-
+                          />
+                        </span>
+                      </td>
+                      <td className="hidden px-6 py-5 lg:table-cell">
+                        <span className="flex justify-center">
+                          <Badge
+                            style={CONTROLLER_ACTIVITY_STYLES[controller.activityStatus]}
+                            text={getControllerActivityLabel(
+                              controller.activityStatus,
+                            )}
+                          />
+                        </span>
+                      </td>
+                      <td className="hidden px-6 py-5 xl:table-cell">
+                        <span className="flex justify-center">
+                          <Badge
+                            style={
+                              operationalStyle[controller.operationalStatus]
+                            }
+                            text={getOperationalStatusLabel(
+                              controller.operationalStatus,
+                            )}
+                          />
+                        </span>
+                      </td>
+                      <td className="px-3 py-5 sm:px-6">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedControllerId(
+                                expandedControllerId === controller.controllerId
+                                  ? null
+                                  : controller.controllerId,
+                              )
+                            }
+                            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                            title={
+                              expandedControllerId === controller.controllerId
+                                ? "Ocultar detalles"
+                                : "Ver detalles"
+                            }
+                          >
+                            {expandedControllerId ===
+                            controller.controllerId ? (
+                              <LuEyeOff className="text-base" />
+                            ) : (
+                              <LuEye className="text-base" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(controller)}
+                            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content lg:hidden"
+                            title="Editar controlador"
+                          >
+                            <LuPencil className="text-base" />
+                          </button>
+                          <div className="hidden justify-center gap-2 lg:flex">{renderControllerActions(controller)}</div>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedControllerId === controller.controllerId && (
+                      <tr className="bg-surface-muted">
+                        <td colSpan={7} className="px-6 py-5">
+                          <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                            <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Propietario</dt><dd className="mt-1">{controller.user?.name || <span className="italic text-muted">Sin propietario</span>}</dd></div>
+                            <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Horno</dt><dd className="mt-1">{controller.kiln?.name || <span className="italic text-muted">Sin horno asociado</span>}</dd></div>
+                            <div className="sm:hidden"><dt className="text-xs font-bold uppercase text-muted">Temperatura</dt><dd className="mt-1">{controller.temperature == null ? <span className="italic text-muted">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}</dd></div>
+                            <div className="xl:hidden"><dt className="text-xs font-bold uppercase text-muted">Estado operacional</dt><dd className="mt-1">{getOperationalStatusLabel(controller.operationalStatus)}</dd></div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Switch
+                              </dt>
+                              <dd className="mt-1">
+                                {getSwitchLabel(controller.switchType)}{" "}
+                                {controller.switchCurrentCapacity} A
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Actividad
+                              </dt>
+                              <dd className="mt-1">
+                                {getControllerActivityLabel(
+                                  controller.activityStatus,
+                                )}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Firmware
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.firmwareVersion}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Fabricación
+                              </dt>
+                              <dd className="mt-1">
+                                {new Date(
+                                  controller.manufacturedAt,
+                                ).toLocaleDateString("es-CL")}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Entrega
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.deliveredAt
+                                  ? new Date(
+                                      controller.deliveredAt,
+                                    ).toLocaleDateString("es-CL")
+                                  : <span className="italic text-muted">Pendiente</span>}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Actualización de firmware
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.firmwareUpdatedAt
+                                  ? new Date(
+                                      controller.firmwareUpdatedAt,
+                                    ).toLocaleDateString("es-CL")
+                                  : <span className="italic text-muted">Sin registro</span>}
+                              </dd>
+                            </div>
+                          </dl>
+                          {isAdmin && (
+                            <div className="mt-5 grid gap-2 border-t border-border pt-4 min-[480px]:grid-cols-2 lg:hidden">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setExpandedControllerId((current) =>
-                                    current === controller.controllerId
-                                      ? null
-                                      : controller.controllerId,
-                                  )
+                                disabled={
+                                  !controller.kiln ||
+                                  controller.connectionStatus !== "ONLINE" ||
+                                  commandLoadingId === controller.controllerId
                                 }
-                                className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-content md:hidden"
-                                title={
-                                  expandedControllerId ===
-                                  controller.controllerId
-                                    ? "Ocultar detalles"
-                                    : "Ver detalles"
-                                }
-                                aria-label={
-                                  expandedControllerId ===
-                                  controller.controllerId
-                                    ? `Ocultar detalles del controlador ${controller.controllerId}`
-                                    : `Ver detalles del controlador ${controller.controllerId}`
-                                }
-                                aria-expanded={
-                                  expandedControllerId ===
-                                  controller.controllerId
-                                }
+                                onClick={() => handleCommand(controller)}
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-3 py-2.5 text-sm text-secondary hover:bg-surface-hover disabled:opacity-40"
                               >
-                                {expandedControllerId ===
-                                controller.controllerId ? (
-                                  <LuEyeOff />
-                                ) : (
-                                  <LuEye />
+                                <LuPower className="text-base" />
+                                {getFiringCommandLabel(
+                                  controller.switchState ? "OFF" : "ON",
                                 )}
                               </button>
-
-                              {/* Enlazar/Desenlazar usuario */}
                               <button
-                                onClick={() => openLinkUserModal(controller)}
-                                className={
-                                  "hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer md:inline-flex" +
-                                  (controller.user
-                                    ? " hover:text-accent hover:bg-danger-soft"
-                                    : " hover:text-success hover:bg-success-soft")
-                                }
-                                title={
-                                  controller.user
-                                    ? "Desvincular usuario"
-                                    : "Asignar usuario"
-                                }
-                              >
-                                {controller.user ? (
-                                  <LuUserRoundMinus />
-                                ) : (
-                                  <LuUserRoundPlus />
-                                )}
-                              </button>
-
-                              {/* Editar datos */}
-                              <button
-                                onClick={() => openEditModal(controller)}
-                                className="hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-surface-hover hover:text-content md:inline-flex"
-                                title="Editar datos"
-                              >
-                                <LuPencil />
-                              </button>
-
-                              {/* Eliminar */}
-                              <button
+                                type="button"
                                 onClick={() => {
                                   setSelectedController(controller);
                                   setIsAlertOpen(true);
                                 }}
-                                className="hidden rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-danger-soft hover:text-accent md:inline-flex"
-                                title="Eliminar controlador"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-danger-border bg-surface px-3 py-2.5 text-sm text-danger hover:bg-danger-soft"
                               >
-                                <LuTrash2 />
+                                <LuTrash2 className="text-base" /> Eliminar
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                        {expandedControllerId === controller.controllerId && (
-                          <tr className="bg-surface-muted md:hidden">
-                            <td colSpan="9" className="px-3 py-3">
-                              <dl className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
-                                <div>
-                                  <dt className="font-bold text-muted">
-                                    Estado y Conexión
-                                  </dt>
-                                  <dd className="mt-1 flex flex-wrap gap-1.5">
-                                    <Badge
-                                      style={
-                                        controller.operativeStatus === "ON"
-                                          ? "success"
-                                          : "default"
-                                      }
-                                      text={getControllerOperationLabel(
-                                        controller.operativeStatus,
-                                      )}
-                                    />
-                                    {controller.operativeStatus === "ON" && (
-                                      <Badge
-                                        style={
-                                          controller.connectionStatus ===
-                                          "ONLINE"
-                                            ? "info"
-                                            : "default"
-                                        }
-                                        text={getControllerConnectionLabel(
-                                          controller.connectionStatus,
-                                        )}
-                                      />
-                                    )}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt className="font-bold text-muted">
-                                    Switch
-                                  </dt>
-                                  <dd className="mt-1 text-content">
-                                    {SWITCH_LABELS[controller.switchType]}{" "}
-                                    {controller.switchAmps}A
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt className="font-bold text-muted">
-                                    Temperatura
-                                  </dt>
-                                  <dd className="mt-1 font-mono text-content">
-                                    {controller.temp == null ? (
-                                      <span className="font-sans italic text-muted">
-                                        No disponible
-                                      </span>
-                                    ) : (
-                                      `${controller.temp.toFixed(1)} °C`
-                                    )}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt className="font-bold text-muted">
-                                    PIN
-                                  </dt>
-                                  <dd className="mt-1 font-mono text-content">
-                                    {controller.pin || "Inactivo"}
-                                  </dd>
-                                </div>
-                              </dl>
-                              <div className="mt-4 border-t border-border pt-3">
-                                <p className="mb-2 text-xs font-bold text-muted">
-                                  Acciones
-                                </p>
-                                <div className="flex flex-wrap items-center gap-2 text-base">
-                                  <button
-                                    onClick={() =>
-                                      handleControllerCommand(
-                                        controller,
-                                        controller.operativeStatus === "ON"
-                                          ? "OFF"
-                                          : "ON",
-                                      )
-                                    }
-                                    disabled={
-                                      Boolean(commandLoadingId) ||
-                                      !controller.kiln ||
-                                      controller.connectionStatus !== "ONLINE"
-                                    }
-                                    className={
-                                      "inline-flex rounded-lg p-2 text-muted transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 " +
-                                      (controller.operativeStatus === "ON"
-                                        ? "enabled:hover:text-accent enabled:hover:bg-danger-soft"
-                                        : "enabled:hover:text-success enabled:hover:bg-success-soft")
-                                    }
-                                    title={
-                                      !controller.kiln
-                                        ? "Requiere horno vinculado"
-                                        : controller.operativeStatus === "ON"
-                                          ? "Apagar horno"
-                                          : "Encender horno"
-                                    }
-                                  >
-                                    <LuPower />
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      openLinkUserModal(controller)
-                                    }
-                                    className={
-                                      "inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer" +
-                                      (controller.user
-                                        ? " hover:text-accent hover:bg-danger-soft"
-                                        : " hover:text-success hover:bg-success-soft")
-                                    }
-                                    title={
-                                      controller.user
-                                        ? "Desvincular usuario"
-                                        : "Asignar usuario"
-                                    }
-                                  >
-                                    {controller.user ? (
-                                      <LuUserRoundMinus />
-                                    ) : (
-                                      <LuUserRoundPlus />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => openEditModal(controller)}
-                                    className="inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-surface-hover hover:text-content"
-                                    title="Editar datos"
-                                  >
-                                    <LuPencil />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedController(controller);
-                                      setIsAlertOpen(true);
-                                    }}
-                                    className="inline-flex rounded-lg p-2 text-muted transition-colors hover:cursor-pointer hover:bg-danger-soft hover:text-accent"
-                                    title="Eliminar controlador"
-                                  >
-                                    <LuTrash2 />
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="9"
-                        className="px-6 py-12 text-center text-muted"
-                      >
-                        No se encontraron controladores que coincidan con "
-                        {searchTerm}".
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )
-          ) : (
-            <p className="text-secondary text-sm/relaxed p-4 text-center">
-              No hay controladores registrados. <br />
-              Haz click en el botón{" "}
-              <span className="rounded-lg font-medium">
-                Añadir nuevo controlador
-              </span>{" "}
-              para registrar un controlador.
-            </p>
-          )}
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              {!loading && controllers.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                    No se encontraron controladores.
+                  </td>
+                </tr>
+              )}
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                    Cargando controladores...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
         <Pagination
           page={page}
@@ -971,219 +638,24 @@ export default function AdminControllers() {
         isOpen={isModalOpen}
         onClose={closeModal}
         title={
-          modalMode === "create"
-            ? "Crear Nuevo Controlador"
-            : "Editar Controlador"
+          modalMode === "create" ? "Crear controlador" : "Editar controlador"
         }
         fields={controllerFields}
-        initialData={selectedController}
-        submitLabel={
-          modalMode === "create" ? "Crear Controlador" : "Guardar Cambios"
+        initialData={
+          modalMode === "create" ? defaultController : selectedController
         }
-        onSubmit={handleSubmitController}
+        submitLabel={
+          modalMode === "create" ? "Crear controlador" : "Guardar cambios"
+        }
+        onSubmit={handleSubmit}
         error={modalError}
         loading={loading}
         onClearError={setModalError}
       />
-
-      <Modal
-        isOpen={isLinkUserModalOpen}
-        onClose={closeLinkUserModal}
-        title={
-          (selectedControllerHasOwner
-            ? "Desvincular usuario de"
-            : "Asignar usuario a") +
-          " Controlador ID " +
-          `...${selectedController?.controllerId.slice(-6)}`
-        }
-        fields={linkUserFields}
-        submitLabel={
-          selectedControllerHasOwner ? "Desvincular usuario" : "Asignar usuario"
-        }
-        onSubmit={
-          selectedControllerHasOwner ? handleUnlinkUser : handleLinkUserSubmit
-        }
-        error={linkUserError}
-        loading={false}
-        onClearError={setLinkUserError}
-        renderContent={({ setFormData, onClearError, error }) => {
-          return (
-            <div className="flex flex-col gap-6">
-              {!selectedControllerHasOwner && (
-                <div className="flex flex-col gap-3">
-                  <div className="relative" ref={linkUserSearchRef}>
-                    <label className="text-sm font-medium text-muted ml-1">
-                      Busca por nombre, correo electrónico o ID de usuario
-                    </label>
-                    <input
-                      type="text"
-                      name="userId"
-                      value={linkUserSearchTerm}
-                      placeholder="Juan, matias@argilla.cl, 5..."
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setLinkUserSearchTerm(value);
-                        setFormData((prev) => ({ ...prev, userId: "" }));
-
-                        onClearError("userId");
-                      }}
-                      aria-invalid={hasFormError(error, "userId") || undefined}
-                      aria-describedby={
-                        hasFormError(error, "userId")
-                          ? "controller-user-error"
-                          : undefined
-                      }
-                      className="mt-2 w-full bg-field border-2 border-control-border rounded-lg px-3 py-2.5 text-content outline-none focus:border-focus transition-colors"
-                    />
-                    <FieldError
-                      error={error}
-                      field="userId"
-                      id="controller-user-error"
-                    />
-
-                    {linkUserSearchTerm.trim() && (
-                      <FloatingDropdown
-                        anchorRef={linkUserSearchRef}
-                        open
-                        onRequestClose={() => setLinkUserSearchTerm("")}
-                      >
-                        {loading ? (
-                          <div className="px-4 py-3 text-sm text-muted">
-                            Cargando usuarios...
-                          </div>
-                        ) : filteredUsersForLink.length > 0 ? (
-                          filteredUsersForLink.map((user) => {
-                            const isSelected =
-                              selectedUserToLink?.userId === user.userId;
-
-                            const isOwner =
-                              selectedControllerHasOwner &&
-                              selectedController?.user?.userId === user.userId;
-
-                            if (isSelected || isOwner) return;
-
-                            return (
-                              <button
-                                key={user.userId}
-                                type="button"
-                                onClick={() => {
-                                  if (isSelected || isOwner) {
-                                    return false;
-                                  }
-
-                                  setSelectedUserToLink(user);
-                                  setLinkUserSearchTerm("");
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    userId: String(user.userId),
-                                  }));
-                                  onClearError("userId");
-                                }}
-                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-surface-hover hover:cursor-pointer"
-                              >
-                                <span className="text-sm font-medium text-content">
-                                  {user.name}
-                                </span>
-                                <span className="text-xs font-bold text-muted">
-                                  #{user.userId} - {user.email}
-                                </span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-muted">
-                            No se encontraron usuarios con ese criterio.
-                          </div>
-                        )}
-                      </FloatingDropdown>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted ml-1">
-                      Ingresa el PIN del controlador
-                    </label>
-                    <input
-                      type="password"
-                      name="pin"
-                      value={linkPin}
-                      placeholder="123456..."
-                      inputMode="numeric"
-                      maxLength={6}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setLinkPin(value);
-                        setFormData((prev) => ({ ...prev, pin: value }));
-
-                        onClearError("pin");
-                      }}
-                      aria-invalid={hasFormError(error, "pin") || undefined}
-                      aria-describedby={
-                        hasFormError(error, "pin")
-                          ? "controller-pin-error"
-                          : undefined
-                      }
-                      required
-                      className="mt-2 w-full bg-field border-2 border-control-border rounded-lg px-3 py-2.5 text-content outline-none focus:border-focus transition-colors"
-                    />
-                    <FieldError
-                      error={error}
-                      field="pin"
-                      id="controller-pin-error"
-                    />
-                  </div>
-                </div>
-              )}
-              {!selectedControllerHasOwner && selectedController?.kiln && (
-                <p className="rounded-lg border border-control-border bg-surface-muted px-3 py-2 text-sm text-secondary">
-                  Si el horno asociado está libre, también se vinculará a este
-                  propietario.
-                </p>
-              )}
-              {selectedController?.user && (
-                <div className="flex flex-col gap-4">
-                  <p className="text-secondary text-pretty">
-                    {selectedController?.kiln
-                      ? "El usuario será desvinculado del controlador y del horno asociado."
-                      : "El usuario será desvinculado del controlador."}
-                  </p>
-                  <div className="rounded-xl border border-control-border bg-surface-hover px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                    <p className="text-sm text-secondary">
-                      Propietario actual
-                    </p>
-                    <p className="text-base">
-                      {selectedController?.user?.name} -{" "}
-                      {selectedController?.user?.email}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {!selectedControllerHasOwner && selectedUserToLink && (
-                <>
-                  <div className="rounded-xl border border-control-border bg-surface-hover px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                    <div>
-                      <p className="text-sm text-secondary">
-                        Nuevo propietario
-                      </p>
-                      <p className="mt-1">
-                        {selectedUserToLink.name} - {selectedUserToLink.email}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedUserToLink(null)}
-                      className="inline-flex items-center rounded-lg bg-surface-hover px-4 py-2 text-sm text-content transition-colors hover:bg-danger-soft hover:cursor-pointer hover:text-danger"
-                    >
-                      Quitar selección
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        }}
+      <CredentialDialog
+        credential={credential}
+        onClose={() => setCredential(null)}
       />
-
       <AlertDialog
         isOpen={isAlertOpen}
         onClose={() => {
@@ -1192,20 +664,8 @@ export default function AdminControllers() {
         }}
         onConfirm={confirmDelete}
         title="¿Eliminar controlador?"
-        CustomMessage={() => (
-          <p className="text-secondary">
-            El controlador{" "}
-            <span
-              title={selectedController?.controllerId}
-              className="font-mono hover:cursor-help"
-            >
-              ...{selectedController?.controllerId?.slice(-6)}
-            </span>{" "}
-            será eliminado permanentemente
-          </p>
-        )}
-        type="danger"
-        confirmText="Eliminar controlador"
+        message={`El controlador terminado en ${selectedController?.controllerCode || "este código"} será eliminado permanentemente si no conserva información histórica.`}
+        confirmText="Eliminar"
         cancelText="Cancelar"
         isLoading={loading}
       />

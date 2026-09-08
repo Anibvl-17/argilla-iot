@@ -4,12 +4,14 @@ import kilnRoutes from "./kiln.routes.js";
 import controllerRoutes from "./controller.routes.js";
 import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
+import catalogRoutes from "./catalog.routes.js";
 
 export function routerApi(app) {
   const router = Router();
   app.use("/api", router);
 
   router.use("/auth", authRoutes);
+  router.use("/catalog", catalogRoutes);
   router.use("/kiln", kilnRoutes);
   router.use("/controller", controllerRoutes);
   router.use("/user", userRoutes);

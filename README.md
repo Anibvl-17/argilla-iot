@@ -16,12 +16,12 @@ Aplicación local para monitorear y controlar hornos cerámicos eléctricos. Inc
 
 ## Funcionalidades
 
-- Registro e inicio de sesión con JWT; roles `USER` y `ADMIN`.
-- Gestión administrativa de usuarios, hornos y controladores.
-- Vinculación de controladores y hornos mediante PIN temporal.
+- Registro e inicio de sesión con JWT; roles `CLIENT`, `TECHNICIAN` y `ADMIN`.
+- Gestión de usuarios, hornos, controladores y circuitos calefactores jerárquicos.
+- Vinculación de conjuntos horno–controlador mediante PIN temporal generado por el ESP32.
 - Visualización de temperatura, estado de conexión y estado del switch en tiempo real.
 - Control `ON`/`OFF` del controlador vinculado a un horno.
-- Historial de telemetría por horno, con muestreo configurable.
+- Modelo de historial basado en ciclos de quema; su lógica funcional se implementará en una iteración posterior.
 - Simulador MQTT integrado: cada controlador de la base de datos recibe su propia instancia simulada.
 
 ## Desarrollo local (flujo principal)
@@ -115,6 +115,10 @@ Contraseña: Admin123!
 Ceramistas varios
 [nombre]@argilla.test
 Contraseña común: Password123!
+
+Técnico
+Correo: tecnico@argilla.test
+Contraseña: Technician123!
 ```
 
 Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de `backend/.env`.
@@ -125,7 +129,7 @@ Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de
 | --- | --- |
 | `backend/.env` | `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `MQTT_URL`, `MQTT_USER`, `MQTT_PASS`, `TELEMETRY_SAMPLE_SECONDS`, `MQTT_COMMAND_TIMEOUT_MS`. |
 | `frontend/.env` | `VITE_BASE_URL`, `VITE_SOCKET_URL`. |
-| `backend/.env` (simulador) | `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`. |
+| `backend/.env` (simulador) | `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`, `SIMULATOR_PAIRING_PIN`. |
 
 ## Docker Compose (opcional)
 
@@ -147,4 +151,5 @@ npm run lint
 
 cd ../backend
 npx prisma validate
+npm run verify:model
 ```

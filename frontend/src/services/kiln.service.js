@@ -57,17 +57,6 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   }
 }
 
-export async function renameMyKiln(kilnId, name) {
-  try {
-    const response = await axios.patch(`/kiln/my-kilns/${kilnId}/name`, {
-      name,
-    });
-    return { success: true, data: response.data.data };
-  } catch (error) {
-    return serviceError(error, "No fue posible actualizar el nombre");
-  }
-}
-
 export async function sendMyKilnControllerCommand(kilnId, command) {
   try {
     const response = await axios.post(
@@ -174,9 +163,9 @@ export async function linkUser(kilnId, userId) {
   }
 }
 
-export async function unlinkUser(kilnId, userId) {
+export async function unlinkUser(kilnId) {
   try {
-    const response = await axios.patch(`/kiln/${kilnId}/release`, { userId });
+    const response = await axios.patch(`/kiln/${kilnId}/release`);
     return { success: true, data: response.data.data };
   } catch (error) {
     console.error(
@@ -192,11 +181,10 @@ export async function unlinkUser(kilnId, userId) {
   }
 }
 
-export async function linkController(kilnId, partialControllerId, pin) {
+export async function linkController(kilnId, controllerId) {
   try {
     const response = await axios.post(`/kiln/${kilnId}/link`, {
-      partialControllerId,
-      pin: Number(pin),
+      controllerId,
     });
 
     return { success: true, data: response.data.data };

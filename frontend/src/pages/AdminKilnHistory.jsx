@@ -2,13 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Pagination from "@components/Pagination";
 import { Badge } from "@components/Badge";
+import ControllerStatus from "@components/ControllerStatus";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import { getAdminKiln, getAdminKilnTelemetry } from "@services/kiln.service";
-import {
-  getControllerConnectionLabel,
-  getControllerOperationLabel,
-} from "@constants/controller.constants";
-import { LuArrowLeft, LuHistory } from "react-icons/lu";
+import { getControllerConnectionLabel } from "@constants/controller.constants";
+import { LuArrowLeft, LuCopy, LuHistory } from "react-icons/lu";
+import { toast } from "sonner";
 
 export default function AdminKilnHistory() {
   const { kilnId } = useParams();
@@ -71,9 +70,7 @@ export default function AdminKilnHistory() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-muted">
-        Cargando horno...
-      </div>
+      <div className="py-20 text-center text-muted">Cargando horno...</div>
     );
   }
 
@@ -83,7 +80,7 @@ export default function AdminKilnHistory() {
         <p className="font-semibold">No fue posible cargar el historial.</p>
         <p className="mt-2 text-sm text-danger">{error}</p>
         <Link
-          to="/admin/kilns"
+          to="/management/kilns"
           className="mt-5 inline-flex items-center gap-2 text-sm text-content"
         >
           <LuArrowLeft /> Volver a hornos
@@ -97,7 +94,7 @@ export default function AdminKilnHistory() {
   return (
     <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5">
       <Link
-        to="/admin/kilns"
+        to="/management/kilns"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-content"
       >
         <LuArrowLeft /> Volver a hornos
@@ -127,28 +124,42 @@ export default function AdminKilnHistory() {
             }
           />
           {controller?.connectionStatus === "ONLINE" && (
-            <Badge
-              style={
-                controller.operativeStatus === "ON" ? "success" : "default"
-              }
-              text={getControllerOperationLabel(controller.operativeStatus)}
-            />
+            <ControllerStatus controller={controller} />
           )}
         </div>
       </header>
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <Metric label="Capacidad" value={`${kiln.liters} L`} />
-        <Metric label="Amperaje" value={`${kiln.amps} A`} />
-        <Metric label="Voltaje" value={`${kiln.volts} V`} />
-        <Metric
-          label="Controlador"
-          value={
-            controller
-              ? `...${controller.controllerId.slice(-6)}`
-              : "Sin vincular"
-          }
-        />
+        <Metric label="Amperaje" value={`${kiln.nominalCurrent} A`} />
+        <Metric label="Voltaje" value={`${kiln.nominalVoltage} V`} />
+        <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
+            Controlador
+          </p>
+          <p
+            className="mt-1 truncate font-mono text-base font-semibold text-content sm:text-xl"
+            title={controller.controllerCode || "Sin vincular"}
+          >
+            {controller ? (
+              <>
+                ...{controller.controllerCode}{" "}
+                <button
+                  className="text-sm hover:cursor-pointer hover:text-accent"
+                  title="Copiar ID"
+                  onClick={() => {
+                    navigator.clipboard.writeText(controller.controllerCode);
+                    toast.success("¡ID copiada!");
+                  }}
+                >
+                  <LuCopy />
+                </button>
+              </>
+            ) : (
+              "Sin vincular"
+            )}
+          </p>
+        </div>
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
@@ -157,7 +168,7 @@ export default function AdminKilnHistory() {
           <div>
             <h2 className="font-semibold">Historial de temperatura</h2>
             <p className="mt-1 text-sm text-muted">
-              Registros paginados de temperatura y estado del switch.
+              Registros paginados de temperatura y estado del relé.
             </p>
           </div>
         </div>
@@ -170,7 +181,7 @@ export default function AdminKilnHistory() {
                   Temperatura
                 </th>
                 <th className="px-3 py-3 text-center font-medium sm:px-6">
-                  Estado
+                  Relé
                 </th>
               </tr>
             </thead>
@@ -185,16 +196,13 @@ export default function AdminKilnHistory() {
                       {item.temperature.toFixed(1)} °C
                     </td>
                     <td className="px-3 py-3 text-center text-secondary sm:px-6">
-                      {item.switchState ? "Encendido" : "Apagado"}
+                      {item.switchState ? "Activo" : "Inactivo"}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="3"
-                    className="px-6 py-12 text-center text-muted"
-                  >
+                  <td colSpan="3" className="px-6 py-12 text-center text-muted">
                     {telemetryLoading
                       ? "Cargando historial..."
                       : "Sin registros de telemetría."}

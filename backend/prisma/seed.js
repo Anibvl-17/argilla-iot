@@ -4,11 +4,29 @@ import "dotenv/config";
 
 const prisma = new PrismaClient();
 const PASSWORD_ROUNDS = 10;
+const DEVICE_SECRET_ROUNDS = 10;
+const seedDeviceSecret =
+  process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
+
+const supportReasons = [
+  { code: "FIRING_PROBLEM", name: "Problema de quema" },
+  { code: "TEMPERATURE", name: "Problema de temperatura" },
+  { code: "CONTROLLER", name: "Problema con controlador" },
+  { code: "ELECTRICAL", name: "Problema eléctrico" },
+  { code: "CONNECTIVITY", name: "Problema de conectividad" },
+  { code: "OTHER", name: "Otro" },
+];
 
 const admin = {
   email: process.env.SEED_ADMIN_EMAIL || "admin@argilla.test",
   name: process.env.SEED_ADMIN_NAME || "Administrador Argilla",
   password: process.env.SEED_ADMIN_PASSWORD || "Admin123!",
+};
+
+const technician = {
+  email: process.env.SEED_TECHNICIAN_EMAIL || "tecnico@argilla.test",
+  name: process.env.SEED_TECHNICIAN_NAME || "Técnico Argilla",
+  password: process.env.SEED_TECHNICIAN_PASSWORD || "Tecnico123!",
 };
 
 const demoPassword = process.env.SEED_DEMO_PASSWORD || "Password123!";
@@ -24,7 +42,7 @@ const demoUsers = [
         name: "Horno de María",
         controllerKey: "main",
         liters: 50,
-        amps: 20,
+        nominalCurrent: 20,
         aliases: ["Horno de Maria"],
       },
     ],
@@ -42,14 +60,14 @@ const demoUsers = [
         name: "Horno gres de José",
         controllerKey: "workshop-a",
         liters: 60,
-        amps: 25,
+        nominalCurrent: 25,
         aliases: ["Horno de José", "Horno de Jose"],
       },
       {
         name: "Horno esmaltes de José",
         controllerKey: "workshop-b",
         liters: 35,
-        amps: 18,
+        nominalCurrent: 18,
       },
     ],
   },
@@ -58,7 +76,7 @@ const demoUsers = [
     email: "ana@argilla.test",
     name: "Ana Rojas",
     controllers: [],
-    kilns: [{ name: "Horno de Ana", liters: 35, amps: 18 }],
+    kilns: [{ name: "Horno de Ana", liters: 35, nominalCurrent: 18 }],
   },
   {
     key: "carlos",
@@ -74,7 +92,7 @@ const demoUsers = [
     controllers: [
       { key: "unlinked", id: "44444444-4444-4444-8444-444444444444" },
     ],
-    kilns: [{ name: "Horno de Valentina", liters: 45, amps: 20 }],
+    kilns: [{ name: "Horno de Valentina", liters: 45, nominalCurrent: 20 }],
   },
   {
     key: "sofia",
@@ -99,11 +117,11 @@ const demoUsers = [
       {
         name: "Horno mural de Camila",
         liters: 80,
-        phases: 3,
-        volts: 380,
-        amps: 32,
+        phaseCount: 3,
+        nominalVoltage: 380,
+        nominalCurrent: 32,
       },
-      { name: "Horno joyería de Camila", liters: 18, amps: 10 },
+      { name: "Horno joyería de Camila", liters: 18, nominalCurrent: 10 },
     ],
   },
   {
@@ -124,12 +142,12 @@ const demoUsers = [
       {
         key: "stock-a",
         id: "88888888-8888-4888-8888-888888888881",
-        switchAmps: 25,
+        switchCurrentCapacity: 25,
       },
       {
         key: "stock-b",
         id: "88888888-8888-4888-8888-888888888882",
-        switchAmps: 40,
+        switchCurrentCapacity: 40,
       },
       {
         key: "stock-c",
@@ -148,7 +166,7 @@ const demoUsers = [
       {
         key: "large",
         id: "99999999-9999-4999-8999-999999999992",
-        switchAmps: 40,
+        switchCurrentCapacity: 40,
       },
     ],
     kilns: [
@@ -156,15 +174,15 @@ const demoUsers = [
         name: "Horno pruebas de Renata",
         controllerKey: "small",
         liters: 30,
-        amps: 16,
+        nominalCurrent: 16,
       },
       {
         name: "Horno producción de Renata",
         controllerKey: "large",
         liters: 100,
-        phases: 3,
-        volts: 380,
-        amps: 32,
+        phaseCount: 3,
+        nominalVoltage: 380,
+        nominalCurrent: 32,
       },
     ],
   },
@@ -179,12 +197,12 @@ const demoUsers = [
       {
         key: "kiln-4",
         id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4",
-        switchAmps: 40,
+        switchCurrentCapacity: 40,
       },
       {
         key: "kiln-5",
         id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5",
-        switchAmps: 40,
+        switchCurrentCapacity: 40,
       },
     ],
     kilns: [
@@ -192,35 +210,35 @@ const demoUsers = [
         name: "Horno bizcocho de Felipe",
         controllerKey: "kiln-1",
         liters: 45,
-        amps: 20,
+        nominalCurrent: 20,
       },
       {
         name: "Horno rakú de Felipe",
         controllerKey: "kiln-2",
         liters: 55,
-        amps: 22,
+        nominalCurrent: 22,
       },
       {
         name: "Horno porcelana de Felipe",
         controllerKey: "kiln-3",
         liters: 65,
-        amps: 25,
+        nominalCurrent: 25,
       },
       {
         name: "Horno comunitario de Felipe",
         controllerKey: "kiln-4",
         liters: 120,
-        phases: 3,
-        volts: 380,
-        amps: 35,
+        phaseCount: 3,
+        nominalVoltage: 380,
+        nominalCurrent: 35,
       },
       {
         name: "Horno taller norte de Felipe",
         controllerKey: "kiln-5",
         liters: 90,
-        phases: 3,
-        volts: 380,
-        amps: 30,
+        phaseCount: 3,
+        nominalVoltage: 380,
+        nominalCurrent: 30,
       },
     ],
   },
@@ -236,9 +254,9 @@ const demoUsers = [
         name: "Horno principal de Paula",
         controllerKey: "linked",
         liters: 70,
-        amps: 28,
+        nominalCurrent: 28,
       },
-      { name: "Horno pendiente de Paula", liters: 40, amps: 20 },
+      { name: "Horno pendiente de Paula", liters: 40, nominalCurrent: 20 },
     ],
   },
   {
@@ -254,7 +272,7 @@ const demoUsers = [
         name: "Horno de Andrés",
         controllerKey: "linked",
         liters: 55,
-        amps: 22,
+        nominalCurrent: 22,
       },
     ],
   },
@@ -277,72 +295,96 @@ const demoUsers = [
         name: "Horno esmalte Elena",
         controllerKey: "kiln-a",
         liters: 42,
-        amps: 18,
+        nominalCurrent: 18,
       },
       {
         name: "Horno esculturas Elena",
         controllerKey: "kiln-b",
         liters: 85,
-        phases: 3,
-        volts: 380,
-        amps: 30,
+        phaseCount: 3,
+        nominalVoltage: 380,
+        nominalCurrent: 30,
       },
       {
         name: "Horno laboratorio Elena",
         controllerKey: "kiln-c",
         liters: 25,
-        amps: 12,
+        nominalCurrent: 12,
       },
     ],
   },
 ];
 
 const orphanControllers = [
-  { id: "55555555-5555-4555-8555-555555555555", switchAmps: 25 },
+  { id: "55555555-5555-4555-8555-555555555555", switchCurrentCapacity: 25 },
   {
     id: "66666666-6666-4666-8666-666666666666",
     switchType: "SSR",
-    switchAmps: 30,
+    switchCurrentCapacity: 30,
   },
-  { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", switchAmps: 40 },
+  { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", switchCurrentCapacity: 40 },
 ];
 
 const orphanKilns = [
   {
     name: "Horno huérfano 1",
     liters: 30,
-    amps: 16,
+    nominalCurrent: 16,
     aliases: ["Horno huerfano 1"],
   },
   {
     name: "Horno huérfano 2",
     liters: 70,
-    phases: 3,
-    volts: 380,
-    amps: 30,
+    phaseCount: 3,
+    nominalVoltage: 380,
+    nominalCurrent: 30,
     aliases: ["Horno huerfano 2"],
   },
-  { name: "Horno huérfano 3", liters: 45, amps: 20 },
+  { name: "Horno huérfano 3", liters: 45, nominalCurrent: 20 },
 ];
 
 const kilnDefaults = {
   liters: 40,
-  phases: 1,
-  volts: 220,
-  amps: 20,
+  phaseCount: 1,
+  nominalVoltage: 220,
+  nominalCurrent: 20,
+  manufacturer: "Argillá",
+  heatingCircuitConfiguration: {
+    type: "ROOT",
+    connectionType: "PARALLEL",
+    elements: [
+      {
+        type: "CHANNEL",
+        name: "Canal principal",
+        resistanceOhms: 18.5,
+        lengthMeters: 6.2,
+      },
+    ],
+  },
 };
 
-async function createUserIfMissing({ email, name, role, password }) {
+async function createUserIfMissing({ email, name, role, password, phone = null }) {
   const hashedPassword = await bcrypt.hash(password, PASSWORD_ROUNDS);
 
   return prisma.user.upsert({
     where: { email },
-    update: { name, role },
-    create: { email, name, role, password: hashedPassword },
+    update: { name, role, phone, isActive: true, anonymizedAt: null },
+    create: {
+      email,
+      name,
+      role,
+      phone,
+      passwordHash: hashedPassword,
+      isActive: true,
+    },
   });
 }
 
 async function createControllerIfMissing(controllerId, data = {}) {
+  const deviceSecretHash = await bcrypt.hash(
+    `${seedDeviceSecret}:${controllerId}`,
+    DEVICE_SECRET_ROUNDS,
+  );
   const controller = await prisma.controller.findUnique({
     where: { controllerId },
   });
@@ -352,9 +394,17 @@ async function createControllerIfMissing(controllerId, data = {}) {
       where: { controllerId },
       data: {
         userId: data.userId ?? null,
-        pin: data.pin ?? null,
+        pairingPinHash: null,
+        pairingPinExpiresAt: null,
+        pairingFailedAttempts: 0,
+        pairingBlockedUntil: null,
         switchType: data.switchType ?? "CONTACTOR",
-        switchAmps: data.switchAmps ?? 25,
+        switchCurrentCapacity: data.switchCurrentCapacity ?? 25,
+        deviceSecretHash,
+        manufacturedAt:
+          data.manufacturedAt ?? new Date("2025-01-15T12:00:00.000Z"),
+        deliveredAt: data.deliveredAt ?? null,
+        firmwareVersion: data.firmwareVersion ?? "DEMO-1.0.0",
       },
     });
   }
@@ -363,20 +413,39 @@ async function createControllerIfMissing(controllerId, data = {}) {
     data: {
       controllerId,
       userId: data.userId ?? null,
-      pin: data.pin ?? null,
+      deviceSecretHash,
       switchType: data.switchType ?? "CONTACTOR",
-      switchAmps: data.switchAmps ?? 25,
+      switchCurrentCapacity: data.switchCurrentCapacity ?? 25,
+      manufacturedAt:
+        data.manufacturedAt ?? new Date("2025-01-15T12:00:00.000Z"),
+      deliveredAt: data.deliveredAt ?? null,
+      firmwareVersion: data.firmwareVersion ?? "DEMO-1.0.0",
     },
   });
 }
 
 async function createKilnIfMissing(name, data, aliases = []) {
+  const kilnData = {
+    userId: data.userId ?? null,
+    controllerId: data.controllerId ?? null,
+    liters: data.liters ?? kilnDefaults.liters,
+    phaseCount: data.phaseCount ?? kilnDefaults.phaseCount,
+    nominalVoltage: data.nominalVoltage ?? kilnDefaults.nominalVoltage,
+    nominalCurrent: data.nominalCurrent ?? kilnDefaults.nominalCurrent,
+    manufacturer: data.manufacturer ?? kilnDefaults.manufacturer,
+    manufacturedAt:
+      data.manufacturedAt ?? new Date("2024-11-01T12:00:00.000Z"),
+    deliveredAt: data.deliveredAt ?? null,
+    heatingCircuitConfiguration:
+      data.heatingCircuitConfiguration ??
+      kilnDefaults.heatingCircuitConfiguration,
+  };
   const existing = await prisma.kiln.findFirst({
     where: { name: { in: [name, ...aliases] } },
     orderBy: { kilnId: "asc" },
   });
 
-  let controllerId = data.controllerId ?? null;
+  let controllerId = kilnData.controllerId;
   if (controllerId) {
     const controller = await prisma.controller.findUnique({
       where: { controllerId },
@@ -398,9 +467,9 @@ async function createKilnIfMissing(name, data, aliases = []) {
       where: { kilnId: existing.kilnId },
       data: {
         ...kilnDefaults,
-        ...data,
+        ...kilnData,
         name,
-        userId: data.userId ?? null,
+        userId: kilnData.userId,
         controllerId,
       },
     });
@@ -409,15 +478,23 @@ async function createKilnIfMissing(name, data, aliases = []) {
   return prisma.kiln.create({
     data: {
       ...kilnDefaults,
-      ...data,
+      ...kilnData,
       name,
-      userId: data.userId ?? null,
+      userId: kilnData.userId,
       controllerId,
     },
   });
 }
 
 async function main() {
+  for (const reason of supportReasons) {
+    await prisma.supportReason.upsert({
+      where: { code: reason.code },
+      update: { name: reason.name, isActive: true },
+      create: reason,
+    });
+  }
+
   await createUserIfMissing({
     email: admin.email,
     name: admin.name,
@@ -425,12 +502,20 @@ async function main() {
     role: "ADMIN",
   });
 
+  await createUserIfMissing({
+    email: technician.email,
+    name: technician.name,
+    password: technician.password,
+    role: "TECHNICIAN",
+    phone: "+56955550101",
+  });
+
   const seededUsers = {};
   for (const user of demoUsers) {
     seededUsers[user.key] = await createUserIfMissing({
       ...user,
       password: demoPassword,
-      role: "USER",
+      role: "CLIENT",
     });
   }
 
@@ -442,7 +527,7 @@ async function main() {
       await createControllerIfMissing(controller.id, {
         userId,
         switchType: controller.switchType,
-        switchAmps: controller.switchAmps,
+        switchCurrentCapacity: controller.switchCurrentCapacity,
       });
       controllerByKey[controller.key] = controller.id;
     }
@@ -456,9 +541,9 @@ async function main() {
             ? controllerByKey[kiln.controllerKey]
             : null,
           liters: kiln.liters,
-          phases: kiln.phases,
-          volts: kiln.volts,
-          amps: kiln.amps,
+          phaseCount: kiln.phaseCount,
+          nominalVoltage: kiln.nominalVoltage,
+          nominalCurrent: kiln.nominalCurrent,
         },
         kiln.aliases,
       );
@@ -478,7 +563,7 @@ async function main() {
   for (const controller of orphanControllers) {
     await createControllerIfMissing(controller.id, {
       switchType: controller.switchType,
-      switchAmps: controller.switchAmps,
+      switchCurrentCapacity: controller.switchCurrentCapacity,
     });
   }
 
@@ -499,9 +584,9 @@ async function main() {
       kiln.name,
       {
         liters: kiln.liters,
-        phases: kiln.phases,
-        volts: kiln.volts,
-        amps: kiln.amps,
+        phaseCount: kiln.phaseCount,
+        nominalVoltage: kiln.nominalVoltage,
+        nominalCurrent: kiln.nominalCurrent,
       },
       kiln.aliases,
     );
@@ -509,7 +594,8 @@ async function main() {
 
   console.log("Seed listo. Registros demo fueron creados o normalizados.");
   console.log(`Administrador: ${admin.email}`);
-  console.log(`Ceramistas: ${demoUsers.map((user) => user.email).join(", ")}`);
+  console.log(`Técnico: ${technician.email}`);
+  console.log(`Clientes: ${demoUsers.map((user) => user.email).join(", ")}`);
 }
 
 main()

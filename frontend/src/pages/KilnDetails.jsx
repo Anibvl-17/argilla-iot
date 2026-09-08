@@ -4,31 +4,22 @@ import {
   LuArrowLeft,
   LuCircuitBoard,
   LuCopy,
-  LuPencil,
   LuPower,
-  LuSave,
-  LuX,
 } from "react-icons/lu";
 import ControllerStatus from "@components/ControllerStatus";
 import Pagination from "@components/Pagination";
 import {
   getMyKiln,
   getMyKilnTelemetry,
-  renameMyKiln,
   sendMyKilnControllerCommand,
 } from "@services/kiln.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
+  getControllerActivityLabel,
   getControllerConnectionLabel,
-  getControllerOperationLabel,
+  getFiringCommandLabel,
 } from "@constants/controller.constants";
 import { SWITCH_LABELS } from "../constants/controller.constants";
-import FieldError from "@components/FieldError";
-import {
-  clearFormError,
-  hasFormError,
-  normalizeFormError,
-} from "../utils/formError";
 import { toast } from "sonner";
 
 function Detail({ label, value, canCopy }) {
@@ -59,10 +50,6 @@ export default function KilnDetails() {
   const [kiln, setKiln] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState(null);
   const [commandSending, setCommandSending] = useState("");
   const [commandError, setCommandError] = useState("");
   const [telemetry, setTelemetry] = useState([]);
@@ -80,7 +67,6 @@ export default function KilnDetails() {
       if (!active) return;
       if (result.success) {
         setKiln(result.data);
-        setName(result.data.name);
       } else setError(result.message);
       setLoading(false);
     });
@@ -129,21 +115,6 @@ export default function KilnDetails() {
 
   useControllerRealtime(handleTelemetry);
 
-  async function handleRename(event) {
-    event.preventDefault();
-    setSaving(true);
-    setFormError(null);
-    const result = await renameMyKiln(kilnId, name.trim());
-    setSaving(false);
-    if (!result.success) {
-      setFormError(normalizeFormError(result, "name"));
-      return;
-    }
-    setKiln(result.data);
-    setName(result.data.name);
-    setEditing(false);
-  }
-
   async function handleCommand(command) {
     setCommandSending(command);
     setCommandError("");
@@ -177,7 +148,7 @@ export default function KilnDetails() {
     );
 
   const controller = kiln.controller;
-  const nextCommand = controller?.operativeStatus === "ON" ? "OFF" : "ON";
+  const nextCommand = controller?.switchState ? "OFF" : "ON";
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -192,65 +163,9 @@ export default function KilnDetails() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">
             Detalle del horno
           </p>
-          {editing ? (
-            <form onSubmit={handleRename} className="mt-2 max-w-xl">
-              <div className="flex min-w-0 flex-wrap gap-2 min-[400px]:flex-nowrap">
-                <input
-                  autoFocus
-                  name="name"
-                  aria-invalid={hasFormError(formError, "name") || undefined}
-                  aria-describedby={
-                    hasFormError(formError, "name")
-                      ? "kiln-name-error"
-                      : undefined
-                  }
-                  value={name}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    setFormError((current) => clearFormError(current, "name"));
-                  }}
-                  minLength={2}
-                  maxLength={100}
-                  required
-                  className="min-w-0 flex-1 rounded-lg border border-control-border bg-field px-3 py-2 text-xl font-semibold outline-none focus:border-focus"
-                />
-                <button
-                  disabled={saving}
-                  className="rounded-lg bg-primary px-3 text-on-action hover:bg-primary-hover"
-                  title="Guardar"
-                >
-                  <LuSave />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditing(false);
-                    setName(kiln.name);
-                    setFormError(null);
-                  }}
-                  className="rounded-lg border border-control-border px-3 text-secondary hover:bg-surface-hover"
-                  title="Cancelar"
-                >
-                  <LuX />
-                </button>
-              </div>
-              <FieldError error={formError} field="name" id="kiln-name-error" />
-              <FieldError error={formError} />
-            </form>
-          ) : (
-            <div className="mt-2 flex min-w-0 items-center gap-2 sm:gap-3">
-              <h1 className="min-w-0 wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl">
-                {kiln.name}
-              </h1>
-              <button
-                onClick={() => setEditing(true)}
-                className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-content"
-                title="Editar nombre"
-              >
-                <LuPencil />
-              </button>
-            </div>
-          )}
+          <h1 className="mt-2 min-w-0 wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl">
+            {kiln.name}
+          </h1>
         </div>
         <ControllerStatus controller={controller} />
       </div>
@@ -259,11 +174,11 @@ export default function KilnDetails() {
         <h2 className="text-lg font-semibold">Información del horno</h2>
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Detail label="Capacidad" value={`${kiln.liters} litros`} />
-          <Detail label="Amperaje" value={`${kiln.amps} A`} />
-          <Detail label="Voltaje" value={`${kiln.volts} V`} />
+          <Detail label="Amperaje" value={`${kiln.nominalCurrent} A`} />
+          <Detail label="Voltaje" value={`${kiln.nominalVoltage} V`} />
           <Detail
             label="Fases"
-            value={kiln.phases === 1 ? "Monofásico" : "Trifásico"}
+            value={kiln.phaseCount === 1 ? "Monofásico" : "Trifásico"}
           />
         </dl>
       </section>
@@ -286,14 +201,14 @@ export default function KilnDetails() {
               <Detail
                 label="Temperatura"
                 value={
-                  controller.temp == null
+                  controller.temperature == null
                     ? "No disponible"
-                    : `${controller.temp.toFixed(1)} °C`
+                    : `${controller.temperature.toFixed(1)} °C`
                 }
               />
               <Detail
-                label="Estado operativo"
-                value={getControllerOperationLabel(controller.operativeStatus)}
+                label="Actividad"
+                value={getControllerActivityLabel(controller.activityStatus)}
               />
               <Detail
                 label="Conexión"
@@ -314,13 +229,13 @@ export default function KilnDetails() {
               />
               <Detail
                 label="Amperaje soportado"
-                value={`${controller.switchAmps} A`}
+                value={`${controller.switchCurrentCapacity} A`}
               />
             </dl>
             <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-content">
-                  Control del switch
+                  Control de quema
                 </h3>
                 {commandError && (
                   <p className="mt-1 text-sm text-accent">{commandError}</p>
@@ -344,9 +259,7 @@ export default function KilnDetails() {
                   <LuPower />
                   {commandSending
                     ? "Enviando..."
-                    : nextCommand === "ON"
-                      ? "Encender"
-                      : "Apagar"}
+                    : getFiringCommandLabel(nextCommand)}
                 </button>
               </div>
             </div>
@@ -374,7 +287,7 @@ export default function KilnDetails() {
                   Temperatura
                 </th>
                 <th className="px-4 py-3 text-center font-medium sm:px-6">
-                  Estado
+                  Relé
                 </th>
               </tr>
             </thead>
@@ -389,7 +302,7 @@ export default function KilnDetails() {
                       {item.temperature.toFixed(1)} °C
                     </td>
                     <td className="px-4 py-3 text-center text-secondary sm:px-6">
-                      {item.switchState ? "Encendido" : "Apagado"}
+                      {item.switchState ? "Activo" : "Inactivo"}
                     </td>
                   </tr>
                 ))

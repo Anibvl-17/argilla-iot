@@ -15,19 +15,56 @@ export async function getProfile() {
   }
 }
 
-export async function changePassword(currentPassword, newPassword) {
+export async function updateProfile(data) {
   try {
-    const response = await axios.patch("/user/me", {
-      currentPassword,
-      newPassword,
-    });
+    const response = await axios.patch("/user/me", data);
     return { success: true, data: response.data.data };
   } catch (error) {
-    console.error("Error al cambiar la contraseña", error.response?.data);
+    console.error("Error al actualizar el perfil", error.response?.data);
     return {
       success: false,
       message:
         error.response?.data?.message || "Error al conectar con el servidor",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function deactivateOwnAccount() {
+  try {
+    await axios.post("/user/me/deactivate");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error.response?.data?.message || "No se pudo desactivar la cuenta",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function deleteOwnAccount() {
+  try {
+    await axios.delete("/user/me");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "No se pudo eliminar la cuenta",
+      data: error.response?.data,
+    };
+  }
+}
+
+export async function updateUserStatus(userId, isActive) {
+  try {
+    const response = await axios.patch(`/user/${userId}/status`, { isActive });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }

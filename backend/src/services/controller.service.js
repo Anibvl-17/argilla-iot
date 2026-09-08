@@ -1,257 +1,285 @@
+import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
 import { CONTROLLER_LINK_STATUS } from "../constants/controller.constants.js";
-import crypto from "crypto";
+import {
+  clearSwitchState,
+  presentController,
+  setSwitchState,
+} from "../utils/entityPresentation.js";
 
-const parsedTelemetrySampleSeconds = Number.parseInt(
-  process.env.TELEMETRY_SAMPLE_SECONDS || "",
-  10,
-);
-const TELEMETRY_SAMPLE_SECONDS =
-  Number.isFinite(parsedTelemetrySampleSeconds) &&
-  parsedTelemetrySampleSeconds > 0
-    ? parsedTelemetrySampleSeconds
-    : 5;
+const HASH_ROUNDS = 10;
+const PIN_TTL_MS = 15 * 60 * 1000;
+const BLOCK_MS = 2 * 60 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 10;
 
-function getControllerLinkStatus(controller) {
-  if (controller.kiln && controller.user) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER;
-  }
-
-  if (controller.kiln) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_KILN;
-  }
-
-  if (controller.user) {
-    return CONTROLLER_LINK_STATUS.LINKED_TO_USER;
-  }
-
-  return CONTROLLER_LINK_STATUS.UNLINKED;
+function serviceError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
 }
 
-function decorateController(controller) {
-  if (!controller) {
-    return controller;
-  }
-
-  const linkStatus = getControllerLinkStatus(controller);
-
+function normalizeDates(data) {
   return {
-    ...controller,
-    linkStatus,
-    status: linkStatus,
+    ...data,
+    ...(data.manufacturedAt !== undefined
+      ? { manufacturedAt: new Date(data.manufacturedAt) }
+      : {}),
+    ...(data.deliveredAt !== undefined
+      ? { deliveredAt: data.deliveredAt ? new Date(data.deliveredAt) : null }
+      : {}),
+    ...(data.firmwareUpdatedAt !== undefined
+      ? {
+          firmwareUpdatedAt: data.firmwareUpdatedAt
+            ? new Date(data.firmwareUpdatedAt)
+            : null,
+        }
+      : {}),
   };
 }
 
-function decorateControllers(controllers) {
-  return controllers.map((controller) => decorateController(controller));
+function decorateController(controller) {
+  if (!controller) return controller;
+  const linkStatus = controller.kiln && controller.user
+    ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
+    : controller.kiln
+      ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN
+      : controller.user
+        ? CONTROLLER_LINK_STATUS.LINKED_TO_USER
+        : CONTROLLER_LINK_STATUS.UNLINKED;
+  return { ...presentController(controller), linkStatus };
 }
 
-/**
- * Crea un controlador de forma lógica. El UUID generado se asigna al
- * controlador físico para ser vinculado posteriormente.
- */
 export async function create(data) {
-  const controller = await prisma.controller.create({ data });
-
-  return decorateController(controller);
+  const deviceSecret = crypto.randomBytes(32).toString("base64url");
+  const deviceSecretHash = await bcrypt.hash(deviceSecret, HASH_ROUNDS);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const controller = await prisma.controller.create({
+        data: {
+          controllerId: crypto.randomUUID(),
+          ...normalizeDates(data),
+          deviceSecretHash,
+        },
+        include: { kiln: true, user: true },
+      });
+      return { ...decorateController(controller), deviceSecret };
+    } catch (error) {
+      if (error.code !== "P2002" || attempt === 4) throw error;
+    }
+  }
 }
 
 export async function edit(controllerId, data) {
-  const currentController = await prisma.controller.findUnique({
+  const normalizedData = normalizeDates(data);
+  const current = await prisma.controller.findUnique({
     where: { controllerId },
-    include: { kiln: { select: { amps: true } } },
+    include: { kiln: { select: { nominalCurrent: true } } },
   });
-
-  if (!currentController) {
-    const error = new Error("Controlador no encontrado");
-    error.code = "P2025";
-    throw error;
-  }
-
+  if (!current) throw serviceError("P2025", "Controlador no encontrado");
   if (
-    currentController.kiln &&
-    data.switchAmps != null &&
-    data.switchAmps < currentController.kiln.amps
+    current.kiln &&
+    normalizedData.switchCurrentCapacity != null &&
+    normalizedData.switchCurrentCapacity < current.kiln.nominalCurrent
   ) {
-    const error = new Error(
-      `El horno vinculado requiere al menos ${currentController.kiln.amps}A. Desvincula el controlador del horno antes de reducir su amperaje.`,
+    throw serviceError(
+      "INCOMPATIBLE_KILN_AMPERAGE",
+      `El horno vinculado requiere al menos ${current.kiln.nominalCurrent}A`,
     );
-    error.code = "INCOMPATIBLE_KILN_AMPERAGE";
-    throw error;
   }
-
-  const controller = await prisma.controller.update({
-    where: { controllerId },
-    data,
-  });
-
-  return decorateController(controller);
+  return decorateController(
+    await prisma.controller.update({
+      where: { controllerId },
+      data: normalizedData,
+      include: { kiln: true, user: true },
+    }),
+  );
 }
 
 export async function remove(controllerId) {
-  const controllerToRemove = await prisma.controller.findUnique({
-    where: { controllerId },
-    include: { kiln: true },
-  });
-
-  if (!controllerToRemove) return false;
-
-  if (controllerToRemove.kiln) {
-    await prisma.kiln.update({
-      where: { kilnId: controllerToRemove.kiln.kilnId },
-      data: {
-        controller: { disconnect: true },
-      },
-    });
-  }
-
-  await prisma.controller.delete({
-    where: { controllerId },
-  });
-
+  const controller = await prisma.controller.findUnique({ where: { controllerId } });
+  if (!controller) return false;
+  await prisma.controller.delete({ where: { controllerId } });
+  clearSwitchState(controllerId);
   return true;
 }
 
-/**
- * Genera un pin de 6 digitos
- *
- * @param {string} uuid UUID del controlador
- * @returns PIN aleatorio
- */
-export async function generatePin(uuid) {
-  const pin = crypto.randomInt(100000, 1000000);
-
-  await prisma.controller.update({
-    where: { controllerId: uuid },
-    data: {
-      pin,
-    },
+export async function receivePairingPin(controllerId, pin, deviceSecret) {
+  const authenticated = await prisma.controller.findUnique({
+    where: { controllerId },
+    select: { deviceSecretHash: true },
   });
-
-  return pin;
+  if (!authenticated || !(await bcrypt.compare(deviceSecret, authenticated.deviceSecretHash))) {
+    throw serviceError("PAIRING_AUTH_FAILED", "Credencial de dispositivo inválida");
+  }
+  const pairingPinHash = await bcrypt.hash(pin, HASH_ROUNDS);
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "controllerId" FROM "Controller" WHERE "controllerId" = ${controllerId} FOR UPDATE`;
+    const controller = await tx.controller.findUnique({ where: { controllerId } });
+    if (controller.operationalStatus !== "OPERATIONAL") {
+      throw serviceError("PAIRING_NOT_OPERATIONAL", "El controlador no está operacional");
+    }
+    const now = new Date();
+    if (controller.pairingBlockedUntil && controller.pairingBlockedUntil > now) {
+      const error = serviceError("PAIRING_BLOCKED", "La vinculación está bloqueada");
+      error.blockedUntil = controller.pairingBlockedUntil;
+      throw error;
+    }
+    const expiresAt = new Date(now.getTime() + PIN_TTL_MS);
+    await tx.controller.update({
+      where: { controllerId },
+      data: {
+        pairingPinHash,
+        pairingPinExpiresAt: expiresAt,
+        ...(controller.pairingBlockedUntil && controller.pairingBlockedUntil <= now
+          ? { pairingFailedAttempts: 0, pairingBlockedUntil: null }
+          : {}),
+      },
+    });
+    return { status: "READY", expiresAt };
+  });
 }
 
-/**
- * Limpia el PIN temporal del controlador una vez consumido.
- *
- * @param {string} id UUID del Controlador
- * @returns El Controlador actualizado
- */
-export async function clearPin(id) {
-  return await prisma.controller.update({
-    where: { controllerId: id },
-    data: {
-      pin: null,
-    },
+export async function claimControllerBundle(partialControllerId, userId, pin) {
+  const result = await prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw`
+      SELECT "controllerId" FROM "Controller"
+      WHERE RIGHT("controllerId", 6) = ${partialControllerId}
+      FOR UPDATE
+    `;
+    if (locked.length !== 1) {
+      throw serviceError("PAIRING_NOT_FOUND", "Controlador no encontrado");
+    }
+    const controller = await tx.controller.findUnique({
+      where: { controllerId: locked[0].controllerId },
+      include: { kiln: true },
+    });
+    const now = new Date();
+    if (controller.pairingBlockedUntil && controller.pairingBlockedUntil > now) {
+      const error = serviceError("PAIRING_BLOCKED", "La vinculación está bloqueada temporalmente");
+      error.blockedUntil = controller.pairingBlockedUntil;
+      error.controllerId = controller.controllerId;
+      throw error;
+    }
+    if (!controller.pairingPinHash || !controller.pairingPinExpiresAt || controller.pairingPinExpiresAt <= now) {
+      throw serviceError("PAIRING_PIN_EXPIRED", "El PIN no existe o está vencido");
+    }
+    const matches = await bcrypt.compare(pin, controller.pairingPinHash);
+    if (!matches) {
+      const failedAttempts = controller.pairingFailedAttempts + 1;
+      if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+        const blockedUntil = new Date(now.getTime() + BLOCK_MS);
+        await tx.controller.update({
+          where: { controllerId: controller.controllerId },
+          data: {
+            pairingFailedAttempts: failedAttempts,
+            pairingBlockedUntil: blockedUntil,
+            pairingPinHash: null,
+            pairingPinExpiresAt: null,
+          },
+        });
+        const error = serviceError("PAIRING_BLOCKED", "Se alcanzó el límite de intentos");
+        error.blockedUntil = blockedUntil;
+        error.controllerId = controller.controllerId;
+        return { error };
+      }
+      await tx.controller.update({
+        where: { controllerId: controller.controllerId },
+        data: { pairingFailedAttempts: { increment: 1 } },
+      });
+      return { error: serviceError("PAIRING_PIN_INVALID", "PIN incorrecto") };
+    }
+    if (!controller.kiln) {
+      throw serviceError("PAIRING_KILN_REQUIRED", "El controlador no tiene un horno asociado");
+    }
+    if (![null, userId].includes(controller.userId) || ![null, userId].includes(controller.kiln.userId)) {
+      throw serviceError("PAIRING_OWNED", "Los equipos pertenecen a otro usuario");
+    }
+    const user = await tx.user.findUnique({ where: { userId } });
+    if (!user || !user.isActive || user.anonymizedAt || user.role !== "CLIENT") {
+      throw serviceError("PAIRING_USER_INVALID", "El cliente no está habilitado");
+    }
+    await tx.kiln.update({ where: { kilnId: controller.kiln.kilnId }, data: { userId } });
+    const claimed = await tx.controller.update({
+      where: { controllerId: controller.controllerId },
+      data: {
+        userId,
+        pairingPinHash: null,
+        pairingPinExpiresAt: null,
+        pairingFailedAttempts: 0,
+        pairingBlockedUntil: null,
+      },
+      include: { kiln: true, user: true },
+    });
+    return { controller: decorateController(claimed) };
   });
+  if (result.error) throw result.error;
+  return result.controller;
 }
 
 export async function updateControllerTelemetry(controllerId, data) {
-  return await prisma.$transaction(async (tx) => {
-    const controller = await tx.controller.update({
-      where: { controllerId },
-      data,
-      select: {
-        controllerId: true,
-        userId: true,
-        operativeStatus: true,
-        connectionStatus: true,
-        temp: true,
-        kiln: { select: { kilnId: true } },
-      },
-    });
-
-    let telemetrySaved = false;
-
-    if (data.temp != null && controller.kiln) {
-      const lastTelemetry = await tx.telemetry.findFirst({
-        where: { kilnId: controller.kiln.kilnId },
-        orderBy: { timestamp: "desc" },
-        select: { timestamp: true },
-      });
-      const elapsedSeconds = lastTelemetry
-        ? (Date.now() - lastTelemetry.timestamp.getTime()) / 1000
-        : Number.POSITIVE_INFINITY;
-
-      if (elapsedSeconds >= TELEMETRY_SAMPLE_SECONDS) {
-        await tx.telemetry.create({
-          data: {
-            kilnId: controller.kiln.kilnId,
-            temperature: data.temp,
-            switchState: controller.operativeStatus === "ON",
-          },
-        });
-        telemetrySaved = true;
-      }
-    }
-
-    return { ...controller, telemetrySaved };
+  const controller = await prisma.controller.update({
+    where: { controllerId },
+    data: {
+      temperature: data.temperature,
+      ...(data.relayState
+        ? { activityStatus: data.relayState === "ON" ? "FIRING" : "IDLE" }
+        : {}),
+    },
+    select: {
+      controllerId: true,
+      userId: true,
+      connectionStatus: true,
+      activityStatus: true,
+      temperature: true,
+      switchCurrentCapacity: true,
+      kiln: { select: { kilnId: true } },
+    },
   });
+  if (data.relayState) setSwitchState(controllerId, data.relayState);
+  return { ...presentController(controller), telemetrySaved: false };
 }
 
-export async function updateControllerConnectionStatus(
-  controllerId,
-  connectionStatus,
-) {
-  return await prisma.controller.update({
+export async function updateControllerConnectionStatus(controllerId, connectionStatus) {
+  const controller = await prisma.controller.update({
     where: { controllerId },
     data: { connectionStatus },
     select: {
       controllerId: true,
       userId: true,
-      operativeStatus: true,
       connectionStatus: true,
-      temp: true,
+      activityStatus: true,
+      temperature: true,
+      switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
     },
   });
+  return presentController(controller);
 }
 
-export async function updateControllerOperativeStatus(
-  controllerId,
-  operativeStatus,
-) {
-  return await prisma.controller.update({
+export async function updateControllerSwitchState(controllerId, switchState) {
+  const controller = await prisma.controller.update({
     where: { controllerId },
-    data: { operativeStatus },
-    select: {
-      controllerId: true,
-      userId: true,
-      operativeStatus: true,
-      connectionStatus: true,
-      temp: true,
-      kiln: { select: { kilnId: true } },
-    },
-  });
-}
-
-export async function getControllerCommandTarget(controllerId) {
-  return await prisma.controller.findUnique({
-    where: { controllerId },
+    data: { activityStatus: switchState === "ON" ? "FIRING" : "IDLE" },
     select: {
       controllerId: true,
       userId: true,
       connectionStatus: true,
+      activityStatus: true,
+      temperature: true,
+      switchCurrentCapacity: true,
       kiln: { select: { kilnId: true } },
     },
   });
+  setSwitchState(controllerId, switchState);
+  return presentController(controller);
 }
 
-export async function getAllControllers() {
-  const controllers = await prisma.controller.findMany({
-    include: { kiln: true, user: true },
+export function getControllerCommandTarget(controllerId) {
+  return prisma.controller.findUnique({
+    where: { controllerId },
+    select: { controllerId: true, userId: true, connectionStatus: true, kiln: { select: { kilnId: true } } },
   });
-
-  return decorateControllers(controllers);
-}
-
-export async function getControllersForUser(userId) {
-  const controllers = await prisma.controller.findMany({
-    where: { userId },
-    include: { kiln: true, user: true },
-  });
-
-  return decorateControllers(controllers);
 }
 
 export async function getControllersPage({
@@ -260,171 +288,94 @@ export async function getControllersPage({
   pageSize = 10,
   search = "",
   connectionStatus,
-  operativeStatus,
   kilnStatus,
+  operationalStatusFilter,
 } = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
   const normalizedSearch = String(search || "").trim();
-  const safeConnectionStatus = ["ONLINE", "OFFLINE"].includes(connectionStatus)
-    ? connectionStatus
+  const normalizedControllerSearch = normalizedSearch.replace(/^\.\.\./, "");
+  const kilnIdSearch = normalizedSearch.startsWith("#")
+    ? Number(normalizedSearch.slice(1).trim())
+    : null;
+  const normalizedOperationalStatus = [
+    "OPERATIONAL",
+    "MAINTENANCE",
+    "OUT_OF_SERVICE",
+  ].includes(operationalStatusFilter)
+    ? operationalStatusFilter
     : undefined;
-  const safeOperativeStatus = ["ON", "OFF"].includes(operativeStatus)
-    ? operativeStatus
-    : undefined;
-  const where = {
+  const scopeWhere = {
     ...(userId != null ? { userId } : {}),
-    ...(normalizedSearch
+    ...(normalizedOperationalStatus
+      ? { operationalStatus: normalizedOperationalStatus }
+      : {}),
+  };
+  const searchWhere = normalizedSearch
+    ? normalizedSearch.startsWith("#")
       ? {
-          controllerId: {
-            contains: normalizedSearch,
-            mode: "insensitive",
+          kiln: {
+            is: {
+              kilnId:
+                Number.isInteger(kilnIdSearch) && kilnIdSearch > 0
+                  ? kilnIdSearch
+                  : -1,
+            },
           },
         }
-      : {}),
-    ...(safeOperativeStatus
-      ? { connectionStatus: "ONLINE" }
-      : safeConnectionStatus
-        ? { connectionStatus: safeConnectionStatus }
-        : {}),
-    ...(safeOperativeStatus ? { operativeStatus: safeOperativeStatus } : {}),
+      : {
+          OR: [
+            ...(normalizedControllerSearch
+              ? [
+                  {
+                    controllerId: {
+                      endsWith: normalizedControllerSearch,
+                      mode: "insensitive",
+                    },
+                  },
+                ]
+              : []),
+            {
+              user: {
+                is: {
+                  OR: [
+                    {
+                      name: {
+                        contains: normalizedSearch,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      email: {
+                        contains: normalizedSearch,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        }
+    : {};
+  const where = {
+    ...scopeWhere,
+    ...searchWhere,
+    ...(["ONLINE", "OFFLINE"].includes(connectionStatus) ? { connectionStatus } : {}),
     ...(kilnStatus === "linked" ? { kiln: { isNot: null } } : {}),
     ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
   };
-  const scopeWhere = userId != null ? { userId } : {};
-
-  const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] =
-    await prisma.$transaction([
-      prisma.controller.findMany({
-        where,
-        include: { kiln: true, user: true },
-        orderBy: { controllerId: "asc" },
-        skip: (safePage - 1) * safePageSize,
-        take: safePageSize,
-      }),
-      prisma.controller.count({ where }),
-      prisma.controller.count({ where: scopeWhere }),
-      prisma.controller.count({
-        where: { ...scopeWhere, kiln: { isNot: null } },
-      }),
-      prisma.controller.count({
-        where: { ...scopeWhere, user: { isNot: null } },
-      }),
-      prisma.controller.count({
-        where: {
-          ...scopeWhere,
-          kiln: { isNot: null },
-          user: { isNot: null },
-        },
-      }),
-    ]);
-
+  const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] = await prisma.$transaction([
+    prisma.controller.findMany({ where, include: { kiln: true, user: true }, orderBy: { controllerId: "asc" }, skip: (safePage - 1) * safePageSize, take: safePageSize }),
+    prisma.controller.count({ where }),
+    prisma.controller.count({ where: scopeWhere }),
+    prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null } } }),
+    prisma.controller.count({ where: { ...scopeWhere, user: { isNot: null } } }),
+    prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null }, user: { isNot: null } } }),
+  ]);
   return {
-    items: decorateControllers(items),
-    pagination: {
-      page: safePage,
-      pageSize: safePageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
-    },
+    items: items.map(decorateController),
+    pagination: { page: safePage, pageSize: safePageSize, total, totalPages: Math.max(1, Math.ceil(total / safePageSize)) },
     summary: { total: scopeTotal, linkedToKiln, linkedToUser, fullyLinked },
   };
-}
-
-/**
- * Vincula un Usuario a un Controlador. Utiliza los últimos 6 caracteres del
- * UUID del controlador para identificarlo. Debe existir un PIN.
- *
- * @param {number} userId
- * @param {string} partialControllerId
- * @param {number} pin
- * @returns El Controlador actualizado
- */
-export async function linkControllerToUser(partialControllerId, userId, pin) {
-  return await prisma.$transaction(async (tx) => {
-    const controller = await tx.controller.findFirst({
-      where: { controllerId: { endsWith: partialControllerId } },
-      include: { kiln: true },
-    });
-
-    if (!controller || controller.pin !== pin) {
-      throw new Error("Credenciales incorrectas");
-    }
-
-    const user = await tx.user.findUnique({ where: { userId } });
-
-    if (!user) {
-      throw new Error("Usuario no encontrado");
-    }
-
-    // ---- Clausulas de Guarda ----
-    if (controller.userId !== null) {
-      throw new Error("El controlador ya tiene un propietario");
-    }
-
-    if (
-      controller.kiln &&
-      controller.kiln.userId !== null &&
-      controller.kiln.userId !== userId
-    ) {
-      throw new Error("El horno asociado pertenece a otro usuario");
-    }
-
-    // ---- Fin Clausulas de Guarda ----
-
-    const claimedController = await tx.controller.update({
-      where: { controllerId: controller.controllerId },
-      data: {
-        user: { connect: { userId } },
-        pin: null,
-      },
-    });
-
-    if (controller.kiln) {
-      await tx.kiln.update({
-        where: { kilnId: controller.kiln.kilnId },
-        data: { user: { connect: { userId } } },
-      });
-    }
-
-    return claimedController;
-  });
-}
-
-/**
- * Desvincula un Controlador de un Usuario.
- *
- * @param {number} userId
- * @param {number} controllerId
- * @returns El controlador actualizado
- */
-export async function unlinkUserFromController(userId, controllerId) {
-  return await prisma.$transaction(async (tx) => {
-    const controller = await tx.controller.findUnique({
-      where: { controllerId },
-      include: { kiln: true },
-    });
-
-    if (!controller) {
-      throw new Error("Controlador no encontrado");
-    }
-
-    if (controller.userId !== userId) {
-      throw new Error("El controlador no pertenece a este usuario");
-    }
-
-    const updatedController = await tx.controller.update({
-      where: { controllerId },
-      data: { user: { disconnect: true } },
-    });
-
-    if (controller.kiln && controller.kiln.userId === userId) {
-      await tx.kiln.update({
-        where: { kilnId: controller.kiln.kilnId },
-        data: { user: { disconnect: true } },
-      });
-    }
-
-    return updatedController;
-  });
 }

@@ -2,41 +2,50 @@ import { prisma } from "../config/prisma.js";
 
 export async function getAdminSummary() {
   const [
-    registeredKilns,
-    linkedKilns,
+    totalKilns,
+    kilnsWithOwner,
     operationalKilns,
-    registeredControllers,
-    linkedControllers,
-    registeredUsers,
+    outOfServiceKilns,
+    totalControllers,
+    controllersWithOwner,
+    operationalControllers,
+    outOfServiceControllers,
+    totalUsers,
+    technicians,
+    clients,
   ] = await prisma.$transaction([
     prisma.kiln.count(),
-    prisma.kiln.count({
-      where: {
-        OR: [{ userId: { not: null } }, { controllerId: { not: null } }],
-      },
-    }),
-    prisma.kiln.count({
-      where: { controller: { is: { operativeStatus: "ON" } } },
-    }),
+    prisma.kiln.count({ where: { userId: { not: null } } }),
+    prisma.kiln.count({ where: { operationalStatus: "OPERATIONAL" } }),
+    prisma.kiln.count({ where: { operationalStatus: "OUT_OF_SERVICE" } }),
     prisma.controller.count(),
+    prisma.controller.count({ where: { userId: { not: null } } }),
+    prisma.controller.count({ where: { operationalStatus: "OPERATIONAL" } }),
     prisma.controller.count({
-      where: {
-        OR: [{ userId: { not: null } }, { kiln: { isNot: null } }],
-      },
+      where: { operationalStatus: "OUT_OF_SERVICE" },
     }),
     prisma.user.count(),
+    prisma.user.count({ where: { role: "TECHNICIAN" } }),
+    prisma.user.count({ where: { role: "CLIENT" } }),
   ]);
 
   return {
     kilns: {
-      registered: registeredKilns,
-      linked: linkedKilns,
+      total: totalKilns,
+      withOwner: kilnsWithOwner,
       operational: operationalKilns,
+      outOfService: outOfServiceKilns,
     },
     controllers: {
-      registered: registeredControllers,
-      linked: linkedControllers,
+      total: totalControllers,
+      withOwner: controllersWithOwner,
+      operational: operationalControllers,
+      outOfService: outOfServiceControllers,
     },
-    users: { registered: registeredUsers },
+    users: {
+      total: totalUsers,
+      technicians,
+      clients,
+    },
   };
 }

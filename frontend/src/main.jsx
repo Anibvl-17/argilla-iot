@@ -1,4 +1,9 @@
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+} from "react-router-dom";
 import ProtectedRoute from "@components/ProtectedRoute";
 import ReactDOM from "react-dom/client";
 import Login from "@pages/Login";
@@ -14,6 +19,7 @@ import AuthLayout from "./layouts/AuthLayout";
 import KilnDetails from "@pages/KilnDetails";
 import SimulatorPanel from "./pages/SimulatorPanel";
 import AdminKilnHistory from "@pages/AdminKilnHistory";
+import Profile from "@pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -56,9 +62,13 @@ const router = createBrowserRouter([
             element: <SimulatorPanel />,
           },
           {
-            path: "admin",
+            path: "profile",
+            element: <Profile />,
+          },
+          {
+            path: "management",
             element: (
-              <ProtectedRoute allowedRoles="ADMIN">
+              <ProtectedRoute allowedRoles={["ADMIN", "TECHNICIAN"]}>
                 <Outlet />
               </ProtectedRoute>
             ),
@@ -82,6 +92,28 @@ const router = createBrowserRouter([
               {
                 path: "users",
                 element: <AdminUsers />,
+              },
+            ],
+          },
+          {
+            path: "admin",
+            children: [
+              { index: true, element: <Navigate to="/management" replace /> },
+              {
+                path: "users",
+                element: <Navigate to="/management/users" replace />,
+              },
+              {
+                path: "kilns",
+                element: <Navigate to="/management/kilns" replace />,
+              },
+              {
+                path: "controllers",
+                element: <Navigate to="/management/controllers" replace />,
+              },
+              {
+                path: "kilns/:kilnId/history",
+                element: <Navigate to="/management/kilns" replace />,
               },
             ],
           },

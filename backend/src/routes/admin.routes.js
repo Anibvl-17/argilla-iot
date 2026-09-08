@@ -6,7 +6,7 @@ import { ROLES } from "../constants/user.constants.js";
 
 const router = Router();
 
-router.use(authenticateJWT, verifyRoles([ROLES.ADMIN]));
+router.use(authenticateJWT, verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]));
 router.get("/summary", getAdminSummary);
 
 export default router;
