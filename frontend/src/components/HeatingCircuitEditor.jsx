@@ -21,7 +21,10 @@ function ContainerNode({ node, onChange, root = false }) {
     onChange({ ...node, elements });
   };
   const removeChild = (index) => {
-    onChange({ ...node, elements: node.elements.filter((_, position) => position !== index) });
+    onChange({
+      ...node,
+      elements: node.elements.filter((_, position) => position !== index),
+    });
   };
   const moveChild = (index, direction) => {
     const target = index + direction;
@@ -33,7 +36,9 @@ function ContainerNode({ node, onChange, root = false }) {
 
   return (
     <fieldset className="rounded-xl border border-border bg-surface-muted p-3">
-      <legend className="px-2 text-sm font-semibold">{root ? "Circuito raíz" : "Grupo"}</legend>
+      <legend className="px-2 text-sm font-semibold">
+        {root ? "Circuito raíz" : "Grupo"}
+      </legend>
       <div className="grid gap-3 sm:grid-cols-2">
         {!root && (
           <label className="text-sm text-muted">
@@ -41,7 +46,9 @@ function ContainerNode({ node, onChange, root = false }) {
             <input
               className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
               value={node.name}
-              onChange={(event) => onChange({ ...node, name: event.target.value })}
+              onChange={(event) =>
+                onChange({ ...node, name: event.target.value })
+              }
               required
             />
           </label>
@@ -51,7 +58,9 @@ function ContainerNode({ node, onChange, root = false }) {
           <select
             className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
             value={node.connectionType}
-            onChange={(event) => onChange({ ...node, connectionType: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...node, connectionType: event.target.value })
+            }
           >
             <option value="PARALLEL">Paralelo</option>
             <option value="SERIES">Serie</option>
@@ -61,24 +70,87 @@ function ContainerNode({ node, onChange, root = false }) {
 
       <div className="mt-3 space-y-3">
         {node.elements.map((child, index) => (
-          <div key={`${child.type}-${index}`} className="relative rounded-xl border border-border bg-surface p-3">
+          <div
+            key={`${child.type}-${index}`}
+            className="relative rounded-xl border border-border bg-surface p-3"
+          >
             <div className="mb-2 flex justify-end gap-1">
-              <button type="button" title="Subir" onClick={() => moveChild(index, -1)} className="rounded p-1 hover:bg-surface-hover"><LuArrowUp /></button>
-              <button type="button" title="Bajar" onClick={() => moveChild(index, 1)} className="rounded p-1 hover:bg-surface-hover"><LuArrowDown /></button>
-              <button type="button" title="Eliminar" onClick={() => removeChild(index)} className="rounded p-1 text-danger hover:bg-danger-soft"><LuTrash2 /></button>
+              <button
+                type="button"
+                title="Subir"
+                onClick={() => moveChild(index, -1)}
+                className="rounded p-1 hover:bg-surface-hover"
+              >
+                <LuArrowUp />
+              </button>
+              <button
+                type="button"
+                title="Bajar"
+                onClick={() => moveChild(index, 1)}
+                className="rounded p-1 hover:bg-surface-hover"
+              >
+                <LuArrowDown />
+              </button>
+              <button
+                type="button"
+                title="Eliminar"
+                onClick={() => removeChild(index)}
+                className="rounded p-1 text-danger hover:bg-danger-soft"
+              >
+                <LuTrash2 />
+              </button>
             </div>
             {child.type === "GROUP" ? (
-              <ContainerNode node={child} onChange={(next) => updateChild(index, next)} />
+              <ContainerNode
+                node={child}
+                onChange={(next) => updateChild(index, next)}
+              />
             ) : (
               <div className="grid gap-3 sm:grid-cols-3">
-                <label className="text-sm text-muted">Canal
-                  <input className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content" value={child.name} onChange={(event) => updateChild(index, { ...child, name: event.target.value })} required />
+                <label className="text-sm text-muted">
+                  Canal
+                  <input
+                    className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
+                    value={child.name}
+                    onChange={(event) =>
+                      updateChild(index, { ...child, name: event.target.value })
+                    }
+                    required
+                  />
                 </label>
-                <label className="text-sm text-muted">Resistencia (Ω)
-                  <input type="number" min="0.001" step="0.001" className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content" value={child.resistanceOhms} onChange={(event) => updateChild(index, { ...child, resistanceOhms: Number(event.target.value) })} required />
+                <label className="text-sm text-muted">
+                  Resistencia (Ω)
+                  <input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
+                    value={child.resistanceOhms}
+                    onChange={(event) =>
+                      updateChild(index, {
+                        ...child,
+                        resistanceOhms: Number(event.target.value),
+                      })
+                    }
+                    required
+                  />
                 </label>
-                <label className="text-sm text-muted">Longitud (m)
-                  <input type="number" min="0.001" step="0.001" className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content" value={child.lengthMeters} onChange={(event) => updateChild(index, { ...child, lengthMeters: Number(event.target.value) })} required />
+                <label className="text-sm text-muted">
+                  Longitud (m)
+                  <input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    className="mt-1 w-full rounded-lg border border-control-border bg-field px-3 py-2 text-content"
+                    value={child.lengthMeters}
+                    onChange={(event) =>
+                      updateChild(index, {
+                        ...child,
+                        lengthMeters: Number(event.target.value),
+                      })
+                    }
+                    required
+                  />
                 </label>
               </div>
             )}
@@ -91,8 +163,24 @@ function ContainerNode({ node, onChange, root = false }) {
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" onClick={() => onChange({ ...node, elements: [...node.elements, newChannel()] })} className="inline-flex items-center gap-1 rounded-lg border border-control-border px-3 py-2 text-sm"><LuPlus /> Canal</button>
-        <button type="button" onClick={() => onChange({ ...node, elements: [...node.elements, newGroup()] })} className="inline-flex items-center gap-1 rounded-lg border border-control-border px-3 py-2 text-sm"><LuPlus /> Grupo</button>
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ ...node, elements: [...node.elements, newChannel()] })
+          }
+          className="inline-flex items-center gap-1 rounded-lg border border-control-border px-3 py-2 text-sm"
+        >
+          <LuPlus /> Canal
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ ...node, elements: [...node.elements, newGroup()] })
+          }
+          className="inline-flex items-center gap-1 rounded-lg border border-control-border px-3 py-2 text-sm"
+        >
+          <LuPlus /> Grupo
+        </button>
       </div>
     </fieldset>
   );

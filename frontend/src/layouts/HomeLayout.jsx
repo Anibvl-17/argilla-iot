@@ -46,29 +46,29 @@ export default function HomeLayout() {
 
           {/* Opciones admin */}
           {(isAdmin || isTechnician) && (
-              <>
-                <SidebarItem
-                  path="/management"
-                  title="Resumen"
-                  icon={LuChartNoAxesCombined}
-                />
-                <SidebarItem
-                  path="/management/users"
-                  title="Usuarios"
-                  icon={LuUsers}
-                />
-                <SidebarItem
-                  path="/management/kilns"
-                  title="Hornos"
-                  icon={LuFlame}
-                />
-                <SidebarItem
-                  path="/management/controllers"
-                  title="Controladores"
-                  icon={LuCircuitBoard}
-                />
-              </>
-            )}
+            <>
+              <SidebarItem
+                path="/management"
+                title="Resumen"
+                icon={LuChartNoAxesCombined}
+              />
+              <SidebarItem
+                path="/management/users"
+                title="Usuarios"
+                icon={LuUsers}
+              />
+              <SidebarItem
+                path="/management/kilns"
+                title="Hornos"
+                icon={LuFlame}
+              />
+              <SidebarItem
+                path="/management/controllers"
+                title="Controladores"
+                icon={LuCircuitBoard}
+              />
+            </>
+          )}
           <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
         </nav>
       </aside>

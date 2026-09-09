@@ -2,10 +2,7 @@ import { useRef, useState } from "react";
 import FieldError from "./FieldError";
 import FloatingDropdown from "./FloatingDropdown";
 import { hasFormError } from "../utils/formError";
-import {
-  formatPhoneInput,
-  getPhoneCountryCode,
-} from "../utils/userContact";
+import { formatPhoneInput, getPhoneCountryCode } from "../utils/userContact";
 
 const inputClassName =
   "mt-2 min-w-0 max-w-full w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none transition-colors focus:border-focus disabled:cursor-not-allowed disabled:opacity-60";
@@ -80,7 +77,9 @@ export default function UserContactFields({
 
   if (catalogLoading) {
     return (
-      <p className="text-sm text-muted">Cargando países, regiones y comunas...</p>
+      <p className="text-sm text-muted">
+        Cargando países, regiones y comunas...
+      </p>
     );
   }
 
@@ -113,9 +112,13 @@ export default function UserContactFields({
   const matchingPhoneCountries = normalizedPhoneCountrySearch
     ? catalog.countries.filter(
         (country) =>
-          normalizeSearchText(country.name).includes(normalizedPhoneCountrySearch) ||
+          normalizeSearchText(country.name).includes(
+            normalizedPhoneCountrySearch,
+          ) ||
           country.callingCode.includes(normalizedPhoneCountrySearch) ||
-          country.code.toLocaleLowerCase("es").includes(normalizedPhoneCountrySearch),
+          country.code
+            .toLocaleLowerCase("es")
+            .includes(normalizedPhoneCountrySearch),
       )
     : [];
   const preferredPhoneCountry = catalog.countries.find(
@@ -123,11 +126,11 @@ export default function UserContactFields({
   );
   const orderedPhoneCountries =
     normalizedPhoneCountrySearch && preferredPhoneCountry
-    ? [
-        preferredPhoneCountry,
-        ...matchingPhoneCountries.filter((country) => country.code !== "CL"),
-      ]
-    : matchingPhoneCountries;
+      ? [
+          preferredPhoneCountry,
+          ...matchingPhoneCountries.filter((country) => country.code !== "CL"),
+        ]
+      : matchingPhoneCountries;
   const visiblePhoneCountries = orderedPhoneCountries.slice(
     0,
     MAX_PHONE_COUNTRY_RESULTS,
@@ -148,7 +151,9 @@ export default function UserContactFields({
           onChange={(event) => updateCountry(event.target.value)}
           aria-invalid={hasFormError(error, "countryCode") || undefined}
           aria-describedby={
-            hasFormError(error, "countryCode") ? "country-code-error" : undefined
+            hasFormError(error, "countryCode")
+              ? "country-code-error"
+              : undefined
           }
         >
           <option value="">Selecciona un país</option>
@@ -171,7 +176,9 @@ export default function UserContactFields({
             onChange={(event) => updateRegion(event.target.value)}
             aria-invalid={hasFormError(error, "regionCode") || undefined}
             aria-describedby={
-              hasFormError(error, "regionCode") ? "region-code-error" : undefined
+              hasFormError(error, "regionCode")
+                ? "region-code-error"
+                : undefined
             }
           >
             <option value="">Selecciona una región</option>
@@ -216,7 +223,11 @@ export default function UserContactFields({
               </option>
             ))}
           </select>
-          <FieldError error={error} field="communeCode" id="commune-code-error" />
+          <FieldError
+            error={error}
+            field="communeCode"
+            id="commune-code-error"
+          />
         </label>
       ) : (
         <div className="hidden sm:block" aria-hidden="true" />
@@ -233,7 +244,9 @@ export default function UserContactFields({
           onChange={(event) => updateField("addressLine", event.target.value)}
           aria-invalid={hasFormError(error, "addressLine") || undefined}
           aria-describedby={
-            hasFormError(error, "addressLine") ? "address-line-error" : undefined
+            hasFormError(error, "addressLine")
+              ? "address-line-error"
+              : undefined
           }
         />
         <FieldError error={error} field="addressLine" id="address-line-error" />
@@ -269,7 +282,11 @@ export default function UserContactFields({
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m7 10 5 5 5-5"
+              />
             </svg>
           </button>
           <FloatingDropdown
@@ -300,11 +317,12 @@ export default function UserContactFields({
                   Busca por país o código para ver resultados.
                 </p>
               )}
-              {normalizedPhoneCountrySearch && !orderedPhoneCountries.length && (
-                <p className="px-3 py-4 text-center text-sm text-muted">
-                  No encontramos países para esa búsqueda.
-                </p>
-              )}
+              {normalizedPhoneCountrySearch &&
+                !orderedPhoneCountries.length && (
+                  <p className="px-3 py-4 text-center text-sm text-muted">
+                    No encontramos países para esa búsqueda.
+                  </p>
+                )}
               {visiblePhoneCountries.map((country, index) => (
                 <div key={country.code}>
                   {index === 1 && visiblePhoneCountries[0]?.code === "CL" && (
@@ -355,7 +373,9 @@ export default function UserContactFields({
             }
             aria-labelledby="phone-label"
             aria-invalid={hasFormError(error, "phone") || undefined}
-            aria-describedby={hasFormError(error, "phone") ? "phone-error" : undefined}
+            aria-describedby={
+              hasFormError(error, "phone") ? "phone-error" : undefined
+            }
           />
         </div>
         <FieldError

@@ -575,7 +575,9 @@ export default function AdminKilns() {
                                 className="hover:cursor-pointer hover:text-accent"
                                 title="Copiar ID"
                                 onClick={() => {
-                                  navigator.clipboard.writeText(kiln.controller.controllerCode);
+                                  navigator.clipboard.writeText(
+                                    kiln.controller.controllerCode,
+                                  );
                                   toast.success("¡ID copiada!");
                                 }}
                               >
@@ -596,21 +598,21 @@ export default function AdminKilns() {
                             {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
                           </p>
                           <p className="mt-1 text-secondary text-xs">
-                            {kiln.phaseCount === 1
-                              ? "Monofásico"
-                              : "Trifásico"}
+                            {kiln.phaseCount === 1 ? "Monofásico" : "Trifásico"}
                           </p>
                         </td>
                         <td className="hidden px-6 py-5 lg:table-cell text-center">
                           {kiln.controller ? (
                             <button
-                                className="font-mono text-accent hover:cursor-pointer hover:underline"
-                                title="Copiar ID"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(kiln.controller.controllerCode);
-                                  toast.success("¡ID copiada!");
-                                }}
-                              >
+                              className="font-mono text-accent hover:cursor-pointer hover:underline"
+                              title="Copiar ID"
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  kiln.controller.controllerCode,
+                                );
+                                toast.success("¡ID copiada!");
+                              }}
+                            >
                               ...{kiln.controller.controllerCode}
                             </button>
                           ) : (
@@ -699,7 +701,8 @@ export default function AdminKilns() {
                                 </dt>
                                 <dd className="mt-1">
                                   <p>
-                                    {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
+                                    {kiln.nominalVoltage} V -{" "}
+                                    {kiln.nominalCurrent} A
                                   </p>
                                   <p className="mt-1 text-secondary">
                                     {kiln.phaseCount === 1
@@ -789,8 +792,7 @@ export default function AdminKilns() {
                                       {getSwitchLabel(
                                         kiln.controller.switchType,
                                       )}{" "}
-                                      {kiln.controller.switchCurrentCapacity}{" "}
-                                      A
+                                      {kiln.controller.switchCurrentCapacity} A
                                     </dd>
                                   </div>
                                 </>
@@ -824,7 +826,7 @@ export default function AdminKilns() {
                                         key={controller.controllerId}
                                         value={controller.controllerId}
                                       >
-                                        ...{controller.controllerCode} - {" "}
+                                        ...{controller.controllerCode} -{" "}
                                         {controller.switchCurrentCapacity} A
                                       </option>
                                     ))}
@@ -870,7 +872,8 @@ export default function AdminKilns() {
                                 to={`/management/kilns/${kiln.kilnId}/history`}
                                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
                               >
-                                <LuHistory className="text-base" /> Ver historial
+                                <LuHistory className="text-base" /> Ver
+                                historial
                               </Link>
                             </div>
                           </td>

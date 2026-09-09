@@ -29,12 +29,10 @@ export default function FloatingDropdown({
       window.innerHeight - viewportPadding,
       (boundaryRect?.bottom ?? window.innerHeight) - viewportPadding,
     );
-    const availableBelow = Math.max(
-      0,
-      boundaryBottom - rect.bottom - gap,
-    );
+    const availableBelow = Math.max(0, boundaryBottom - rect.bottom - gap);
     const availableAbove = Math.max(0, rect.top - boundaryTop - gap);
-    const openAbove = availableBelow < maxHeight && availableAbove > availableBelow;
+    const openAbove =
+      availableBelow < maxHeight && availableAbove > availableBelow;
     const desiredWidth = Math.min(
       Math.max(rect.width, minWidth),
       window.innerWidth - viewportPadding * 2,

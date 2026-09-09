@@ -68,7 +68,9 @@ describe("Profile page", () => {
       await screen.findByRole("heading", { name: "Mi perfil" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Tu cuenta fue creada el/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Peligro" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Peligro" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Desactivar mi cuenta" }),
     ).toBeInTheDocument();
@@ -87,11 +89,11 @@ describe("Profile page", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Desactivar mi cuenta" }),
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Desactivar cuenta" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar cuenta" }));
 
-    await waitFor(() => expect(mocks.deactivateOwnAccount).toHaveBeenCalledOnce());
+    await waitFor(() =>
+      expect(mocks.deactivateOwnAccount).toHaveBeenCalledOnce(),
+    );
     expect(mocks.setUser).toHaveBeenCalledWith(null);
   });
 });

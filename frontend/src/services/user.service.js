@@ -64,7 +64,8 @@ export async function updateUserStatus(userId, isActive) {
   } catch (error) {
     return {
       success: false,
-      message: error.response?.data?.message || "Error al conectar con el servidor",
+      message:
+        error.response?.data?.message || "Error al conectar con el servidor",
       data: error.response?.data,
     };
   }

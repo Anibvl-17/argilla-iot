@@ -16,10 +16,12 @@ export const USER_STATUS_LABELS = {
   ANONYMIZED: "Anonimizado",
 };
 
-export const ROLE_OPTIONS = Object.entries(ROLE_LABELS).map(([value, label]) => ({
-  value,
-  label,
-}));
+export const ROLE_OPTIONS = Object.entries(ROLE_LABELS).map(
+  ([value, label]) => ({
+    value,
+    label,
+  }),
+);
 
 export const USER_STATUS_FILTER_OPTIONS = [
   { value: "ACTIVE", label: USER_STATUS_LABELS.ACTIVE },

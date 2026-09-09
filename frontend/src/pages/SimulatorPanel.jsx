@@ -102,9 +102,7 @@ export default function SimulatorPanel() {
                 onClick={() => command(controller)}
                 className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-on-action disabled:opacity-40"
               >
-                {getFiringCommandLabel(
-                  controller.switchState ? "OFF" : "ON",
-                )}
+                {getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}
               </button>
             )}
           </article>

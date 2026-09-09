@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  LuArrowRight,
-  LuCircuitBoard,
-  LuFlame,
-  LuUsers,
-} from "react-icons/lu";
+import { LuArrowRight, LuCircuitBoard, LuFlame, LuUsers } from "react-icons/lu";
 import { getAdminSummary } from "@services/admin.service";
 import { useAdminSummaryRealtime } from "@hooks/useAdminSummaryRealtime";
 
@@ -20,17 +15,19 @@ function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
       </div>
 
       <dl className="grid flex-1 grid-cols-2 gap-px border-y border-border bg-border">
-        {metrics.map(({ label, value, tone = "text-content", wide = false }) => (
-          <div
-            key={label}
-            className={`min-w-0 bg-surface p-4 ${wide ? "col-span-2" : ""}`}
-          >
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-              {label}
-            </dt>
-            <dd className={`mt-1 text-2xl font-bold ${tone}`}>{value}</dd>
-          </div>
-        ))}
+        {metrics.map(
+          ({ label, value, tone = "text-content", wide = false }) => (
+            <div
+              key={label}
+              className={`min-w-0 bg-surface p-4 ${wide ? "col-span-2" : ""}`}
+            >
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                {label}
+              </dt>
+              <dd className={`mt-1 text-2xl font-bold ${tone}`}>{value}</dd>
+            </div>
+          ),
+        )}
       </dl>
 
       <Link
@@ -149,12 +146,16 @@ export const AdminHome = () => {
             {
               label: "Operativos",
               value: summary.kilns.operational,
-              tone: summary.kilns.operational > 0 ? "text-info" : "text-warning",
+              tone:
+                summary.kilns.operational > 0 ? "text-info" : "text-warning",
             },
             {
               label: "Fuera de servicio",
               value: summary.kilns.outOfService,
-              tone: summary.kilns.outOfService > 0 ? "text-warning" : "text-content",
+              tone:
+                summary.kilns.outOfService > 0
+                  ? "text-warning"
+                  : "text-content",
             },
           ]}
         />
@@ -173,12 +174,18 @@ export const AdminHome = () => {
             {
               label: "Operativos",
               value: summary.controllers.operational,
-              tone: summary.controllers.operational > 0 ? "text-info" : "text-warning",
+              tone:
+                summary.controllers.operational > 0
+                  ? "text-info"
+                  : "text-warning",
             },
             {
               label: "Fuera de servicio",
               value: summary.controllers.outOfService,
-              tone: summary.controllers.outOfService > 0 ? "text-warning" : "text-content",
+              tone:
+                summary.controllers.outOfService > 0
+                  ? "text-warning"
+                  : "text-content",
             },
           ]}
         />

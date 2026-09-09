@@ -300,11 +300,44 @@ export default function AdminControllers() {
 
     return (
       <>
-        <button type="button" onClick={() => openEditModal(controller)} className={buttonClass} title="Editar controlador"><LuPencil className="text-base" /> {withLabels && "Editar"}</button>
+        <button
+          type="button"
+          onClick={() => openEditModal(controller)}
+          className={buttonClass}
+          title="Editar controlador"
+        >
+          <LuPencil className="text-base" /> {withLabels && "Editar"}
+        </button>
         {isAdmin && (
           <>
-            <button type="button" disabled={!controller.kiln || controller.connectionStatus !== "ONLINE" || commandLoadingId === controller.controllerId} onClick={() => handleCommand(controller)} className={`${buttonClass} disabled:opacity-40`} title={getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}><LuPower className="text-base" /> {withLabels && getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}</button>
-            <button type="button" onClick={() => { setSelectedController(controller); setIsAlertOpen(true); }} className={buttonClass} title="Eliminar controlador"><LuTrash2 className="text-base" /> {withLabels && "Eliminar"}</button>
+            <button
+              type="button"
+              disabled={
+                !controller.kiln ||
+                controller.connectionStatus !== "ONLINE" ||
+                commandLoadingId === controller.controllerId
+              }
+              onClick={() => handleCommand(controller)}
+              className={`${buttonClass} disabled:opacity-40`}
+              title={getFiringCommandLabel(
+                controller.switchState ? "OFF" : "ON",
+              )}
+            >
+              <LuPower className="text-base" />{" "}
+              {withLabels &&
+                getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedController(controller);
+                setIsAlertOpen(true);
+              }}
+              className={buttonClass}
+              title="Eliminar controlador"
+            >
+              <LuTrash2 className="text-base" /> {withLabels && "Eliminar"}
+            </button>
           </>
         )}
       </>
@@ -335,7 +368,10 @@ export default function AdminControllers() {
         {[
           ["Total controladores", summary.total],
           ["Sin horno", Math.max(0, summary.total - summary.linkedToKiln)],
-          ["Sin propietario", Math.max(0, summary.total - summary.linkedToUser)],
+          [
+            "Sin propietario",
+            Math.max(0, summary.total - summary.linkedToUser),
+          ],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -344,7 +380,9 @@ export default function AdminControllers() {
             <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs">
               {label}
             </p>
-            <p className={`text-xl font-bold sm:text-3xl text-content`}>{value}</p>
+            <p className={`text-xl font-bold sm:text-3xl text-content`}>
+              {value}
+            </p>
           </div>
         ))}
       </div>
@@ -403,14 +441,20 @@ export default function AdminControllers() {
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="py-4 sm:px-6 text-center gap-2">
-                  ID
+                <th className="py-4 sm:px-6 text-center gap-2">ID</th>
+                <th className="hidden px-6 py-4 md:table-cell">
+                  Propietario / Horno
                 </th>
-                <th className="hidden px-6 py-4 md:table-cell">Propietario / Horno</th>
-                <th className="hidden px-6 py-4 text-center sm:table-cell">Temperatura</th>
+                <th className="hidden px-6 py-4 text-center sm:table-cell">
+                  Temperatura
+                </th>
                 <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
-                <th className="hidden px-6 py-4 text-center lg:table-cell">Actividad</th>
-                <th className="hidden px-6 py-4 text-center xl:table-cell">Estado</th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">
+                  Actividad
+                </th>
+                <th className="hidden px-6 py-4 text-center xl:table-cell">
+                  Estado
+                </th>
                 <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
               </tr>
             </thead>
@@ -422,20 +466,41 @@ export default function AdminControllers() {
                       <td className="py-5 font-mono sm:px-6 text-accent text-center gap-2">
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(controller.controllerId.slice(-6));
+                            navigator.clipboard.writeText(
+                              controller.controllerId.slice(-6),
+                            );
                             toast.success("¡ID copiada!");
                           }}
                           title="Copiar identificador del controlador"
-                          className="text-sm hover:underline hover:cursor-pointer">
+                          className="text-sm hover:underline hover:cursor-pointer"
+                        >
                           ...{controller.controllerCode}
                         </button>
                       </td>
                       <td className="hidden px-6 py-5 md:table-cell">
-                        {controller.user ? <p>{controller.user.name}</p> : <p className="italic text-muted">Sin propietario</p>}
-                        {controller.kiln ? <p className="mt-1 text-secondary">Horno #{controller.kiln.kilnId}</p> : <p className="mt-1 italic text-muted">Sin horno asociado</p>}
+                        {controller.user ? (
+                          <p>{controller.user.name}</p>
+                        ) : (
+                          <p className="italic text-muted">Sin propietario</p>
+                        )}
+                        {controller.kiln ? (
+                          <p className="mt-1 text-secondary">
+                            Horno #{controller.kiln.kilnId}
+                          </p>
+                        ) : (
+                          <p className="mt-1 italic text-muted">
+                            Sin horno asociado
+                          </p>
+                        )}
                       </td>
                       <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
-                        {controller.temperature == null ? <span className="italic text-muted font-sans font-normal">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}
+                        {controller.temperature == null ? (
+                          <span className="italic text-muted font-sans font-normal">
+                            No disponible
+                          </span>
+                        ) : (
+                          `${controller.temperature.toFixed(1)} °C`
+                        )}
                       </td>
                       <td className="px-3 py-5 sm:px-6">
                         <span className="flex justify-center">
@@ -450,7 +515,11 @@ export default function AdminControllers() {
                       <td className="hidden px-6 py-5 lg:table-cell">
                         <span className="flex justify-center">
                           <Badge
-                            style={CONTROLLER_ACTIVITY_STYLES[controller.activityStatus]}
+                            style={
+                              CONTROLLER_ACTIVITY_STYLES[
+                                controller.activityStatus
+                              ]
+                            }
                             text={getControllerActivityLabel(
                               controller.activityStatus,
                             )}
@@ -502,7 +571,9 @@ export default function AdminControllers() {
                           >
                             <LuPencil className="text-base" />
                           </button>
-                          <div className="hidden justify-center gap-2 lg:flex">{renderControllerActions(controller)}</div>
+                          <div className="hidden justify-center gap-2 lg:flex">
+                            {renderControllerActions(controller)}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -510,10 +581,54 @@ export default function AdminControllers() {
                       <tr className="bg-surface-muted">
                         <td colSpan={7} className="px-6 py-5">
                           <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                            <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Propietario</dt><dd className="mt-1">{controller.user?.name || <span className="italic text-muted">Sin propietario</span>}</dd></div>
-                            <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Horno</dt><dd className="mt-1">{controller.kiln?.name || <span className="italic text-muted">Sin horno asociado</span>}</dd></div>
-                            <div className="sm:hidden"><dt className="text-xs font-bold uppercase text-muted">Temperatura</dt><dd className="mt-1">{controller.temperature == null ? <span className="italic text-muted font-normal">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}</dd></div>
-                            <div className="xl:hidden"><dt className="text-xs font-bold uppercase text-muted">Estado operacional</dt><dd className="mt-1">{getOperationalStatusLabel(controller.operationalStatus)}</dd></div>
+                            <div className="md:hidden">
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Propietario
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.user?.name || (
+                                  <span className="italic text-muted">
+                                    Sin propietario
+                                  </span>
+                                )}
+                              </dd>
+                            </div>
+                            <div className="md:hidden">
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Horno
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.kiln?.name || (
+                                  <span className="italic text-muted">
+                                    Sin horno asociado
+                                  </span>
+                                )}
+                              </dd>
+                            </div>
+                            <div className="sm:hidden">
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Temperatura
+                              </dt>
+                              <dd className="mt-1">
+                                {controller.temperature == null ? (
+                                  <span className="italic text-muted font-normal">
+                                    No disponible
+                                  </span>
+                                ) : (
+                                  `${controller.temperature.toFixed(1)} °C`
+                                )}
+                              </dd>
+                            </div>
+                            <div className="xl:hidden">
+                              <dt className="text-xs font-bold uppercase text-muted">
+                                Estado operacional
+                              </dt>
+                              <dd className="mt-1">
+                                {getOperationalStatusLabel(
+                                  controller.operationalStatus,
+                                )}
+                              </dd>
+                            </div>
                             <div>
                               <dt className="text-xs font-bold uppercase text-muted">
                                 Switch
@@ -556,11 +671,15 @@ export default function AdminControllers() {
                                 Entrega
                               </dt>
                               <dd className="mt-1">
-                                {controller.deliveredAt
-                                  ? new Date(
-                                      controller.deliveredAt,
-                                    ).toLocaleDateString("es-CL")
-                                  : <span className="italic text-muted">Pendiente</span>}
+                                {controller.deliveredAt ? (
+                                  new Date(
+                                    controller.deliveredAt,
+                                  ).toLocaleDateString("es-CL")
+                                ) : (
+                                  <span className="italic text-muted">
+                                    Pendiente
+                                  </span>
+                                )}
                               </dd>
                             </div>
                             <div>
@@ -568,11 +687,15 @@ export default function AdminControllers() {
                                 Actualización de firmware
                               </dt>
                               <dd className="mt-1">
-                                {controller.firmwareUpdatedAt
-                                  ? new Date(
-                                      controller.firmwareUpdatedAt,
-                                    ).toLocaleDateString("es-CL")
-                                  : <span className="italic text-muted">Sin registro</span>}
+                                {controller.firmwareUpdatedAt ? (
+                                  new Date(
+                                    controller.firmwareUpdatedAt,
+                                  ).toLocaleDateString("es-CL")
+                                ) : (
+                                  <span className="italic text-muted">
+                                    Sin registro
+                                  </span>
+                                )}
                               </dd>
                             </div>
                           </dl>

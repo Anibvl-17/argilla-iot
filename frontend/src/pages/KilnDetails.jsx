@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  LuArrowLeft,
-  LuCircuitBoard,
-  LuCopy,
-  LuPower,
-} from "react-icons/lu";
+import { LuArrowLeft, LuCircuitBoard, LuCopy, LuPower } from "react-icons/lu";
 import ControllerStatus from "@components/ControllerStatus";
 import Pagination from "@components/Pagination";
 import {
@@ -129,9 +124,7 @@ export default function KilnDetails() {
 
   if (loading)
     return (
-      <div className="py-20 text-center text-muted">
-        Cargando horno...
-      </div>
+      <div className="py-20 text-center text-muted">Cargando horno...</div>
     );
   if (error || !kiln)
     return (
@@ -308,10 +301,7 @@ export default function KilnDetails() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="3"
-                    className="px-6 py-10 text-center text-muted"
-                  >
+                  <td colSpan="3" className="px-6 py-10 text-center text-muted">
                     {telemetryLoading
                       ? "Cargando telemetría..."
                       : "Sin registros de telemetría."}

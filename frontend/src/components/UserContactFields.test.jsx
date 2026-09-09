@@ -28,7 +28,11 @@ const catalog = {
   ],
 };
 
-function ContactHarness({ initialValue, error = null, catalogValue = catalog }) {
+function ContactHarness({
+  initialValue,
+  error = null,
+  catalogValue = catalog,
+}) {
   const [value, setValue] = useState(initialValue);
   return (
     <>
@@ -47,7 +51,14 @@ describe("UserContactFields", () => {
   it("shows country calling codes and the Chilean region and commune selectors", () => {
     render(
       <ContactHarness
-        initialValue={{ countryCode: "CL", regionCode: "", communeCode: "", phoneCountryCode: "CL", phone: "", addressLine: "" }}
+        initialValue={{
+          countryCode: "CL",
+          regionCode: "",
+          communeCode: "",
+          phoneCountryCode: "CL",
+          phone: "",
+          addressLine: "",
+        }}
       />,
     );
 
@@ -111,12 +122,20 @@ describe("UserContactFields", () => {
       />,
     );
 
-    expect(screen.getByRole("option", { name: "Concepción" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "Santiago" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Concepción" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Santiago" }),
+    ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Región/), { target: { value: "13" } });
+    fireEvent.change(screen.getByLabelText(/Región/), {
+      target: { value: "13" },
+    });
     expect(screen.getByLabelText(/Comuna/)).toHaveValue("");
-    expect(screen.getByRole("option", { name: "Santiago" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Santiago" }),
+    ).toBeInTheDocument();
   });
 
   it("clears and hides Chilean territory fields when country changes", () => {
@@ -147,7 +166,14 @@ describe("UserContactFields", () => {
   it("formats input and displays field-specific errors", () => {
     render(
       <ContactHarness
-        initialValue={{ countryCode: "CL", regionCode: "", communeCode: "", phoneCountryCode: "CL", phone: "", addressLine: "" }}
+        initialValue={{
+          countryCode: "CL",
+          regionCode: "",
+          communeCode: "",
+          phoneCountryCode: "CL",
+          phone: "",
+          addressLine: "",
+        }}
         error={{ message: "Teléfono inválido", field: "phone" }}
       />,
     );
@@ -202,14 +228,26 @@ describe("prepareUserContactPayload", () => {
   it("accepts an explicit foreign E.164 number and requires region for a Chilean address", () => {
     expect(
       prepareUserContactPayload(
-        { countryCode: "CL", regionCode: null, communeCode: null, addressLine: null, phone: "+541112345678" },
+        {
+          countryCode: "CL",
+          regionCode: null,
+          communeCode: null,
+          addressLine: null,
+          phone: "+541112345678",
+        },
         catalog,
       ).phone,
     ).toBe("+541112345678");
 
     expect(() =>
       prepareUserContactPayload(
-        { countryCode: "CL", regionCode: null, communeCode: null, addressLine: "Calle 1", phone: null },
+        {
+          countryCode: "CL",
+          regionCode: null,
+          communeCode: null,
+          addressLine: "Calle 1",
+          phone: null,
+        },
         catalog,
       ),
     ).toThrow(/región/i);
@@ -312,7 +350,10 @@ describe("prepareUserContactPayload", () => {
 
     render(
       <ContactHarness
-        catalogValue={{ ...catalog, countries: [...catalog.countries, ...extraCountries] }}
+        catalogValue={{
+          ...catalog,
+          countries: [...catalog.countries, ...extraCountries],
+        }}
         initialValue={{
           countryCode: null,
           regionCode: null,

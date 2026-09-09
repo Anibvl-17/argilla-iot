@@ -169,7 +169,9 @@ export default function Profile() {
     <div className="mx-auto min-w-0 max-w-5xl space-y-6 pb-8">
       <header className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-content sm:text-3xl">Mi perfil</h1>
+          <h1 className="text-2xl font-bold text-content sm:text-3xl">
+            Mi perfil
+          </h1>
           <p className="text-sm mt-2 text-secondary sm:text-base">
             Revisa y mantén actualizada tu información personal.
           </p>
@@ -209,14 +211,22 @@ export default function Profile() {
                 onChange={handleProfileChange}
                 aria-invalid={hasFormError(formError, "name") || undefined}
                 aria-describedby={
-                  hasFormError(formError, "name") ? "profile-name-error" : undefined
+                  hasFormError(formError, "name")
+                    ? "profile-name-error"
+                    : undefined
                 }
               />
-              <FieldError error={formError} field="name" id="profile-name-error" />
+              <FieldError
+                error={formError}
+                field="name"
+                id="profile-name-error"
+              />
             </label>
 
             <div className="min-w-0">
-              <p className="text-sm font-medium text-muted">Correo electrónico</p>
+              <p className="text-sm font-medium text-muted">
+                Correo electrónico
+              </p>
               <p className="mt-2 break-all rounded-lg border border-border bg-surface-muted px-3 py-2.5 text-content">
                 {profile.email}
               </p>
@@ -266,12 +276,19 @@ export default function Profile() {
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m6 9 6 6 6-6"
+                />
               </svg>
             </button>
 
             {isPasswordSectionOpen && (
-              <div id="password-fields" className="grid min-w-0 gap-4 pt-4 sm:grid-cols-2">
+              <div
+                id="password-fields"
+                className="grid min-w-0 gap-4 pt-4 sm:grid-cols-2"
+              >
                 <label className="block min-w-0 text-sm font-medium text-muted">
                   Contraseña actual
                   <input
@@ -299,7 +316,9 @@ export default function Profile() {
                     onChange={handlePasswordChange}
                     type="password"
                     value={passwords.newPassword}
-                    aria-invalid={hasFormError(formError, "newPassword") || undefined}
+                    aria-invalid={
+                      hasFormError(formError, "newPassword") || undefined
+                    }
                   />
                   <FieldError error={formError} field="newPassword" />
                 </label>
@@ -384,7 +403,9 @@ export default function Profile() {
             : "Tu sesión se cerrará inmediatamente. Un administrador deberá reactivar tu cuenta para que puedas volver a ingresar."
         }
         type={dangerAction === "delete" ? "danger" : "warning"}
-        confirmText={dangerAction === "delete" ? "Eliminar cuenta" : "Desactivar cuenta"}
+        confirmText={
+          dangerAction === "delete" ? "Eliminar cuenta" : "Desactivar cuenta"
+        }
         isLoading={dangerLoading}
       />
     </div>

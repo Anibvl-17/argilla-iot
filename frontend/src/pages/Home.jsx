@@ -405,9 +405,7 @@ export default function Home() {
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
                     2
                   </span>
-                  <span>
-                    Ingresa el identificador del controlador.
-                  </span>
+                  <span>Ingresa el identificador del controlador.</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-content font-semibold text-content">
@@ -420,7 +418,8 @@ export default function Home() {
               </ol>
 
               <p className="text-xs text-secondary">
-                El PIN expira en 15 minutos. Después de 10 intentos fallidos, la vinculación se bloqueará temporalmente por 2 horas.
+                El PIN expira en 15 minutos. Después de 10 intentos fallidos, la
+                vinculación se bloqueará temporalmente por 2 horas.
               </p>
 
               <label className="block text-sm font-medium text-muted">
@@ -491,7 +490,12 @@ export default function Home() {
               <div className="border-t border-border text-center pt-4">
                 <p className="text-sm text-muted">
                   ¿No puedes vincular tu horno?{" "}
-                  <a href="#" className="underline transition-all hover:cursor-pointer hover:text-accent">Solicita ayuda aquí</a>
+                  <a
+                    href="#"
+                    className="underline transition-all hover:cursor-pointer hover:text-accent"
+                  >
+                    Solicita ayuda aquí
+                  </a>
                 </p>
               </div>
             </form>
