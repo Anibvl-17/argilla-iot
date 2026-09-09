@@ -435,7 +435,7 @@ export default function AdminControllers() {
                         {controller.kiln ? <p className="mt-1 text-secondary">Horno #{controller.kiln.kilnId}</p> : <p className="mt-1 italic text-muted">Sin horno asociado</p>}
                       </td>
                       <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
-                        {controller.temperature == null ? <span className="italic text-muted">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}
+                        {controller.temperature == null ? <span className="italic text-muted font-sans font-normal">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}
                       </td>
                       <td className="px-3 py-5 sm:px-6">
                         <span className="flex justify-center">
@@ -512,7 +512,7 @@ export default function AdminControllers() {
                           <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                             <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Propietario</dt><dd className="mt-1">{controller.user?.name || <span className="italic text-muted">Sin propietario</span>}</dd></div>
                             <div className="md:hidden"><dt className="text-xs font-bold uppercase text-muted">Horno</dt><dd className="mt-1">{controller.kiln?.name || <span className="italic text-muted">Sin horno asociado</span>}</dd></div>
-                            <div className="sm:hidden"><dt className="text-xs font-bold uppercase text-muted">Temperatura</dt><dd className="mt-1">{controller.temperature == null ? <span className="italic text-muted">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}</dd></div>
+                            <div className="sm:hidden"><dt className="text-xs font-bold uppercase text-muted">Temperatura</dt><dd className="mt-1">{controller.temperature == null ? <span className="italic text-muted font-normal">No disponible</span> : `${controller.temperature.toFixed(1)} °C`}</dd></div>
                             <div className="xl:hidden"><dt className="text-xs font-bold uppercase text-muted">Estado operacional</dt><dd className="mt-1">{getOperationalStatusLabel(controller.operationalStatus)}</dd></div>
                             <div>
                               <dt className="text-xs font-bold uppercase text-muted">
