@@ -46,18 +46,45 @@ router.post(
   validateSchema(linkControllerValidation),
   linkController,
 );
-router.post("/:kilnId/unlink", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), unlinkController);
+router.post(
+  "/:kilnId/unlink",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  unlinkController,
+);
 router.patch("/:kilnId/release", verifyRoles([ROLES.ADMIN]), unlinkUser);
 
 // CRUD
 router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllKilns);
-router.get("/admin/:kilnId", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAdminKiln);
-router.get("/admin/:kilnId/telemetry", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAdminKilnTelemetryHistory);
-router.post("/create", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), validateSchema(createKilnValidation), addKiln);
-router.patch("/:kilnId/edit", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), validateSchema(editKilnValidation), editKiln);
+router.get(
+  "/admin/:kilnId",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  getAdminKiln,
+);
+router.get(
+  "/admin/:kilnId/telemetry",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  getAdminKilnTelemetryHistory,
+);
+router.post(
+  "/create",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(createKilnValidation),
+  addKiln,
+);
+router.patch(
+  "/:kilnId/edit",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(editKilnValidation),
+  editKiln,
+);
 router.delete("/:kilnId/delete", verifyRoles([ROLES.ADMIN]), removeKiln);
 
 // Vinculaciones
-router.patch("/:kilnId/claim", verifyRoles([ROLES.ADMIN]), validateSchema(linkUserValidation), linkUser);
+router.patch(
+  "/:kilnId/claim",
+  verifyRoles([ROLES.ADMIN]),
+  validateSchema(linkUserValidation),
+  linkUser,
+);
 
 export default router;

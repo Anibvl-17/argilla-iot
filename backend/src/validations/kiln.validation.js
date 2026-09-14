@@ -10,15 +10,21 @@ const circuitNode = z.lazy(() =>
         type: z.literal("GROUP"),
         name: nodeName,
         connectionType,
-        elements: z.array(circuitNode).min(1, "El grupo debe contener al menos un elemento"),
+        elements: z
+          .array(circuitNode)
+          .min(1, "El grupo debe contener al menos un elemento"),
       })
       .strict(),
     z
       .object({
         type: z.literal("CHANNEL"),
         name: nodeName,
-        resistanceOhms: z.number().positive("La resistencia debe ser mayor que cero"),
-        lengthMeters: z.number().positive("La longitud debe ser mayor que cero"),
+        resistanceOhms: z
+          .number()
+          .positive("La resistencia debe ser mayor que cero"),
+        lengthMeters: z
+          .number()
+          .positive("La longitud debe ser mayor que cero"),
       })
       .strict(),
   ]),
@@ -28,11 +34,18 @@ export const heatingCircuitConfigurationValidation = z
   .object({
     type: z.literal("ROOT"),
     connectionType,
-    elements: z.array(circuitNode).min(1, "La raíz debe contener al menos un elemento"),
+    elements: z
+      .array(circuitNode)
+      .min(1, "La raíz debe contener al menos un elemento"),
   })
   .strict();
 
-const dateValue = z.string().refine((value) => !Number.isNaN(new Date(value).getTime()), "Fecha inválida");
+const dateValue = z
+  .string()
+  .refine(
+    (value) => !Number.isNaN(new Date(value).getTime()),
+    "Fecha inválida",
+  );
 const nullableDateValue = dateValue.nullable();
 
 const kilnFields = {
@@ -50,8 +63,12 @@ const kilnFields = {
 export const createKilnValidation = z.object(kilnFields).strict();
 export const editKilnValidation = z.object(kilnFields).partial().strict();
 
-export const linkUserValidation = z.object({ userId: z.number().int().positive() }).strict();
-export const linkControllerValidation = z.object({ controllerId: z.uuid() }).strict();
+export const linkUserValidation = z
+  .object({ userId: z.number().int().positive() })
+  .strict();
+export const linkControllerValidation = z
+  .object({ controllerId: z.uuid() })
+  .strict();
 
 export const kilnControllerCommandValidation = z
   .object({ command: z.enum(["ON", "OFF"]) })

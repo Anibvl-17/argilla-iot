@@ -61,7 +61,13 @@ export async function editController(req, res) {
     );
   } catch (error) {
     if (error.code === "INCOMPATIBLE_KILN_AMPERAGE") {
-      return handleErrorClient(res, 409, error.message, null, "switchCurrentCapacity");
+      return handleErrorClient(
+        res,
+        409,
+        error.message,
+        null,
+        "switchCurrentCapacity",
+      );
     }
 
     if (error.code === "P2025") {
@@ -92,7 +98,11 @@ export async function removeController(req, res) {
     return handleSuccess(res, 200, "Controlador eliminado exitosamente");
   } catch (error) {
     if (error.code === "P2003") {
-      return handleErrorClient(res, 409, "El controlador conserva información histórica");
+      return handleErrorClient(
+        res,
+        409,
+        "El controlador conserva información histórica",
+      );
     }
     return handleErrorServer(
       res,

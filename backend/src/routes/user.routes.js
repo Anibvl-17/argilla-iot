@@ -34,7 +34,11 @@ router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllUsers);
 router.use(verifyRoles([ROLES.ADMIN]));
 router.post("/create", validateSchema(createUserValidation), addUser);
 router.patch("/:userId/edit", validateSchema(updateUserValidation), editUser);
-router.patch("/:userId/status", validateSchema(updateUserStatusValidation), changeUserStatus);
+router.patch(
+  "/:userId/status",
+  validateSchema(updateUserStatusValidation),
+  changeUserStatus,
+);
 router.delete("/:userId/delete", removeUser);
 
 export default router;

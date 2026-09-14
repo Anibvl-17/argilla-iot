@@ -243,9 +243,7 @@ export async function getAllUsers(req, res) {
     const users = await getUsersPage({
       ...req.query,
       roleFilter:
-        req.user.role === "TECHNICIAN"
-          ? "CLIENT"
-          : req.query.roleFilter,
+        req.user.role === "TECHNICIAN" ? "CLIENT" : req.query.roleFilter,
     });
 
     return handleSuccess(res, 200, "Usuarios obtenidos exitosamente", users);
@@ -271,14 +269,26 @@ export async function changeUserStatus(req, res) {
     return handleSuccess(
       res,
       200,
-      user.isActive ? "Usuario reactivado exitosamente" : "Usuario desactivado exitosamente",
+      user.isActive
+        ? "Usuario reactivado exitosamente"
+        : "Usuario desactivado exitosamente",
       user,
     );
   } catch (error) {
-    if (error.code === "P2025") return handleErrorClient(res, 404, error.message);
-    if (["SELF_DEACTIVATION", "USER_ANONYMIZED", "LAST_ACTIVE_ADMIN"].includes(error.code)) {
+    if (error.code === "P2025")
+      return handleErrorClient(res, 404, error.message);
+    if (
+      ["SELF_DEACTIVATION", "USER_ANONYMIZED", "LAST_ACTIVE_ADMIN"].includes(
+        error.code,
+      )
+    ) {
       return handleErrorClient(res, 409, error.message);
     }
-    return handleErrorServer(res, 500, "Error al cambiar estado del usuario", error.message);
+    return handleErrorServer(
+      res,
+      500,
+      "Error al cambiar estado del usuario",
+      error.message,
+    );
   }
 }

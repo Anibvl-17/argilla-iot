@@ -16,7 +16,9 @@ test("the catalog exposes supported countries, regions and all Chilean communes"
   assert.ok(COUNTRIES.length > 200);
   assert.deepEqual(
     CHILE_REGIONS.map(({ code }) => code),
-    Array.from({ length: 16 }, (_, index) => String(index + 1).padStart(2, "0")),
+    Array.from({ length: 16 }, (_, index) =>
+      String(index + 1).padStart(2, "0"),
+    ),
   );
   const communes = CHILE_REGIONS.flatMap((region) => region.communes);
   assert.equal(communes.length, 346);
@@ -34,13 +36,25 @@ test("the catalog exposes supported countries, regions and all Chilean communes"
 });
 
 test("national Chilean, Argentinian and Peruvian phones become E.164", () => {
-  assert.equal(normalizeInternationalPhone("9 8765 4321", "CL"), "+56987654321");
-  assert.equal(normalizeInternationalPhone("11 1234-5678", "AR"), "+541112345678");
-  assert.equal(normalizeInternationalPhone("987 654 321", "PE"), "+51987654321");
+  assert.equal(
+    normalizeInternationalPhone("9 8765 4321", "CL"),
+    "+56987654321",
+  );
+  assert.equal(
+    normalizeInternationalPhone("11 1234-5678", "AR"),
+    "+541112345678",
+  );
+  assert.equal(
+    normalizeInternationalPhone("987 654 321", "PE"),
+    "+51987654321",
+  );
 });
 
 test("an explicit international phone does not depend on an address country", () => {
-  assert.equal(normalizeInternationalPhone("+54 11 1234 5678", "CL"), "+541112345678");
+  assert.equal(
+    normalizeInternationalPhone("+54 11 1234 5678", "CL"),
+    "+541112345678",
+  );
 });
 
 test("a national phone uses its own country independently from the address", () => {
@@ -76,7 +90,8 @@ test("invalid and context-free national phones are rejected with a field", () =>
 
 test("a Chilean address requires a valid region and commune", () => {
   assert.throws(
-    () => normalizeUserContactData({ countryCode: "CL", addressLine: "Calle 1" }),
+    () =>
+      normalizeUserContactData({ countryCode: "CL", addressLine: "Calle 1" }),
     { code: "INVALID_USER_CONTACT", field: "regionCode" },
   );
   assert.deepEqual(
@@ -197,7 +212,10 @@ test("foreign addresses accept no region and nullable contact fields", () => {
 });
 
 test("legacy backfill preserves valid international phones only", () => {
-  assert.equal(normalizeLegacyInternationalPhone("+56 9 8765 4321"), "+56987654321");
+  assert.equal(
+    normalizeLegacyInternationalPhone("+56 9 8765 4321"),
+    "+56987654321",
+  );
   assert.equal(normalizeLegacyInternationalPhone("987654321"), null);
   assert.equal(normalizeLegacyInternationalPhone("+56 9 0000 0000"), null);
   assert.equal(normalizeLegacyInternationalPhone(null), null);

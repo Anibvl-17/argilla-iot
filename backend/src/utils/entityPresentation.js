@@ -21,7 +21,10 @@ export function presentUser(user) {
   return safeUser;
 }
 
-export function presentController(controller, { hideControllerId = false } = {}) {
+export function presentController(
+  controller,
+  { hideControllerId = false } = {},
+) {
   if (!controller) return controller;
 
   const {

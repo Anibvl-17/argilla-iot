@@ -6,4 +6,3 @@ const router = Router();
 router.get("/user-contact", getUserContactCatalog);
 
 export default router;
-

@@ -2,8 +2,15 @@ import { z } from "zod";
 import { ROLES } from "../constants/user.constants.js";
 import { userContactValidationShape } from "./userContact.validation.js";
 
-const name = z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres").max(150);
-const password = z.string().min(6, "La contraseña debe tener al menos 6 caracteres").max(128);
+const name = z
+  .string()
+  .trim()
+  .min(2, "El nombre debe tener al menos 2 caracteres")
+  .max(150);
+const password = z
+  .string()
+  .min(6, "La contraseña debe tener al menos 6 caracteres")
+  .max(128);
 
 export const createUserValidation = z
   .object({
@@ -32,7 +39,10 @@ export const updateProfileValidation = z
       });
     }
     if (!Object.keys(data).length) {
-      context.addIssue({ code: "custom", message: "Debe modificar al menos un campo" });
+      context.addIssue({
+        code: "custom",
+        message: "Debe modificar al menos un campo",
+      });
     }
   });
 

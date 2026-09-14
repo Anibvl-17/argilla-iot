@@ -83,7 +83,10 @@ export function normalizeUserContactData(data, current = {}) {
   if (hasOwn(data, "countryCode")) {
     const countryCode = data.countryCode?.trim().toUpperCase() || null;
     if (countryCode && !COUNTRY_CODES.has(countryCode)) {
-      throw new UserContactError("countryCode", "El país seleccionado no es válido");
+      throw new UserContactError(
+        "countryCode",
+        "El país seleccionado no es válido",
+      );
     }
     updates.countryCode = countryCode;
     next.countryCode = countryCode;
@@ -98,9 +101,13 @@ export function normalizeUserContactData(data, current = {}) {
   }
 
   if (hasOwn(data, "addressLine")) {
-    const addressLine = data.addressLine === null ? null : data.addressLine.trim();
+    const addressLine =
+      data.addressLine === null ? null : data.addressLine.trim();
     if (addressLine === "") {
-      throw new UserContactError("addressLine", "La dirección no puede estar vacía");
+      throw new UserContactError(
+        "addressLine",
+        "La dirección no puede estar vacía",
+      );
     }
     updates.addressLine = addressLine;
     next.addressLine = addressLine;
@@ -141,13 +148,19 @@ export function normalizeUserContactData(data, current = {}) {
     }
   } else {
     if (next.regionCode && !CHILE_REGION_CODES.has(next.regionCode)) {
-      throw new UserContactError("regionCode", "La región seleccionada no es válida");
+      throw new UserContactError(
+        "regionCode",
+        "La región seleccionada no es válida",
+      );
     }
 
     if (next.communeCode) {
       const communeRegion = CHILE_COMMUNE_REGION_BY_CODE.get(next.communeCode);
       if (!communeRegion) {
-        throw new UserContactError("communeCode", "La comuna seleccionada no es válida");
+        throw new UserContactError(
+          "communeCode",
+          "La comuna seleccionada no es válida",
+        );
       }
       if (!next.regionCode) {
         throw new UserContactError(

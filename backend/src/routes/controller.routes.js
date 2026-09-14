@@ -38,7 +38,11 @@ router.patch(
   linkUserToController,
 );
 
-router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllControllers);
+router.get(
+  "/all",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  getAllControllers,
+);
 router.post(
   "/create",
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),

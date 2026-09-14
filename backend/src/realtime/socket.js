@@ -18,7 +18,12 @@ export function initializeRealtime(server) {
       const decoded = jwt.verify(token, JWT_SECRET);
       const user = await prisma.user.findUnique({
         where: { userId: decoded.id },
-        select: { userId: true, role: true, isActive: true, anonymizedAt: true },
+        select: {
+          userId: true,
+          role: true,
+          isActive: true,
+          anonymizedAt: true,
+        },
       });
       if (!user || !user.isActive || user.anonymizedAt) {
         return next(new Error("No autorizado"));

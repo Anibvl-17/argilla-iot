@@ -18,12 +18,24 @@ export async function authenticateJWT(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { userId: decoded.id },
-      select: { userId: true, name: true, email: true, role: true, isActive: true, anonymizedAt: true },
+      select: {
+        userId: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        anonymizedAt: true,
+      },
     });
     if (!user || !user.isActive || user.anonymizedAt) {
       return handleErrorClient(res, 403, "La cuenta está desactivada");
     }
-    req.user = { id: user.userId, name: user.name, email: user.email, role: user.role };
+    req.user = {
+      id: user.userId,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
     next();
   } catch (error) {
     return handleErrorClient(res, 403, "Token inválido o expirado");

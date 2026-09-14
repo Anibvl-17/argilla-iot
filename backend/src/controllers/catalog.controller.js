@@ -10,4 +10,3 @@ export function getUserContactCatalog(_req, res) {
     chileRegions: CHILE_REGIONS,
   });
 }
-

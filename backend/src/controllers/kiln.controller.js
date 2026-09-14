@@ -362,7 +362,11 @@ export async function removeKiln(req, res) {
     return handleSuccess(res, 200, "Horno eliminado exitosamente");
   } catch (error) {
     if (error.code === "P2003") {
-      return handleErrorClient(res, 409, "El horno conserva información histórica");
+      return handleErrorClient(
+        res,
+        409,
+        "El horno conserva información histórica",
+      );
     }
     return handleErrorServer(
       res,
