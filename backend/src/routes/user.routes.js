@@ -30,7 +30,7 @@ router.patch("/me", validateSchema(updateProfileValidation), editProfile);
 router.post("/me/deactivate", deactivateProfile);
 router.delete("/me", deleteProfile);
 
-router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllUsers);
+router.get("/all", verifyRoles([ROLES.ADMIN]), getAllUsers);
 router.use(verifyRoles([ROLES.ADMIN]));
 router.post("/create", validateSchema(createUserValidation), addUser);
 router.patch("/:userId/edit", validateSchema(updateUserValidation), editUser);

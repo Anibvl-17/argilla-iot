@@ -3,6 +3,7 @@ import {
   presentController as presentControllerEntity,
   presentKiln as presentKilnEntity,
 } from "../utils/entityPresentation.js";
+import { ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES } from "../constants/controller.constants.js";
 
 function normalizeDates(data) {
   return {
@@ -24,8 +25,38 @@ export async function createKiln(kilnData) {
   return presentKilnEntity(kiln);
 }
 
+function presentTechnicianKiln(kiln) {
+  if (!kiln) return kiln;
+
+  return {
+    kilnId: kiln.kilnId,
+    liters: kiln.liters,
+    phaseCount: kiln.phaseCount,
+    nominalVoltage: kiln.nominalVoltage,
+    nominalCurrent: kiln.nominalCurrent,
+    operationalStatus: kiln.operationalStatus,
+    manufacturer: kiln.manufacturer,
+    manufacturedAt: kiln.manufacturedAt,
+    deliveredAt: kiln.deliveredAt,
+    heatingCircuitConfiguration: kiln.heatingCircuitConfiguration,
+    user: kiln.user ? { userId: kiln.user.userId, name: kiln.user.name } : null,
+    controller: kiln.controller
+      ? {
+          controllerId: kiln.controller.controllerId,
+          controllerCode: kiln.controller.controllerId.slice(-6),
+          switchType: kiln.controller.switchType,
+          switchCurrentCapacity: kiln.controller.switchCurrentCapacity,
+        }
+      : null,
+  };
+}
+
 /** Actualiza únicamente los metadatos canónicos editables de un horno. */
-export async function edit(kilnId, data) {
+export async function edit(
+  kilnId,
+  data,
+  { requireUnowned = false, restrictPresentation = false } = {},
+) {
   const normalizedData = normalizeDates(data);
   const currentKiln = await prisma.kiln.findUnique({
     where: { kilnId },
@@ -38,11 +69,16 @@ export async function edit(kilnId, data) {
     throw error;
   }
 
+  if (requireUnowned && currentKiln.userId !== null) {
+    const error = new Error("El horno tiene un cliente asociado");
+    error.code = "KILN_HAS_OWNER";
+    throw error;
+  }
+
   if (
     currentKiln.controller &&
     normalizedData.nominalCurrent != null &&
-    normalizedData.nominalCurrent >
-      currentKiln.controller.switchCurrentCapacity
+    normalizedData.nominalCurrent > currentKiln.controller.switchCurrentCapacity
   ) {
     const error = new Error(
       `El controlador vinculado soporta hasta ${currentKiln.controller.switchCurrentCapacity}A. Desvincula el controlador del horno antes de aumentar su amperaje.`,
@@ -51,14 +87,30 @@ export async function edit(kilnId, data) {
     throw error;
   }
 
-  const kiln = await prisma.kiln.update({
-    where: {
-      kilnId,
-    },
-    data: normalizedData,
+  if (requireUnowned) {
+    const result = await prisma.kiln.updateMany({
+      where: { kilnId, userId: null },
+      data: normalizedData,
+    });
+    if (result.count !== 1) {
+      const error = new Error("El horno tiene un cliente asociado");
+      error.code = "KILN_HAS_OWNER";
+      throw error;
+    }
+  } else {
+    await prisma.kiln.update({ where: { kilnId }, data: normalizedData });
+  }
+
+  const kiln = await prisma.kiln.findUnique({
+    where: { kilnId },
+    include: restrictPresentation
+      ? { user: true, controller: true }
+      : undefined,
   });
 
-  return presentKilnEntity(kiln);
+  return restrictPresentation
+    ? presentTechnicianKiln(kiln)
+    : presentKilnEntity(kiln);
 }
 
 /**
@@ -108,6 +160,7 @@ export async function getKilnsPage({
   pageSize = 10,
   search = "",
   operationalStatusFilter,
+  restrictUserDetails = false,
 } = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
@@ -131,37 +184,46 @@ export async function getKilnsPage({
     ...(normalizedSearch
       ? {
           OR: [
-          ...(Number.isInteger(numericSearch)
-            ? [{ kilnId: numericSearch }]
-            : []),
-          {
-            manufacturer: {
-              contains: normalizedSearch,
-              mode: "insensitive",
-            },
-          },
-          {
-            user: {
-              is: {
-                OR: [
-                  { name: { contains: normalizedSearch, mode: "insensitive" } },
-                  {
-                    email: { contains: normalizedSearch, mode: "insensitive" },
-                  },
-                ],
+            ...(Number.isInteger(numericSearch)
+              ? [{ kilnId: numericSearch }]
+              : []),
+            {
+              manufacturer: {
+                contains: normalizedSearch,
+                mode: "insensitive",
               },
             },
-          },
-          {
-            controller: {
-              is: {
-                controllerId: {
-                  contains: normalizedSearch,
-                  mode: "insensitive",
+            {
+              user: {
+                is: {
+                  OR: [
+                    {
+                      name: { contains: normalizedSearch, mode: "insensitive" },
+                    },
+                    ...(!restrictUserDetails
+                      ? [
+                          {
+                            email: {
+                              contains: normalizedSearch,
+                              mode: "insensitive",
+                            },
+                          },
+                        ]
+                      : []),
+                  ],
                 },
               },
             },
-          },
+            {
+              controller: {
+                is: {
+                  controllerId: {
+                    contains: normalizedSearch,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
           ],
         }
       : {}),
@@ -185,7 +247,11 @@ export async function getKilnsPage({
     ]);
 
   return {
-    items: items.map(presentKilnEntity),
+    items: items.map((kiln) =>
+      restrictUserDetails
+        ? presentTechnicianKiln(kiln)
+        : presentKilnEntity(kiln),
+    ),
     pagination: {
       page: safePage,
       pageSize: safePageSize,
@@ -372,13 +438,15 @@ export async function getOwnedKilnTelemetry(
   };
 }
 
-export async function getAdminKilnById(kilnId) {
+export async function getAdminKilnById(kilnId, restrictUserDetails = false) {
   const kiln = await prisma.kiln.findUnique({
     where: { kilnId },
     include: { user: true, controller: true },
   });
 
-  return presentKilnEntity(kiln);
+  return restrictUserDetails
+    ? presentTechnicianKiln(kiln)
+    : presentKilnEntity(kiln);
 }
 
 export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
@@ -412,32 +480,76 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   };
 }
 
-export async function linkControllerToKiln(kilnId, controllerId) {
+export async function linkControllerToKiln(
+  kilnId,
+  controllerId,
+  { restrictPresentation = false } = {},
+) {
   return prisma.$transaction(async (tx) => {
     const [kiln, controller] = await Promise.all([
       tx.kiln.findUnique({ where: { kilnId } }),
-      tx.controller.findUnique({ where: { controllerId }, include: { kiln: true } }),
+      tx.controller.findUnique({
+        where: { controllerId },
+        include: { kiln: true },
+      }),
     ]);
     if (!kiln) throw new Error("Horno no encontrado");
     if (!controller) throw new Error("Controlador no encontrado");
+    if (
+      !ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+        kiln.operationalStatus,
+      )
+    ) {
+      throw new Error("El horno está fuera de servicio");
+    }
+    if (
+      !ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+        controller.operationalStatus,
+      )
+    ) {
+      throw new Error("El controlador está fuera de servicio");
+    }
     if (kiln.controllerId && kiln.controllerId !== controllerId) {
       throw new Error("El horno ya tiene un controlador vinculado");
     }
     if (controller.kiln && controller.kiln.kilnId !== kilnId) {
       throw new Error("El controlador ya está vinculado a otro horno");
     }
-    if (kiln.userId !== controller.userId) {
-      throw new Error("El horno y el controlador deben tener el mismo propietario");
+    if (
+      kiln.userId !== null &&
+      controller.userId !== null &&
+      kiln.userId !== controller.userId
+    ) {
+      throw new Error(
+        "El horno y el controlador pertenecen a clientes distintos",
+      );
     }
     if (controller.switchCurrentCapacity < kiln.nominalCurrent) {
-      throw new Error("La capacidad del controlador es inferior al amperaje del horno");
+      throw new Error(
+        "La capacidad del controlador es inferior al amperaje del horno",
+      );
     }
+    const resolvedUserId = kiln.userId ?? controller.userId;
+    if (resolvedUserId !== null && controller.userId === null) {
+      await tx.controller.update({
+        where: { controllerId },
+        data: { userId: resolvedUserId },
+      });
+    }
+
     const updated = await tx.kiln.update({
       where: { kilnId },
-      data: { controllerId },
+      data: {
+        controllerId,
+        ...(kiln.userId === null && resolvedUserId !== null
+          ? { userId: resolvedUserId }
+          : {}),
+      },
       include: { controller: true, user: true },
     });
-    return presentKilnEntity(updated);
+    return restrictPresentation
+      ? presentTechnicianKiln(updated)
+      : presentKilnEntity(updated);
   });
 }
 
@@ -478,8 +590,12 @@ export async function linkUserToKiln(kilnId, userId) {
     if (!user.isActive || user.anonymizedAt || user.role !== "CLIENT") {
       throw new Error("El propietario debe ser un cliente activo");
     }
-    if (!kiln.controller) throw new Error("El horno debe tener un controlador asociado");
-    if (![null, userId].includes(kiln.userId) || ![null, userId].includes(kiln.controller.userId)) {
+    if (!kiln.controller)
+      throw new Error("El horno debe tener un controlador asociado");
+    if (
+      ![null, userId].includes(kiln.userId) ||
+      ![null, userId].includes(kiln.controller.userId)
+    ) {
       throw new Error("Los equipos pertenecen a otro usuario");
     }
     await tx.controller.update({

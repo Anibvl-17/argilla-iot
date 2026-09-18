@@ -6,13 +6,133 @@ import { formatPhoneInput, getPhoneCountryCode } from "../utils/userContact";
 
 const inputClassName =
   "mt-2 min-w-0 max-w-full w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none transition-colors focus:border-focus disabled:cursor-not-allowed disabled:opacity-60";
-const MAX_PHONE_COUNTRY_RESULTS = 10;
+const MAX_SEARCH_RESULTS = 10;
 
 const normalizeSearchText = (value) =>
   value
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLocaleLowerCase("es");
+
+export function SearchableCatalogField({
+  label,
+  value,
+  options,
+  onSelect,
+  placeholder,
+  searchPlaceholder,
+  searchPrompt,
+  noResultsMessage,
+  listboxLabel,
+  getSearchText = (option) => `${option.name} ${option.code}`,
+  renderOption = null,
+  disabled = false,
+  invalid,
+  describedBy,
+}) {
+  const buttonRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selected = options.find((option) => option.code === value);
+  const normalizedSearch = search ? normalizeSearchText(search.trim()) : "";
+  const matches = normalizedSearch
+    ? options.filter((option) =>
+        normalizeSearchText(getSearchText(option)).includes(normalizedSearch),
+      )
+    : [];
+  const visibleOptions = matches.slice(0, MAX_SEARCH_RESULTS);
+  const hiddenCount = matches.length - visibleOptions.length;
+
+  function close() {
+    setOpen(false);
+    setSearch("");
+  }
+
+  function select(option) {
+    onSelect(option.code);
+    close();
+  }
+
+  return (
+    <div className="block min-w-0 text-sm font-medium text-muted">
+      <span>{label}</span>
+      <button
+        ref={buttonRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={`${inputClassName} flex items-center justify-between gap-3 text-left`}
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
+      >
+        <span className={selected ? "truncate text-content" : "truncate text-muted"}>
+          {selected?.name || placeholder}
+        </span>
+        <svg
+          aria-hidden="true"
+          className="h-4 w-4 shrink-0 text-muted"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" />
+        </svg>
+      </button>
+      <FloatingDropdown
+        anchorRef={buttonRef}
+        open={open && !disabled}
+        onRequestClose={close}
+        minWidth={280}
+        maxHeight={288}
+      >
+        <div className="border-b border-border bg-surface-muted p-2">
+          <input
+            autoFocus
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            className="w-full rounded-lg border border-control-border bg-field px-3 py-2 text-sm text-content outline-none focus:border-focus"
+          />
+        </div>
+        <div role="listbox" aria-label={listboxLabel} className="max-h-44 overflow-y-auto p-1">
+          {!normalizedSearch && (
+            <p className="px-3 py-4 text-center text-sm text-muted">{searchPrompt}</p>
+          )}
+          {normalizedSearch && !matches.length && (
+            <p className="px-3 py-4 text-center text-sm text-muted">{noResultsMessage}</p>
+          )}
+          {visibleOptions.map((option) => (
+            <button
+              key={option.code}
+              type="button"
+              role="option"
+              aria-selected={option.code === value}
+              onClick={() => select(option)}
+              className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover ${option.code === value ? "bg-surface-hover text-content" : "text-secondary"}`}
+            >
+              {renderOption ? (
+                renderOption(option, { selected: option.code === value })
+              ) : (
+                <span className="truncate">{option.name}</span>
+              )}
+            </button>
+          ))}
+        </div>
+        {hiddenCount > 0 && (
+          <p className="border-t border-border bg-surface-muted px-3 py-2 text-xs text-muted">
+            Hay {hiddenCount} resultados ocultos. Haz una búsqueda más específica.
+          </p>
+        )}
+      </FloatingDropdown>
+    </div>
+  );
+}
 
 export default function UserContactFields({
   value,
@@ -133,7 +253,7 @@ export default function UserContactFields({
       : matchingPhoneCountries;
   const visiblePhoneCountries = orderedPhoneCountries.slice(
     0,
-    MAX_PHONE_COUNTRY_RESULTS,
+    MAX_SEARCH_RESULTS,
   );
   const hiddenPhoneCountryCount =
     orderedPhoneCountries.length - visiblePhoneCountries.length;
@@ -142,93 +262,67 @@ export default function UserContactFields({
     <fieldset className="grid min-w-0 gap-4 sm:grid-cols-2">
       <legend className="sr-only">Información de contacto y dirección</legend>
 
-      <label className="block min-w-0 text-sm font-medium text-muted sm:col-span-2">
-        País
-        <select
-          className={inputClassName}
-          name="countryCode"
+      <div className="sm:col-span-2">
+        <SearchableCatalogField
+          label="País"
           value={value.countryCode || ""}
-          onChange={(event) => updateCountry(event.target.value)}
-          aria-invalid={hasFormError(error, "countryCode") || undefined}
-          aria-describedby={
-            hasFormError(error, "countryCode")
-              ? "country-code-error"
-              : undefined
-          }
-        >
-          <option value="">Selecciona un país</option>
-          {catalog.countries.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.name}
-            </option>
-          ))}
-        </select>
+          options={catalog.countries}
+          onSelect={updateCountry}
+          placeholder="Selecciona un país"
+          searchPlaceholder="Buscar país"
+          searchPrompt="Busca un país para ver resultados."
+          noResultsMessage="No encontramos países para esa búsqueda."
+          listboxLabel="Países"
+          getSearchText={(country) => `${country.name} ${country.code} ${country.callingCode}`}
+          invalid={hasFormError(error, "countryCode")}
+          describedBy={hasFormError(error, "countryCode") ? "country-code-error" : undefined}
+        />
         <FieldError error={error} field="countryCode" id="country-code-error" />
-      </label>
+      </div>
 
       {value.countryCode === "CL" ? (
-        <label className="block min-w-0 text-sm font-medium text-muted">
-          Región
-          <select
-            className={inputClassName}
-            name="regionCode"
+        <div>
+          <SearchableCatalogField
+            label="Región"
             value={value.regionCode || ""}
-            onChange={(event) => updateRegion(event.target.value)}
-            aria-invalid={hasFormError(error, "regionCode") || undefined}
-            aria-describedby={
-              hasFormError(error, "regionCode")
-                ? "region-code-error"
-                : undefined
-            }
-          >
-            <option value="">Selecciona una región</option>
-            {catalog.chileRegions.map((region) => (
-              <option key={region.code} value={region.code}>
-                {region.name}
-              </option>
-            ))}
-          </select>
+            options={catalog.chileRegions}
+            onSelect={updateRegion}
+            placeholder="Selecciona una región"
+            searchPlaceholder="Buscar región"
+            searchPrompt="Busca una región para ver resultados."
+            noResultsMessage="No encontramos regiones para esa búsqueda."
+            listboxLabel="Regiones de Chile"
+            invalid={hasFormError(error, "regionCode")}
+            describedBy={hasFormError(error, "regionCode") ? "region-code-error" : undefined}
+          />
           <FieldError error={error} field="regionCode" id="region-code-error" />
-        </label>
+        </div>
       ) : (
         <div className="hidden sm:block" aria-hidden="true" />
       )}
 
       {value.countryCode === "CL" ? (
-        <label className="block min-w-0 text-sm font-medium text-muted">
-          Comuna
-          <select
-            className={inputClassName}
-            name="communeCode"
+        <div>
+          <SearchableCatalogField
+            label="Comuna"
             value={value.communeCode || ""}
-            onChange={(event) =>
-              updateField("communeCode", event.target.value || null)
-            }
+            options={selectedRegion?.communes || []}
+            onSelect={(communeCode) => updateField("communeCode", communeCode)}
+            placeholder={selectedRegion ? "Selecciona una comuna" : "Selecciona primero una región"}
+            searchPlaceholder="Buscar comuna"
+            searchPrompt="Busca una comuna para ver resultados."
+            noResultsMessage="No encontramos comunas para esa búsqueda."
+            listboxLabel="Comunas de la región"
             disabled={!selectedRegion}
-            aria-invalid={hasFormError(error, "communeCode") || undefined}
-            aria-describedby={
-              hasFormError(error, "communeCode")
-                ? "commune-code-error"
-                : undefined
-            }
-          >
-            <option value="">
-              {selectedRegion
-                ? "Selecciona una comuna"
-                : "Selecciona primero una región"}
-            </option>
-            {selectedRegion?.communes.map((commune) => (
-              <option key={commune.code} value={commune.code}>
-                {commune.name}
-              </option>
-            ))}
-          </select>
+            invalid={hasFormError(error, "communeCode")}
+            describedBy={hasFormError(error, "communeCode") ? "commune-code-error" : undefined}
+          />
           <FieldError
             error={error}
             field="communeCode"
             id="commune-code-error"
           />
-        </label>
+        </div>
       ) : (
         <div className="hidden sm:block" aria-hidden="true" />
       )}
@@ -354,7 +448,8 @@ export default function UserContactFields({
             </div>
             {hiddenPhoneCountryCount > 0 && (
               <p className="border-t border-border bg-surface-muted px-3 py-2 text-xs text-muted">
-                {hiddenPhoneCountryCount} resultados ocultos.
+                Hay {hiddenPhoneCountryCount} resultados ocultos. Haz una
+                búsqueda más específica.
               </p>
             )}
           </FloatingDropdown>

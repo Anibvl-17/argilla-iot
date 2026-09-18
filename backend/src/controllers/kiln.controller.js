@@ -21,6 +21,7 @@ import {
 } from "../services/kiln.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
 import { publishControllerCommand } from "../config/mqttClient.js";
+import { ROLES } from "../constants/user.constants.js";
 
 export async function addKiln(req, res) {
   try {
@@ -157,7 +158,10 @@ export async function getAdminKiln(req, res) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
 
-    const kiln = await getAdminKilnById(kilnId);
+    const kiln = await getAdminKilnById(
+      kilnId,
+      req.user.role === ROLES.TECHNICIAN,
+    );
     if (!kiln) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
@@ -218,6 +222,7 @@ export async function linkController(req, res) {
     const updatedKiln = await linkControllerToKiln(
       parseInt(kilnId),
       controllerId,
+      { restrictPresentation: req.user.role === ROLES.TECHNICIAN },
     );
     void emitAdminSummary();
 
@@ -326,7 +331,10 @@ export async function editKiln(req, res) {
     const { kilnId } = req.params;
     const { body } = req;
 
-    const updatedKiln = await edit(parseInt(kilnId), body);
+    const updatedKiln = await edit(parseInt(kilnId), body, {
+      requireUnowned: req.user.role === ROLES.TECHNICIAN,
+      restrictPresentation: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(
       res,
@@ -341,6 +349,14 @@ export async function editKiln(req, res) {
 
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+
+    if (error.code === "KILN_HAS_OWNER") {
+      return handleErrorClient(
+        res,
+        403,
+        "Los técnicos solo pueden editar hornos sin cliente asociado",
+      );
     }
 
     return handleErrorServer(res, 500, "Error al editar horno", error.message);
@@ -379,7 +395,10 @@ export async function removeKiln(req, res) {
 
 export async function getAllKilns(req, res) {
   try {
-    const kilns = await getKilnsPage(req.query);
+    const kilns = await getKilnsPage({
+      ...req.query,
+      restrictUserDetails: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(res, 200, "Hornos obtenidos exitosamente", kilns);
   } catch (error) {

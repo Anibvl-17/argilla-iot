@@ -44,6 +44,7 @@ export default function Home() {
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    if (user.role !== ROLES.CLIENT) return undefined;
     let active = true;
     getMyKilns().then((result) => {
       if (!active) return;
@@ -54,7 +55,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [reloadKey]);
+  }, [reloadKey, user.role]);
 
   const handleTelemetry = useCallback((telemetry) => {
     setData((current) => ({
@@ -83,7 +84,11 @@ export default function Home() {
     }
   }
 
-  if ([ROLES.ADMIN, ROLES.TECHNICIAN].includes(user.role)) {
+  if (user.role === ROLES.TECHNICIAN) {
+    return <Navigate to="/support" replace />;
+  }
+
+  if (user.role === ROLES.ADMIN) {
     return <Navigate to="/management" replace />;
   }
 

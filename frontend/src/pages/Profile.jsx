@@ -355,32 +355,36 @@ export default function Profile() {
           Estas acciones afectan tu acceso y requieren confirmación.
         </p>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-danger-border bg-surface p-4">
-            <h3 className="font-semibold text-content">Desactivar cuenta</h3>
-            <p className="mt-1 text-sm text-secondary">
-              Se cerrará tu sesión y no podrás volver a ingresar hasta que un
-              administrador reactive la cuenta.
-            </p>
+        <div className="mt-5 divide-y divide-danger-border/60" role="list" aria-label="Acciones peligrosas">
+          <div className="flex flex-col gap-4 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between" role="listitem">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-content">Desactivar cuenta</h3>
+              <p className="mt-1 text-sm text-secondary">
+                Se cerrará tu sesión y no podrás volver a ingresar hasta que un
+                administrador reactive la cuenta.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setDangerAction("deactivate")}
-              className="mt-4 rounded-lg border border-danger-border px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger-soft"
+              className="shrink-0 rounded-lg border border-danger-border px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger-soft"
             >
               Desactivar mi cuenta
             </button>
           </div>
 
-          <div className="rounded-xl border border-danger-border bg-surface p-4">
-            <h3 className="font-semibold text-content">Eliminar cuenta</h3>
-            <p className="mt-1 text-sm text-secondary">
-              Tus datos personales serán anonimizados y esta acción no se puede
-              deshacer.
-            </p>
+          <div className="flex flex-col gap-4 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between" role="listitem">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-content">Eliminar cuenta</h3>
+              <p className="mt-1 text-sm text-secondary">
+                Tus datos personales serán anonimizados y esta acción no se puede
+                deshacer.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setDangerAction("delete")}
-              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-action transition-colors hover:bg-primary-hover"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-action transition-colors hover:bg-primary-hover"
             >
               Eliminar mi cuenta
             </button>

@@ -17,10 +17,13 @@ Aplicación local para monitorear y controlar hornos cerámicos eléctricos. Inc
 ## Funcionalidades
 
 - Registro e inicio de sesión con JWT; roles `CLIENT`, `TECHNICIAN` y `ADMIN`.
-- Gestión de usuarios, hornos, controladores y circuitos calefactores jerárquicos.
+- Gestión de usuarios, hornos, controladores y circuitos de resistencias jerárquicos.
 - Vinculación de conjuntos horno–controlador mediante PIN temporal generado por el ESP32.
 - Visualización de temperatura, estado de conexión y estado del switch en tiempo real.
 - Control `ON`/`OFF` del controlador vinculado a un horno.
+- Soporte por tickets con motivos administrables, asignación atómica, diagnóstico
+  contextual, resolución y mantenimientos asociados. Los técnicos acceden a los
+  equipos únicamente desde tickets sin asignar o asignados a ellos.
 - Modelo de historial basado en ciclos de quema; su lógica funcional se implementará en una iteración posterior.
 - Simulador MQTT integrado: cada controlador de la base de datos recibe su propia instancia simulada.
 
@@ -148,8 +151,11 @@ No usar los valores por defecto de Compose ni la configuración MQTT anónima fu
 ```bash
 cd frontend
 npm run lint
+npm test
+npm run build
 
 cd ../backend
 npx prisma validate
+npm test
 npm run verify:model
 ```

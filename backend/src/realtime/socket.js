@@ -36,10 +36,10 @@ export function initializeRealtime(server) {
   });
 
   io.on("connection", async (socket) => {
-    socket.join(`user:${socket.user.id}`);
+    socket.join(`session:${socket.user.id}`);
 
-    if ([ROLES.ADMIN, ROLES.TECHNICIAN].includes(socket.user.role)) {
-      socket.join("managers");
+    if (socket.user.role === ROLES.CLIENT) {
+      socket.join(`user:${socket.user.id}`);
     }
 
     if (socket.user.role === ROLES.ADMIN) {
@@ -60,7 +60,7 @@ export function emitControllerTelemetry(userId, telemetry) {
   if (userId) {
     io.to(`user:${userId}`).emit("controller:telemetry", telemetry);
   }
-  io.to("managers").emit("controller:telemetry", telemetry);
+  io.to("admins").emit("controller:telemetry", telemetry);
 }
 
 export async function emitAdminSummary() {
@@ -75,5 +75,5 @@ export async function emitAdminSummary() {
 
 export function disconnectUserSockets(userId) {
   if (!io) return;
-  io.in(`user:${userId}`).disconnectSockets(true);
+  io.in(`session:${userId}`).disconnectSockets(true);
 }

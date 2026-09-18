@@ -62,7 +62,7 @@ describe("UserContactFields", () => {
       />,
     );
 
-    expect(screen.getByRole("option", { name: "Chile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "País" })).toHaveTextContent("Chile");
     expect(screen.getByLabelText("País del teléfono")).toHaveTextContent("+56");
     fireEvent.click(screen.getByLabelText("País del teléfono"));
     expect(
@@ -74,8 +74,8 @@ describe("UserContactFields", () => {
     expect(
       screen.getByRole("option", { name: "Chile (+56)" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/Región/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Comuna/)).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Región" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Comuna" })).toBeDisabled();
   });
 
   it("pins Chile above the other matching phone countries", () => {
@@ -122,20 +122,22 @@ describe("UserContactFields", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("option", { name: "Concepción" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("option", { name: "Santiago" }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Comuna" })).toHaveTextContent("Concepción");
 
-    fireEvent.change(screen.getByLabelText(/Región/), {
-      target: { value: "13" },
+    fireEvent.click(screen.getByRole("button", { name: "Región" }));
+    expect(screen.getByText("Busca una región para ver resultados.")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar región" }), {
+      target: { value: "Metropolitana" },
     });
-    expect(screen.getByLabelText(/Comuna/)).toHaveValue("");
-    expect(
-      screen.getByRole("option", { name: "Santiago" }),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: "Metropolitana de Santiago" }));
+    expect(screen.getByRole("button", { name: "Comuna" })).toHaveTextContent("Selecciona una comuna");
+
+    fireEvent.click(screen.getByRole("button", { name: "Comuna" }));
+    expect(screen.getByText("Busca una comuna para ver resultados.")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar comuna" }), {
+      target: { value: "Santiago" },
+    });
+    expect(screen.getByRole("option", { name: "Santiago" })).toBeInTheDocument();
   });
 
   it("clears and hides Chilean territory fields when country changes", () => {
@@ -152,11 +154,13 @@ describe("UserContactFields", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("País"), {
-      target: { value: "AR" },
+    fireEvent.click(screen.getByRole("button", { name: "País" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar país" }), {
+      target: { value: "Argentina" },
     });
-    expect(screen.queryByLabelText(/Región/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Comuna/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: "Argentina" }));
+    expect(screen.queryByRole("button", { name: "Región" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Comuna" })).not.toBeInTheDocument();
     expect(screen.getByTestId("contact-state")).toHaveTextContent(
       '"regionCode":null,"communeCode":null',
     );
@@ -198,6 +202,46 @@ describe("UserContactFields", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(retry).toHaveBeenCalledOnce();
+  });
+
+  it("does not preload address countries and limits searched results", () => {
+    const extraCountries = Array.from({ length: 12 }, (_, index) => ({
+      code: `X${index}`,
+      name: `País de prueba ${index + 1}`,
+      callingCode: `+99${index}`,
+    }));
+
+    render(
+      <ContactHarness
+        catalogValue={{
+          ...catalog,
+          countries: [...catalog.countries, ...extraCountries],
+        }}
+        initialValue={{
+          countryCode: null,
+          regionCode: null,
+          communeCode: null,
+          phoneCountryCode: "CL",
+          phone: "",
+          addressLine: "",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "País" }));
+    const listbox = screen.getByRole("listbox", { name: "Países" });
+    expect(within(listbox).queryAllByRole("option")).toHaveLength(0);
+    expect(screen.getByText("Busca un país para ver resultados.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar país" }), {
+      target: { value: "País de prueba" },
+    });
+    expect(within(listbox).getAllByRole("option")).toHaveLength(10);
+    expect(
+      screen.getByText(
+        "Hay 2 resultados ocultos. Haz una búsqueda más específica.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 

@@ -74,32 +74,6 @@ function ContainerNode({ node, onChange, root = false }) {
             key={`${child.type}-${index}`}
             className="relative rounded-xl border border-border bg-surface p-3"
           >
-            <div className="mb-2 flex justify-end gap-1">
-              <button
-                type="button"
-                title="Subir"
-                onClick={() => moveChild(index, -1)}
-                className="rounded p-1 hover:bg-surface-hover"
-              >
-                <LuArrowUp />
-              </button>
-              <button
-                type="button"
-                title="Bajar"
-                onClick={() => moveChild(index, 1)}
-                className="rounded p-1 hover:bg-surface-hover"
-              >
-                <LuArrowDown />
-              </button>
-              <button
-                type="button"
-                title="Eliminar"
-                onClick={() => removeChild(index)}
-                className="rounded p-1 text-danger hover:bg-danger-soft"
-              >
-                <LuTrash2 />
-              </button>
-            </div>
             {child.type === "GROUP" ? (
               <ContainerNode
                 node={child}
@@ -154,6 +128,32 @@ function ContainerNode({ node, onChange, root = false }) {
                 </label>
               </div>
             )}
+            <div className="mb-2 flex justify-end gap-1">
+              <button
+                type="button"
+                title="Subir"
+                onClick={() => moveChild(index, -1)}
+                className="rounded p-1 hover:bg-surface-hover"
+              >
+                <LuArrowUp />
+              </button>
+              <button
+                type="button"
+                title="Bajar"
+                onClick={() => moveChild(index, 1)}
+                className="rounded p-1 hover:bg-surface-hover"
+              >
+                <LuArrowDown />
+              </button>
+              <button
+                type="button"
+                title="Eliminar"
+                onClick={() => removeChild(index)}
+                className="rounded p-1 text-danger hover:bg-danger-soft"
+              >
+                <LuTrash2 />
+              </button>
+            </div>
           </div>
         ))}
       </div>

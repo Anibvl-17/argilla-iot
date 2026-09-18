@@ -41,6 +41,11 @@ export const OPERATIONAL_STATUS_OPTIONS = Object.entries(
   OPERATIONAL_STATUS_LABELS,
 ).map(([value, label]) => ({ value, label }));
 
+export const ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES = [
+  "OPERATIONAL",
+  "MAINTENANCE",
+];
+
 export const FIRING_COMMAND_LABELS = {
   ON: "Iniciar quema",
   OFF: "Detener Quema",
@@ -49,6 +54,11 @@ export const FIRING_COMMAND_LABELS = {
 export const CONTROLLER_CONNECTION_LABELS = {
   ONLINE: "Conectado",
   OFFLINE: "Desconectado",
+};
+
+export const PHASE_COUNT_LABELS = {
+  1: "Monofásico",
+  3: "Trifásico",
 };
 
 export function formatEnumLabel(value, labels = {}) {
@@ -77,4 +87,8 @@ export function getOperationalStatusLabel(status) {
 
 export function getSwitchLabel(type) {
   return formatEnumLabel(type, SWITCH_LABELS);
+}
+
+export function getPhaseCountLabel(phaseCount) {
+  return PHASE_COUNT_LABELS[phaseCount] || "Configuración no disponible";
 }

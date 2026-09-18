@@ -31,11 +31,16 @@ const router = Router();
 
 router.use(authenticateJWT);
 
-router.get("/my-kilns", getUserKilns);
-router.get("/my-kilns/:kilnId", getUserKiln);
-router.get("/my-kilns/:kilnId/telemetry", getOwnedKilnTelemetryHistory);
+router.get("/my-kilns", verifyRoles([ROLES.CLIENT]), getUserKilns);
+router.get("/my-kilns/:kilnId", verifyRoles([ROLES.CLIENT]), getUserKiln);
+router.get(
+  "/my-kilns/:kilnId/telemetry",
+  verifyRoles([ROLES.CLIENT]),
+  getOwnedKilnTelemetryHistory,
+);
 router.post(
   "/my-kilns/:kilnId/controller/command",
+  verifyRoles([ROLES.CLIENT]),
   validateSchema(kilnControllerCommandValidation),
   sendOwnedKilnControllerCommand,
 );
@@ -48,7 +53,7 @@ router.post(
 );
 router.post(
   "/:kilnId/unlink",
-  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  verifyRoles([ROLES.ADMIN]),
   unlinkController,
 );
 router.patch("/:kilnId/release", verifyRoles([ROLES.ADMIN]), unlinkUser);
@@ -62,7 +67,7 @@ router.get(
 );
 router.get(
   "/admin/:kilnId/telemetry",
-  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  verifyRoles([ROLES.ADMIN]),
   getAdminKilnTelemetryHistory,
 );
 router.post(

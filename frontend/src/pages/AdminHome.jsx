@@ -196,7 +196,11 @@ export const AdminHome = () => {
           to="/management/users"
           linkLabel="Ver usuarios"
           metrics={[
-            { label: "Total", value: summary.users.total, wide: true },
+            { label: "Total", value: summary.users.total },
+            {
+              label: "Administradores",
+              value: summary.users.administrators,
+            },
             { label: "Técnicos", value: summary.users.technicians },
             { label: "Clientes", value: summary.users.clients },
           ]}

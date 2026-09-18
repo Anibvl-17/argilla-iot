@@ -51,7 +51,10 @@ export async function editController(req, res) {
     const { controllerId } = req.params;
     const { body } = req;
 
-    const updatedController = await edit(controllerId, body);
+    const updatedController = await edit(controllerId, body, {
+      requireUnowned: req.user.role === ROLES.TECHNICIAN,
+      restrictPresentation: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(
       res,
@@ -72,6 +75,14 @@ export async function editController(req, res) {
 
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Controlador no encontrado");
+    }
+
+    if (error.code === "CONTROLLER_HAS_OWNER") {
+      return handleErrorClient(
+        res,
+        403,
+        "Los técnicos solo pueden editar controladores sin cliente asociado",
+      );
     }
 
     return handleErrorServer(
@@ -116,7 +127,10 @@ export async function removeController(req, res) {
 /** Lista controladores para administración y soporte técnico. */
 export async function getAllControllers(req, res) {
   try {
-    const controllers = await getControllersPage(req.query);
+    const controllers = await getControllersPage({
+      ...req.query,
+      restrictUserDetails: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(
       res,
@@ -173,9 +187,7 @@ export async function getAccessibleControllers(req, res) {
   try {
     const controllers = await getControllersPage({
       ...req.query,
-      userId: [ROLES.ADMIN, ROLES.TECHNICIAN].includes(req.user.role)
-        ? undefined
-        : req.user.id,
+      userId: req.user.role === ROLES.ADMIN ? undefined : req.user.id,
     });
 
     return handleSuccess(

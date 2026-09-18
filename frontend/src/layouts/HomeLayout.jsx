@@ -7,14 +7,13 @@ import {
   LuCircuitBoard,
   LuFlame,
   LuMicrochip,
+  LuLifeBuoy,
   LuUser,
   LuUsers,
 } from "react-icons/lu";
 
 export default function HomeLayout() {
   const { user } = useAuth();
-  const userRole = user.role;
-
   const isClient = user.role === "CLIENT";
   const isTechnician = user.role === "TECHNICIAN";
   const isAdmin = user.role === "ADMIN";
@@ -35,17 +34,18 @@ export default function HomeLayout() {
 
         {/* Navegación Principal */}
         <nav
-          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${["ADMIN", "TECHNICIAN"].includes(userRole) ? "grid-cols-5" : "grid-cols-2"}`}
+          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${isAdmin ? "grid-cols-6" : isClient || isTechnician ? "grid-cols-3" : "grid-cols-1"}`}
         >
           {/* Opciones usuario */}
           {isClient && (
             <>
               <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
+              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
             </>
           )}
 
           {/* Opciones admin */}
-          {(isAdmin || isTechnician) && (
+          {isAdmin && (
             <>
               <SidebarItem
                 path="/management"
@@ -67,9 +67,19 @@ export default function HomeLayout() {
                 title="Controladores"
                 icon={LuCircuitBoard}
               />
+              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
             </>
           )}
-          <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
+          {isTechnician && (
+            <>
+              <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
+              <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
+              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
+            </>
+          )}
+          {(isAdmin || isClient) && (
+            <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
+          )}
         </nav>
       </aside>
 

@@ -11,6 +11,7 @@ export async function getAdminSummary() {
     operationalControllers,
     outOfServiceControllers,
     totalUsers,
+    administrators,
     technicians,
     clients,
   ] = await prisma.$transaction([
@@ -25,6 +26,7 @@ export async function getAdminSummary() {
       where: { operationalStatus: "OUT_OF_SERVICE" },
     }),
     prisma.user.count(),
+    prisma.user.count({ where: { role: "ADMIN" } }),
     prisma.user.count({ where: { role: "TECHNICIAN" } }),
     prisma.user.count({ where: { role: "CLIENT" } }),
   ]);
@@ -44,6 +46,7 @@ export async function getAdminSummary() {
     },
     users: {
       total: totalUsers,
+      administrators,
       technicians,
       clients,
     },

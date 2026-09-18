@@ -38,7 +38,7 @@ function normalizeDates(data) {
   };
 }
 
-function decorateController(controller) {
+function decorateController(controller, { restrictUserDetails = false } = {}) {
   if (!controller) return controller;
   const linkStatus = controller.kiln && controller.user
     ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
@@ -47,7 +47,26 @@ function decorateController(controller) {
       : controller.user
         ? CONTROLLER_LINK_STATUS.LINKED_TO_USER
         : CONTROLLER_LINK_STATUS.UNLINKED;
-  return { ...presentController(controller), linkStatus };
+  const presented = presentController(controller);
+  const decorated = {
+    ...presented,
+    linkStatus,
+  };
+
+  if (!restrictUserDetails) return decorated;
+
+  return {
+    controllerId: decorated.controllerId,
+    controllerCode: decorated.controllerCode,
+    operationalStatus: decorated.operationalStatus,
+    switchType: decorated.switchType,
+    switchCurrentCapacity: decorated.switchCurrentCapacity,
+    linkStatus,
+    user: decorated.user
+      ? { userId: decorated.user.userId, name: decorated.user.name }
+      : null,
+    kiln: decorated.kiln ? { kilnId: decorated.kiln.kilnId } : null,
+  };
 }
 
 export async function create(data) {
@@ -70,13 +89,23 @@ export async function create(data) {
   }
 }
 
-export async function edit(controllerId, data) {
+export async function edit(
+  controllerId,
+  data,
+  { requireUnowned = false, restrictPresentation = false } = {},
+) {
   const normalizedData = normalizeDates(data);
   const current = await prisma.controller.findUnique({
     where: { controllerId },
     include: { kiln: { select: { nominalCurrent: true } } },
   });
   if (!current) throw serviceError("P2025", "Controlador no encontrado");
+  if (requireUnowned && current.userId !== null) {
+    throw serviceError(
+      "CONTROLLER_HAS_OWNER",
+      "El controlador tiene un cliente asociado",
+    );
+  }
   if (
     current.kiln &&
     normalizedData.switchCurrentCapacity != null &&
@@ -87,13 +116,29 @@ export async function edit(controllerId, data) {
       `El horno vinculado requiere al menos ${current.kiln.nominalCurrent}A`,
     );
   }
-  return decorateController(
+  if (requireUnowned) {
+    const result = await prisma.controller.updateMany({
+      where: { controllerId, userId: null },
+      data: normalizedData,
+    });
+    if (result.count !== 1) {
+      throw serviceError(
+        "CONTROLLER_HAS_OWNER",
+        "El controlador tiene un cliente asociado",
+      );
+    }
+  } else {
     await prisma.controller.update({
       where: { controllerId },
       data: normalizedData,
-      include: { kiln: true, user: true },
-    }),
-  );
+    });
+  }
+
+  const updated = await prisma.controller.findUnique({
+    where: { controllerId },
+    include: { kiln: true, user: true },
+  });
+  return decorateController(updated, { restrictUserDetails: restrictPresentation });
 }
 
 export async function remove(controllerId) {
@@ -290,6 +335,7 @@ export async function getControllersPage({
   connectionStatus,
   kilnStatus,
   operationalStatusFilter,
+  restrictUserDetails = false,
 } = {}) {
   const safePage = Math.max(1, Number(page) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
@@ -345,12 +391,16 @@ export async function getControllersPage({
                         mode: "insensitive",
                       },
                     },
-                    {
-                      email: {
-                        contains: normalizedSearch,
-                        mode: "insensitive",
-                      },
-                    },
+                    ...(!restrictUserDetails
+                      ? [
+                          {
+                            email: {
+                              contains: normalizedSearch,
+                              mode: "insensitive",
+                            },
+                          },
+                        ]
+                      : []),
                   ],
                 },
               },
@@ -374,7 +424,9 @@ export async function getControllersPage({
     prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null }, user: { isNot: null } } }),
   ]);
   return {
-    items: items.map(decorateController),
+    items: items.map((controller) =>
+      decorateController(controller, { restrictUserDetails }),
+    ),
     pagination: { page: safePage, pageSize: safePageSize, total, totalPages: Math.max(1, Math.ceil(total / safePageSize)) },
     summary: { total: scopeTotal, linkedToKiln, linkedToUser, fullyLinked },
   };

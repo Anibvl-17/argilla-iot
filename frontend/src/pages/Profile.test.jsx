@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Profile from "./Profile";
 
@@ -80,6 +80,12 @@ describe("Profile page", () => {
     expect(
       screen.getByRole("button", { name: "Cerrar sesión" }),
     ).toBeInTheDocument();
+    const dangerRows = within(
+      screen.getByRole("list", { name: "Acciones peligrosas" }),
+    ).getAllByRole("listitem");
+    expect(dangerRows).toHaveLength(2);
+    expect(dangerRows[0]).not.toHaveClass("border", "bg-surface");
+    expect(dangerRows[1]).not.toHaveClass("border", "bg-surface");
   });
 
   it("confirms self-deactivation and ends the local session", async () => {

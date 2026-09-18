@@ -527,7 +527,7 @@ export default function AdminUsers() {
                                     : "No aplica"}
                                 </dd>
                               </div>
-                              <div className="col-span-2 sm:col-span-3">
+                              <div className="col-span-2 sm:col-span-2">
                                 <dt className="text-xs font-bold uppercase text-muted">
                                   Dirección
                                 </dt>

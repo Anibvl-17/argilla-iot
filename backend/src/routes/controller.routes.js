@@ -23,10 +23,15 @@ const router = Router();
 
 router.use(authenticateJWT);
 
-router.get("/accessible", getAccessibleControllers);
+router.get(
+  "/accessible",
+  verifyRoles([ROLES.ADMIN, ROLES.CLIENT]),
+  getAccessibleControllers,
+);
 
 router.post(
   "/:controllerId/command",
+  verifyRoles([ROLES.ADMIN, ROLES.CLIENT]),
   validateSchema(controllerCommandValidation),
   sendControllerCommand,
 );

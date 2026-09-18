@@ -3,6 +3,7 @@ import {
   LuCopy,
   LuEye,
   LuEyeOff,
+  LuLink,
   LuPencil,
   LuPlus,
   LuPower,
@@ -13,14 +14,17 @@ import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
 import Modal from "@components/Modal";
 import Pagination from "@components/Pagination";
+import { SearchableCatalogField } from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
+  ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
   CONTROLLER_ACTIVITY_STYLES,
   getControllerActivityLabel,
   getControllerConnectionLabel,
   getFiringCommandLabel,
   getOperationalStatusLabel,
+  getPhaseCountLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
 } from "@constants/controller.constants";
@@ -31,6 +35,7 @@ import {
   sendAdminControllerCommand,
   updateController,
 } from "@services/controller.service";
+import { getAllKilns, linkController } from "@services/kiln.service";
 import { normalizeFormError } from "../utils/formError";
 import { getPageAfterDeletion } from "../utils/pagination";
 
@@ -154,6 +159,7 @@ export default function AdminControllers() {
   const isAdmin = user.role === "ADMIN";
   const [loading, setLoading] = useState(false);
   const [controllers, setControllers] = useState([]);
+  const [kilns, setKilns] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [operationalStatusFilter, setOperationalStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -168,25 +174,36 @@ export default function AdminControllers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [selectedController, setSelectedController] = useState(null);
+  const [associationController, setAssociationController] = useState(null);
+  const [associationKilnId, setAssociationKilnId] = useState("");
+  const [associationLoading, setAssociationLoading] = useState(false);
   const [expandedControllerId, setExpandedControllerId] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [credential, setCredential] = useState(null);
   const [commandLoadingId, setCommandLoadingId] = useState("");
+  const modalFields =
+    modalMode === "create" || isAdmin
+      ? controllerFields
+      : controllerFields.slice(0, 2);
 
   const fetchControllers = useCallback(async () => {
     setLoading(true);
-    const result = await getAllControllers({
-      page,
-      pageSize: PAGE_SIZE,
-      search: searchTerm,
-      operationalStatusFilter: operationalStatusFilter || undefined,
-    });
+    const [result, kilnResult] = await Promise.all([
+      getAllControllers({
+        page,
+        pageSize: PAGE_SIZE,
+        search: searchTerm,
+        operationalStatusFilter: operationalStatusFilter || undefined,
+      }),
+      getAllKilns({ pageSize: 100 }),
+    ]);
     setLoading(false);
     if (!result.success) return toast.error(result.message);
     const payload = result.data || {};
     setControllers(payload.items || []);
     setTotalPages(payload.pagination?.totalPages || 1);
     setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
+    if (kilnResult.success) setKilns(kilnResult.data?.items || []);
   }, [operationalStatusFilter, page, searchTerm]);
 
   useEffect(() => {
@@ -234,12 +251,14 @@ export default function AdminControllers() {
   async function handleSubmit(formData) {
     setLoading(true);
     setModalError(null);
-    const payload = {
-      ...formData,
-      switchCurrentCapacity: Number(formData.switchCurrentCapacity),
-      deliveredAt: formData.deliveredAt || null,
-      firmwareUpdatedAt: formData.firmwareUpdatedAt || null,
-    };
+    const payload = Object.fromEntries(
+      modalFields.map((field) => [field.name, formData[field.name]]),
+    );
+    payload.switchCurrentCapacity = Number(payload.switchCurrentCapacity);
+    if ("deliveredAt" in payload)
+      payload.deliveredAt = payload.deliveredAt || null;
+    if ("firmwareUpdatedAt" in payload)
+      payload.firmwareUpdatedAt = payload.firmwareUpdatedAt || null;
     const result =
       modalMode === "create"
         ? await createController(payload)
@@ -277,6 +296,50 @@ export default function AdminControllers() {
     toast.success(command === "ON" ? "Quema iniciada." : "Quema detenida.");
   }
 
+  async function attachKiln(controller, kilnId) {
+    if (!kilnId) return;
+    setAssociationLoading(true);
+    const result = await linkController(
+      Number(kilnId),
+      controller.controllerId,
+    );
+    setAssociationLoading(false);
+    if (!result.success)
+      return toast.error(result.data?.errorDetails || result.message);
+    toast.success("Horno asociado exitosamente.");
+    setExpandedControllerId(null);
+    setAssociationController(null);
+    setAssociationKilnId("");
+    await fetchControllers();
+  }
+
+  function closeAssociationModal() {
+    setAssociationController(null);
+    setAssociationKilnId("");
+    setAssociationLoading(false);
+  }
+
+  function getAvailableKilnOptions(controller) {
+    return kilns
+      .filter(
+        (kiln) =>
+          !kiln.controller &&
+          ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+            kiln.operationalStatus,
+          ) &&
+          (!controller.user ||
+            !kiln.user ||
+            controller.user.userId === kiln.user.userId),
+      )
+      .map((kiln) => ({
+        code: String(kiln.kilnId),
+        name: `Horno #${kiln.kilnId} - ${kiln.user?.name || "Sin propietario"}`,
+        secondary: `${kiln.liters} litros - ${kiln.nominalVoltage} V - ${kiln.nominalCurrent} A - ${getPhaseCountLabel(kiln.phaseCount)}`,
+        operationalStatus: kiln.operationalStatus,
+        searchText: `#${kiln.kilnId} ${kiln.kilnId} ${kiln.user?.name || "sin propietario"}`,
+      }));
+  }
+
   async function confirmDelete() {
     setLoading(true);
     const result = await deleteController(selectedController.controllerId);
@@ -300,14 +363,16 @@ export default function AdminControllers() {
 
     return (
       <>
-        <button
-          type="button"
-          onClick={() => openEditModal(controller)}
-          className={buttonClass}
-          title="Editar controlador"
-        >
-          <LuPencil className="text-base" /> {withLabels && "Editar"}
-        </button>
+        {(isAdmin || !controller.user) && (
+          <button
+            type="button"
+            onClick={() => openEditModal(controller)}
+            className={buttonClass}
+            title="Editar controlador"
+          >
+            <LuPencil className="text-base" /> {withLabels && "Editar"}
+          </button>
+        )}
         {isAdmin && (
           <>
             <button
@@ -441,18 +506,36 @@ export default function AdminControllers() {
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="py-4 sm:px-6 text-center gap-2">ID</th>
-                <th className="hidden px-6 py-4 md:table-cell">
-                  Propietario / Horno
-                </th>
-                <th className="hidden px-6 py-4 text-center sm:table-cell">
-                  Temperatura
-                </th>
-                <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
-                <th className="hidden px-6 py-4 text-center lg:table-cell">
-                  Actividad
-                </th>
-                <th className="hidden px-6 py-4 text-center xl:table-cell">
+                <th className="w-32 px-3 py-4 text-center sm:px-6">ID</th>
+                {isAdmin ? (
+                  <th className="hidden px-6 py-4 md:table-cell">
+                    Propietario / ID Horno
+                  </th>
+                ) : (
+                  <>
+                    <th className="px-3 py-4 sm:px-6">Propietario</th>
+                    <th className="px-3 py-4 sm:px-6">ID Horno</th>
+                    <th className="px-3 py-4 text-center sm:px-6">Switch</th>
+                  </>
+                )}
+                {isAdmin && (
+                  <>
+                    <th className="hidden px-6 py-4 text-center sm:table-cell">
+                      Temperatura
+                    </th>
+                    <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
+                    <th className="hidden px-6 py-4 text-center lg:table-cell">
+                      Actividad
+                    </th>
+                  </>
+                )}
+                <th
+                  className={
+                    isAdmin
+                      ? "hidden px-6 py-4 text-center xl:table-cell"
+                      : "px-3 py-4 text-center sm:px-6"
+                  }
+                >
                   Estado
                 </th>
                 <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
@@ -463,11 +546,11 @@ export default function AdminControllers() {
                 controllers.map((controller) => (
                   <Fragment key={controller.controllerId}>
                     <tr className="transition-colors hover:bg-surface-hover">
-                      <td className="py-5 font-mono sm:px-6 text-accent text-center gap-2">
+                      <td className="w-32 px-3 py-5 text-center font-mono text-accent sm:px-6">
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(
-                              controller.controllerId.slice(-6),
+                              controller.controllerId,
                             );
                             toast.success("¡ID copiada!");
                           }}
@@ -477,56 +560,91 @@ export default function AdminControllers() {
                           ...{controller.controllerCode}
                         </button>
                       </td>
-                      <td className="hidden px-6 py-5 md:table-cell">
-                        {controller.user ? (
-                          <p>{controller.user.name}</p>
-                        ) : (
-                          <p className="italic text-muted">Sin propietario</p>
-                        )}
-                        {controller.kiln ? (
-                          <p className="mt-1 text-secondary">
-                            Horno #{controller.kiln.kilnId}
-                          </p>
-                        ) : (
-                          <p className="mt-1 italic text-muted">
-                            Sin horno asociado
-                          </p>
-                        )}
-                      </td>
-                      <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
-                        {controller.temperature == null ? (
-                          <span className="italic text-muted font-sans font-normal">
-                            No disponible
-                          </span>
-                        ) : (
-                          `${controller.temperature.toFixed(1)} °C`
-                        )}
-                      </td>
-                      <td className="px-3 py-5 sm:px-6">
-                        <span className="flex justify-center">
-                          <Badge
-                            style={connectionStyle[controller.connectionStatus]}
-                            text={getControllerConnectionLabel(
-                              controller.connectionStatus,
+                      {isAdmin ? (
+                        <td className="hidden px-6 py-5 md:table-cell">
+                          {controller.user ? (
+                            <p>{controller.user.name}</p>
+                          ) : (
+                            <p className="italic text-muted">Sin propietario</p>
+                          )}
+                          {controller.kiln ? (
+                            <p className="mt-1 text-secondary">
+                              Horno #{controller.kiln.kilnId}
+                            </p>
+                          ) : (
+                            <p className="mt-1 italic text-muted">
+                              Sin horno asociado
+                            </p>
+                          )}
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-3 py-5 sm:px-6">
+                            {controller.user?.name || (
+                              <span className="italic text-muted">
+                                Sin propietario
+                              </span>
                             )}
-                          />
-                        </span>
-                      </td>
-                      <td className="hidden px-6 py-5 lg:table-cell">
-                        <span className="flex justify-center">
-                          <Badge
-                            style={
-                              CONTROLLER_ACTIVITY_STYLES[
-                                controller.activityStatus
-                              ]
-                            }
-                            text={getControllerActivityLabel(
-                              controller.activityStatus,
+                          </td>
+                          <td className="px-3 py-5 sm:px-6">
+                            {controller.kiln ? (
+                              `Horno #${controller.kiln.kilnId}`
+                            ) : (
+                              <span className="italic text-muted">
+                                Sin horno asociado
+                              </span>
                             )}
-                          />
-                        </span>
-                      </td>
-                      <td className="hidden px-6 py-5 xl:table-cell">
+                          </td>
+                          <td className="px-3 py-5 text-center sm:px-6">
+                            {getSwitchLabel(controller.switchType)}{" "}
+                            {controller.switchCurrentCapacity} A
+                          </td>
+                        </>
+                      )}
+                      {isAdmin && (
+                        <>
+                          <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
+                            {controller.temperature == null ? (
+                              <span className="italic text-muted font-sans font-normal">
+                                No disponible
+                              </span>
+                            ) : (
+                              `${controller.temperature.toFixed(1)} °C`
+                            )}
+                          </td>
+                          <td className="px-3 py-5 sm:px-6">
+                            <span className="flex justify-center">
+                              <Badge
+                                style={connectionStyle[controller.connectionStatus]}
+                                text={getControllerConnectionLabel(
+                                  controller.connectionStatus,
+                                )}
+                              />
+                            </span>
+                          </td>
+                          <td className="hidden px-6 py-5 lg:table-cell">
+                            <span className="flex justify-center">
+                              <Badge
+                                style={
+                                  CONTROLLER_ACTIVITY_STYLES[
+                                    controller.activityStatus
+                                  ]
+                                }
+                                text={getControllerActivityLabel(
+                                  controller.activityStatus,
+                                )}
+                              />
+                            </span>
+                          </td>
+                        </>
+                      )}
+                      <td
+                        className={
+                          isAdmin
+                            ? "hidden px-6 py-5 xl:table-cell"
+                            : "px-3 py-5 sm:px-6"
+                        }
+                      >
                         <span className="flex justify-center">
                           <Badge
                             style={
@@ -540,47 +658,80 @@ export default function AdminControllers() {
                       </td>
                       <td className="px-3 py-5 sm:px-6">
                         <div className="flex justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedControllerId(
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedControllerId(
+                                  expandedControllerId === controller.controllerId
+                                    ? null
+                                    : controller.controllerId,
+                                )
+                              }
+                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                              title={
                                 expandedControllerId === controller.controllerId
-                                  ? null
-                                  : controller.controllerId,
-                              )
-                            }
-                            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
-                            title={
-                              expandedControllerId === controller.controllerId
-                                ? "Ocultar detalles"
-                                : "Ver detalles"
-                            }
-                          >
-                            {expandedControllerId ===
-                            controller.controllerId ? (
-                              <LuEyeOff className="text-base" />
-                            ) : (
-                              <LuEye className="text-base" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(controller)}
-                            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content lg:hidden"
-                            title="Editar controlador"
-                          >
-                            <LuPencil className="text-base" />
-                          </button>
+                                  ? "Ocultar detalles"
+                                  : "Ver detalles"
+                              }
+                            >
+                              {expandedControllerId ===
+                              controller.controllerId ? (
+                                <LuEyeOff className="text-base" />
+                              ) : (
+                                <LuEye className="text-base" />
+                              )}
+                            </button>
+                          )}
+                          {!controller.kiln && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isAdmin) {
+                                  setExpandedControllerId(
+                                    expandedControllerId ===
+                                      controller.controllerId
+                                      ? null
+                                      : controller.controllerId,
+                                  );
+                                } else {
+                                  setAssociationController(controller);
+                                  setAssociationKilnId("");
+                                }
+                              }}
+                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                              title="Asociar horno"
+                            >
+                              <LuLink className="text-base" />
+                            </button>
+                          )}
+                          {(isAdmin || !controller.user) && (
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(controller)}
+                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content lg:hidden"
+                              title="Editar controlador"
+                            >
+                              <LuPencil className="text-base" />
+                            </button>
+                          )}
                           <div className="hidden justify-center gap-2 lg:flex">
                             {renderControllerActions(controller)}
                           </div>
+                          {!isAdmin && controller.kiln && controller.user && (
+                            <span className="text-sm italic text-muted">
+                              Sin acciones disponibles
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
-                    {expandedControllerId === controller.controllerId && (
+                    {isAdmin &&
+                      expandedControllerId === controller.controllerId && (
                       <tr className="bg-surface-muted">
                         <td colSpan={7} className="px-6 py-5">
-                          <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                          {isAdmin && (
+                            <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                             <div className="md:hidden">
                               <dt className="text-xs font-bold uppercase text-muted">
                                 Propietario
@@ -698,7 +849,26 @@ export default function AdminControllers() {
                                 )}
                               </dd>
                             </div>
-                          </dl>
+                            </dl>
+                          )}
+                          {!controller.kiln && (
+                            <div className="mt-5 max-w-2xl border-t border-border pt-4">
+                              <SearchableCatalogField
+                                label="Asociar horno"
+                                value=""
+                                options={getAvailableKilnOptions(controller)}
+                                onSelect={(kilnId) =>
+                                  attachKiln(controller, kilnId)
+                                }
+                                placeholder="Selecciona un horno"
+                                searchPlaceholder="Buscar por ID de horno"
+                                searchPrompt="Escribe el ID para buscar hornos."
+                                noResultsMessage="No encontramos hornos disponibles para esa búsqueda."
+                                listboxLabel="Hornos disponibles"
+                                getSearchText={(option) => option.searchText}
+                              />
+                            </div>
+                          )}
                           {isAdmin && (
                             <div className="mt-5 grid gap-2 border-t border-border pt-4 min-[480px]:grid-cols-2 lg:hidden">
                               <button
@@ -735,14 +905,20 @@ export default function AdminControllers() {
                 ))}
               {!loading && controllers.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                  <td
+                    colSpan={isAdmin ? 7 : 6}
+                    className="px-6 py-12 text-center text-muted"
+                  >
                     No se encontraron controladores.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                  <td
+                    colSpan={isAdmin ? 7 : 6}
+                    className="px-6 py-12 text-center text-muted"
+                  >
                     Cargando controladores...
                   </td>
                 </tr>
@@ -758,12 +934,73 @@ export default function AdminControllers() {
       </div>
 
       <Modal
+        isOpen={!isAdmin && Boolean(associationController)}
+        onClose={closeAssociationModal}
+        title="Asociar horno"
+        fields={[]}
+        onSubmit={() =>
+          attachKiln(associationController, associationKilnId)
+        }
+        submitLabel="Confirmar vinculación"
+        submitDisabled={!associationKilnId}
+        loading={associationLoading}
+        renderContent={() => (
+          <div className="space-y-4">
+            <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-secondary">
+              Controlador seleccionado:{" "}
+              <span className="break-all font-mono text-content">
+                {associationController?.controllerId}
+              </span>
+            </p>
+            <p className="text-sm text-secondary">
+              Busca un horno por su identificador o cliente, si está disponible.
+            </p>
+            <SearchableCatalogField
+              label="Horno disponible"
+              value={associationKilnId}
+              options={
+                associationController
+                  ? getAvailableKilnOptions(associationController)
+                  : []
+              }
+              onSelect={setAssociationKilnId}
+              placeholder="Selecciona un horno"
+              searchPlaceholder="Buscar por ID o cliente"
+              searchPrompt="Escribe un identificador o nombre de cliente para buscar hornos."
+              noResultsMessage="No encontramos hornos disponibles para esa búsqueda."
+              listboxLabel="Hornos disponibles"
+              getSearchText={(option) => option.searchText}
+              disabled={associationLoading}
+              renderOption={(option) => (
+                <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-content">
+                      {option.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted">
+                      {option.secondary}
+                    </span>
+                  </span>
+                  <Badge
+                    style={operationalStyle[option.operationalStatus]}
+                    text={getOperationalStatusLabel(
+                      option.operationalStatus,
+                    )}
+                  />
+                </span>
+              )}
+            />
+          </div>
+        )}
+      />
+
+      <Modal
         isOpen={isModalOpen}
         onClose={closeModal}
         title={
           modalMode === "create" ? "Crear controlador" : "Editar controlador"
         }
-        fields={controllerFields}
+        fields={modalFields}
         initialData={
           modalMode === "create" ? defaultController : selectedController
         }

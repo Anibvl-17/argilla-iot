@@ -16,9 +16,11 @@ import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
 import HeatingCircuitEditor from "@components/HeatingCircuitEditor";
 import Pagination from "@components/Pagination";
+import { SearchableCatalogField } from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
+  ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
   getControllerActivityLabel,
   getOperationalStatusLabel,
   getSwitchLabel,
@@ -161,7 +163,7 @@ export default function AdminKilns() {
   function openEditView(kiln) {
     setEditingId(kiln.kilnId);
     setForm({
-      name: kiln.name,
+      name: kiln.name || "",
       liters: kiln.liters,
       phaseCount: kiln.phaseCount,
       nominalVoltage: kiln.nominalVoltage,
@@ -187,7 +189,7 @@ export default function AdminKilns() {
     event.preventDefault();
     if (!form.heatingCircuitConfiguration?.elements?.length) {
       setFormError(
-        "El circuito calefactor debe contener al menos un elemento.",
+        "El circuito de resistencias debe contener al menos un elemento.",
       );
       return;
     }
@@ -201,6 +203,7 @@ export default function AdminKilns() {
       nominalCurrent: Number(form.nominalCurrent),
       deliveredAt: form.deliveredAt || null,
     };
+    if (!isAdmin && editingId) delete payload.name;
     const result = editingId
       ? await updateKiln(editingId, payload)
       : await createKiln(payload);
@@ -280,7 +283,7 @@ export default function AdminKilns() {
             {editingId ? "Editar horno" : "Crear horno"}
           </h1>
           <p className="mt-1 text-sm text-secondary">
-            Completa la información técnica y configura el circuito calefactor.
+            Completa la información técnica y configura el circuito de resistencias.
           </p>
         </div>
 
@@ -291,17 +294,19 @@ export default function AdminKilns() {
           <section>
             <h2 className="text-lg font-semibold">Información general</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Nombre">
-                <input
-                  required
-                  minLength={2}
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm({ ...form, name: event.target.value })
-                  }
-                  className={fieldClass}
-                />
-              </Field>
+              {(isAdmin || !editingId) && (
+                <Field label="Nombre">
+                  <input
+                    required
+                    minLength={2}
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm({ ...form, name: event.target.value })
+                    }
+                    className={fieldClass}
+                  />
+                </Field>
+              )}
               <Field label="Capacidad (litros)">
                 <input
                   required
@@ -388,7 +393,7 @@ export default function AdminKilns() {
           </section>
 
           <section className="border-t border-border pt-6">
-            <h2 className="mb-4 text-lg font-semibold">Circuito calefactor</h2>
+            <h2 className="mb-4 text-lg font-semibold">Circuito de resistencias</h2>
             <HeatingCircuitEditor
               value={form.heatingCircuitConfiguration}
               onChange={(heatingCircuitConfiguration) =>
@@ -542,8 +547,23 @@ export default function AdminKilns() {
                 kilns.map((kiln) => {
                   const availableControllers = controllers.filter(
                     (controller) =>
-                      !controller.kiln ||
-                      controller.kiln.kilnId === kiln.kilnId,
+                      (!controller.kiln ||
+                        controller.kiln.kilnId === kiln.kilnId) &&
+                      ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+                        controller.operationalStatus,
+                      ) &&
+                      (!controller.user ||
+                        !kiln.user ||
+                        controller.user.userId === kiln.user.userId),
+                  );
+                  const availableControllerOptions = availableControllers.map(
+                    (controller) => ({
+                      code: controller.controllerId,
+                      name: `...${controller.controllerCode} - ${controller.user?.name || "Sin propietario"}`,
+                      secondary: `${getSwitchLabel(controller.switchType)} ${controller.switchCurrentCapacity} A`,
+                      operationalStatus: controller.operationalStatus,
+                      searchText: `${controller.controllerId} ...${controller.controllerCode} ${controller.user?.name || ""}`,
+                    }),
                   );
                   const circuitSummary = summarizeHeatingCircuit(
                     kiln.heatingCircuitConfiguration,
@@ -560,9 +580,11 @@ export default function AdminKilns() {
                           {kiln.user ? (
                             <>
                               <p>{kiln.user.name}</p>
-                              <p className="mt-1 hidden break-all text-secondary lg:block">
-                                {kiln.user.email}
-                              </p>
+                              {isAdmin && (
+                                <p className="mt-1 hidden break-all text-secondary lg:block">
+                                  {kiln.user.email}
+                                </p>
+                              )}
                             </>
                           ) : (
                             <span className="italic text-muted">
@@ -576,7 +598,7 @@ export default function AdminKilns() {
                                 title="Copiar ID"
                                 onClick={() => {
                                   navigator.clipboard.writeText(
-                                    kiln.controller.controllerCode,
+                                    kiln.controller.controllerId,
                                   );
                                   toast.success("¡ID copiada!");
                                 }}
@@ -608,7 +630,7 @@ export default function AdminKilns() {
                               title="Copiar ID"
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  kiln.controller.controllerCode,
+                                  kiln.controller.controllerId,
                                 );
                                 toast.success("¡ID copiada!");
                               }}
@@ -655,14 +677,16 @@ export default function AdminKilns() {
                                 <LuEye className="text-base" />
                               )}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => openEditView(kiln)}
-                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
-                              title="Editar horno"
-                            >
-                              <LuPencil className="text-base" />
-                            </button>
+                            {(isAdmin || !kiln.user) && (
+                              <button
+                                type="button"
+                                onClick={() => openEditView(kiln)}
+                                className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                                title="Editar horno"
+                              >
+                                <LuPencil className="text-base" />
+                              </button>
+                            )}
                             {isAdmin && (
                               <button
                                 type="button"
@@ -683,12 +707,14 @@ export default function AdminKilns() {
                         <tr className="bg-surface-muted">
                           <td colSpan={7} className="px-6 py-5">
                             <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                              <div>
-                                <dt className="text-xs font-bold uppercase text-muted">
-                                  Nombre
-                                </dt>
-                                <dd className="mt-1">{kiln.name}</dd>
-                              </div>
+                              {isAdmin && (
+                                <div>
+                                  <dt className="text-xs font-bold uppercase text-muted">
+                                    Nombre
+                                  </dt>
+                                  <dd className="mt-1">{kiln.name}</dd>
+                                </div>
+                              )}
                               <div className="lg:hidden">
                                 <dt className="text-xs font-bold uppercase text-muted">
                                   Capacidad
@@ -774,16 +800,18 @@ export default function AdminKilns() {
                               </div>
                               {kiln.controller && (
                                 <>
-                                  <div>
-                                    <dt className="text-xs font-bold uppercase text-muted">
-                                      Actividad
-                                    </dt>
-                                    <dd className="mt-1">
-                                      {getControllerActivityLabel(
-                                        kiln.controller.activityStatus,
-                                      )}
-                                    </dd>
-                                  </div>
+                                  {isAdmin && (
+                                    <div>
+                                      <dt className="text-xs font-bold uppercase text-muted">
+                                        Actividad
+                                      </dt>
+                                      <dd className="mt-1">
+                                        {getControllerActivityLabel(
+                                          kiln.controller.activityStatus,
+                                        )}
+                                      </dd>
+                                    </div>
+                                  )}
                                   <div>
                                     <dt className="text-xs font-bold uppercase text-muted">
                                       Switch
@@ -798,40 +826,56 @@ export default function AdminKilns() {
                                 </>
                               )}
                             </dl>
-                            <div className="mt-5 grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-2 lg:grid-cols-3">
+                            {(isAdmin || !kiln.controller) && (
+                              <div className="mt-5 grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-2 lg:grid-cols-3">
                               {kiln.controller ? (
-                                <button
-                                  type="button"
-                                  onClick={() => detach(kiln)}
-                                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
-                                >
-                                  <LuUnlink className="text-base" /> Desvincular
-                                  controlador
-                                </button>
-                              ) : (
-                                <label className="w-full text-sm font-medium text-muted">
-                                  Asociar controlador
-                                  <select
-                                    defaultValue=""
-                                    onChange={(event) =>
-                                      attach(kiln, event.target.value)
-                                    }
-                                    className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-content"
+                                isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => detach(kiln)}
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
                                   >
-                                    <option value="">
-                                      Selecciona un controlador
-                                    </option>
-                                    {availableControllers.map((controller) => (
-                                      <option
-                                        key={controller.controllerId}
-                                        value={controller.controllerId}
-                                      >
-                                        ...{controller.controllerCode} -{" "}
-                                        {controller.switchCurrentCapacity} A
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
+                                    <LuUnlink className="text-base" /> Desvincular
+                                    controlador
+                                  </button>
+                                )
+                              ) : (
+                                <SearchableCatalogField
+                                  label="Asociar controlador"
+                                  value=""
+                                  options={availableControllerOptions}
+                                  onSelect={(controllerId) =>
+                                    attach(kiln, controllerId)
+                                  }
+                                  placeholder="Selecciona un controlador"
+                                  searchPlaceholder="Buscar por ID o cliente"
+                                  searchPrompt="Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible."
+                                  noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
+                                  listboxLabel="Controladores disponibles"
+                                  getSearchText={(option) => option.searchText}
+                                  renderOption={(option) => (
+                                    <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                                      <span className="min-w-0">
+                                        <span className="block truncate font-medium text-content">
+                                          {option.name}
+                                        </span>
+                                        <span className="mt-0.5 block truncate text-xs text-muted">
+                                          {option.secondary}
+                                        </span>
+                                      </span>
+                                      <Badge
+                                        style={
+                                          operationalStyle[
+                                            option.operationalStatus
+                                          ]
+                                        }
+                                        text={getOperationalStatusLabel(
+                                          option.operationalStatus,
+                                        )}
+                                      />
+                                    </span>
+                                  )}
+                                />
                               )}
                               {isAdmin &&
                                 (kiln.user ? (
@@ -868,14 +912,17 @@ export default function AdminKilns() {
                                     </select>
                                   </label>
                                 ))}
-                              <Link
-                                to={`/management/kilns/${kiln.kilnId}/history`}
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
-                              >
-                                <LuHistory className="text-base" /> Ver
-                                historial
-                              </Link>
-                            </div>
+                              {isAdmin && (
+                                <Link
+                                  to={`/management/kilns/${kiln.kilnId}/history`}
+                                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                >
+                                  <LuHistory className="text-base" /> Ver
+                                  historial
+                                </Link>
+                              )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )}

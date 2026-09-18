@@ -20,6 +20,8 @@ import KilnDetails from "@pages/KilnDetails";
 import SimulatorPanel from "./pages/SimulatorPanel";
 import AdminKilnHistory from "@pages/AdminKilnHistory";
 import Profile from "@pages/Profile";
+import SupportTickets from "@pages/SupportTickets";
+import SupportTicketDetails from "@pages/SupportTicketDetails";
 
 const router = createBrowserRouter([
   {
@@ -59,7 +61,35 @@ const router = createBrowserRouter([
           },
           {
             path: "simulator",
-            element: <SimulatorPanel />,
+            element: (
+              <ProtectedRoute allowedRoles={["ADMIN", "CLIENT"]}>
+                <SimulatorPanel />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "support",
+            element: <SupportTickets />,
+          },
+          {
+            path: "support/requests",
+            element: (
+              <ProtectedRoute allowedRoles={["CLIENT"]}>
+                <SupportTickets />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "support/assigned",
+            element: (
+              <ProtectedRoute allowedRoles={["TECHNICIAN"]}>
+                <SupportTickets />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "support/:ticketId",
+            element: <SupportTicketDetails />,
           },
           {
             path: "profile",
@@ -75,7 +105,11 @@ const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <AdminHome />,
+                element: (
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminHome />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: "kilns",
@@ -83,7 +117,11 @@ const router = createBrowserRouter([
               },
               {
                 path: "kilns/:kilnId/history",
-                element: <AdminKilnHistory />,
+                element: (
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminKilnHistory />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: "controllers",
@@ -91,7 +129,11 @@ const router = createBrowserRouter([
               },
               {
                 path: "users",
-                element: <AdminUsers />,
+                element: (
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                ),
               },
             ],
           },
