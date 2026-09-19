@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { userContactValidationShape } from "./userContact.validation.js";
 
 export const registerValidation = z
   .object({
@@ -14,8 +13,6 @@ export const registerValidation = z
       .string("Debe incluir contraseña de tipo texto")
       .min(6, "La contraseña debe tener al menos 6 caracteres")
       .max(128, "La contraseña debe tener máximo 128 caracteres"),
-    ...userContactValidationShape,
-    countryId: userContactValidationShape.countryId.unwrap().unwrap(),
   })
   .strict();
 

@@ -20,9 +20,16 @@ function serviceError(code, message) {
   return error;
 }
 
-export async function createUser(data) {
+export async function createUser(data, { allowIncompleteContact = false } = {}) {
   const passwordHash = await bcrypt.hash(data.password, HASH_ROUNDS);
-  const contactData = await normalizeUserContactData(data, {}, prisma);
+  const contactData = allowIncompleteContact
+    ? {
+        phone: null,
+        countryId: null,
+        communeId: null,
+        addressLine: null,
+      }
+    : await normalizeUserContactData(data, {}, prisma);
   const user = await prisma.user.create({
     data: {
       email: data.email,

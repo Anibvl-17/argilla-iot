@@ -6,35 +6,16 @@ import { register } from "@services/auth.service";
 import { toast } from "sonner";
 import FieldError from "@components/FieldError";
 import PasswordInput from "@components/PasswordInput";
-import UserContactFields from "@components/UserContactFields";
-import useUserContactCatalog from "@hooks/useUserContactCatalog";
 import { hasFormError } from "../utils/formError";
-import { prepareUserContactPayload } from "../utils/userContact";
-
-const emptyContact = {
-  countryId: null,
-  regionId: null,
-  communeId: null,
-  addressLine: "",
-  phoneCountryCode: "CL",
-  phone: "",
-};
 
 const Register = ({ setMode }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [contact, setContact] = useState(emptyContact);
   const [loading, setLoading] = useState(false);
   const { loading: authLoading, user } = useAuth();
   const { error, errorData, handleInputChange } = useAuthForm();
-  const {
-    catalog,
-    loading: catalogLoading,
-    error: catalogError,
-    retry: retryCatalog,
-  } = useUserContactCatalog();
 
   // Evita cargar formulario en caso que haya un usuario con sesión iniciada
   if (authLoading) return null;
@@ -59,7 +40,6 @@ const Register = ({ setMode }) => {
         name,
         email,
         password,
-        ...prepareUserContactPayload(contact, catalog),
       });
 
       if (result.success) {
@@ -98,6 +78,7 @@ const Register = ({ setMode }) => {
             type="text"
             id="name"
             name="name"
+            required
             aria-invalid={hasFormError(error, "name") || undefined}
             aria-describedby={
               hasFormError(error, "name") ? "name-error" : undefined
@@ -121,6 +102,7 @@ const Register = ({ setMode }) => {
             type="email"
             id="email"
             name="email"
+            required
             aria-invalid={hasFormError(error, "email") || undefined}
             aria-describedby={
               hasFormError(error, "email") ? "email-error" : undefined
@@ -143,6 +125,7 @@ const Register = ({ setMode }) => {
           <PasswordInput
             id="password"
             name="password"
+            required
             aria-invalid={hasFormError(error, "password") || undefined}
             aria-describedby={
               hasFormError(error, "password") ? "password-error" : undefined
@@ -167,6 +150,7 @@ const Register = ({ setMode }) => {
           <PasswordInput
             id="confirm-password"
             name="confirmPassword"
+            required
             visibilityLabel="confirmación de contraseña"
             aria-invalid={hasFormError(error, "confirmPassword") || undefined}
             aria-describedby={
@@ -187,26 +171,11 @@ const Register = ({ setMode }) => {
           />
         </div>
 
-        <div className="border-t border-border pt-4">
-          <UserContactFields
-            value={contact}
-            onChange={setContact}
-            error={error}
-            onClearError={(field) =>
-              handleInputChange({ target: { name: field } })
-            }
-            catalog={catalog}
-            catalogLoading={catalogLoading}
-            catalogError={catalogError}
-            onRetryCatalog={retryCatalog}
-          />
-        </div>
-
         <FieldError error={error} />
 
         <button
           type="submit"
-          disabled={loading || catalogLoading || !catalog}
+          disabled={loading}
           className="w-full bg-primary text-on-action py-3 rounded-lg mt-4 font-medium transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed "
         >
           {loading ? "Cargando..." : "Crear cuenta"}

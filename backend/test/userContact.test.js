@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CHILE_REGIONS, COUNTRIES } from "../src/constants/userContact.constants.js";
+import { prisma } from "../src/config/prisma.js";
+import { createUser } from "../src/services/user.service.js";
 import {
   normalizeInternationalPhone,
   normalizeLegacyInternationalPhone,
@@ -8,6 +10,7 @@ import {
   normalizeUserContactData,
 } from "../src/utils/userContact.js";
 import { registerValidation } from "../src/validations/auth.validation.js";
+import { createUserValidation } from "../src/validations/user.validation.js";
 
 const countries = new Map([
   [1, { countryId: 1, isoCode: "CL", name: "Chile" }],
@@ -150,14 +153,14 @@ test("legacy phone backfill and formatted search remain supported", () => {
   assert.equal(normalizePhoneSearch("María"), "");
 });
 
-test("registration requires a numeric country id and validates optional contact", () => {
+test("public registration accepts only the basic identity fields", () => {
   assert.equal(
     registerValidation.safeParse({
       name: "María Pérez",
       email: "maria@example.com",
       password: "Password123!",
     }).success,
-    false,
+    true,
   );
   assert.equal(
     registerValidation.safeParse({
@@ -165,10 +168,51 @@ test("registration requires a numeric country id and validates optional contact"
       email: "maria@example.com",
       password: "Password123!",
       countryId: 1,
-      regionId: 8,
-      communeId: 101,
-      phoneCountryCode: "us",
     }).success,
-    true,
+    false,
+  );
+});
+
+test("public user creation persists an incomplete contact explicitly", async (t) => {
+  let createdData;
+  const originalCreate = prisma.user.create;
+  prisma.user.create = async ({ data }) => {
+    createdData = data;
+    return {
+      userId: 99,
+      ...data,
+      country: null,
+      commune: null,
+    };
+  };
+  t.after(() => {
+    prisma.user.create = originalCreate;
+  });
+
+  await createUser(
+    {
+      name: "María Pérez",
+      email: "maria@example.com",
+      password: "Password123!",
+      role: "CLIENT",
+    },
+    { allowIncompleteContact: true },
+  );
+
+  assert.equal(createdData.countryId, null);
+  assert.equal(createdData.communeId, null);
+  assert.equal(createdData.phone, null);
+  assert.equal(createdData.addressLine, null);
+});
+
+test("administrative user creation still requires a country", () => {
+  assert.equal(
+    createUserValidation.safeParse({
+      name: "María Pérez",
+      email: "maria@example.com",
+      password: "Password123!",
+      role: "CLIENT",
+    }).success,
+    false,
   );
 });

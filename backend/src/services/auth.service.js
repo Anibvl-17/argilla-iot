@@ -34,5 +34,8 @@ export async function login(email, password) {
 }
 
 export async function register(data) {
-  return createUser({ ...data, role: "CLIENT" });
+  return createUser(
+    { ...data, role: "CLIENT" },
+    { allowIncompleteContact: true },
+  );
 }
