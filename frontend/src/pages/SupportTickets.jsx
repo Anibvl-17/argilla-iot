@@ -674,7 +674,7 @@ export default function SupportTickets() {
       : mode === "client-requests"
         ? "Revisa el estado y la resolución de tus solicitudes."
         : mode === "technician-open"
-          ? "Solicitudes abiertas disponibles para tomar."
+          ? "Revisa las solicitudes disponibles para tomar."
           : mode === "technician-assigned"
             ? "Solicitudes que están o estuvieron a tu cargo."
             : "Gestión centralizada de solicitudes y diagnósticos.";
