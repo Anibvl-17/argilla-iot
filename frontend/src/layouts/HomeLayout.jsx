@@ -40,7 +40,12 @@ export default function HomeLayout() {
           {isClient && (
             <>
               <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
-              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
+              <SidebarItem
+                path="/support"
+                title="Soporte"
+                icon={LuLifeBuoy}
+                matchDescendants
+              />
             </>
           )}
 
@@ -67,14 +72,24 @@ export default function HomeLayout() {
                 title="Controladores"
                 icon={LuCircuitBoard}
               />
-              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
+              <SidebarItem
+                path="/support"
+                title="Soporte"
+                icon={LuLifeBuoy}
+                matchDescendants
+              />
             </>
           )}
           {isTechnician && (
             <>
               <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
               <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
-              <SidebarItem path="/support" title="Soporte" icon={LuLifeBuoy} />
+              <SidebarItem
+                path="/support"
+                title="Soporte"
+                icon={LuLifeBuoy}
+                matchDescendants
+              />
             </>
           )}
           {(isAdmin || isClient) && (

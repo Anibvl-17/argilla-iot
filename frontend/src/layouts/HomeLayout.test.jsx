@@ -41,4 +41,18 @@ describe("HomeLayout", () => {
     expect(screen.getByRole("link", { name: /Controladores/ })).toHaveAttribute("href", "/management/controllers");
     expect(screen.queryByRole("link", { name: /Simulador/ })).not.toBeInTheDocument();
   });
+
+  it("keeps support highlighted while viewing a ticket detail", () => {
+    authState.user = { id: 2, name: "Técnico", role: "TECHNICIAN" };
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <HomeLayout />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /Soporte/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
 });

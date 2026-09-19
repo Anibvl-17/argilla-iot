@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 
-export const SidebarItem = ({ path, title, icon: Icon }) => {
+export const SidebarItem = ({ path, title, icon: Icon, matchDescendants }) => {
   const location = useLocation();
-  let isActive = (path) => location.pathname === path;
+  let isActive = (itemPath) =>
+    location.pathname === itemPath ||
+    (matchDescendants && location.pathname.startsWith(`${itemPath}/`));
 
   if (
     (path === "/management" || path === "/kilns") &&
