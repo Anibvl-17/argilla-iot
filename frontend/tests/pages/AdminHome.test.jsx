@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AdminHome } from "./AdminHome";
+import { AdminHome } from "@pages/AdminHome";
 
 const { mocks } = vi.hoisted(() => ({
   mocks: {

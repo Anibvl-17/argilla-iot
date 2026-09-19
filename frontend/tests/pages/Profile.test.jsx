@@ -1,6 +1,12 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Profile from "./Profile";
+import Profile from "@pages/Profile";
 
 const mocks = vi.hoisted(() => ({
   setUser: vi.fn(),

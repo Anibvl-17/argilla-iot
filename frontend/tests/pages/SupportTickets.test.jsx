@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import SupportTickets from "./SupportTickets";
+import SupportTickets from "@pages/SupportTickets";
 
 const { authState, mocks } = vi.hoisted(() => ({
   authState: { user: { id: 1, name: "Cliente", role: "CLIENT" } },
@@ -222,9 +222,9 @@ describe("SupportTickets", () => {
       );
     }
     for (const heading of ["ID", "Solicitud", "Acciones"]) {
-      expect(screen.getByRole("columnheader", { name: heading })).not.toHaveClass(
-        "hidden",
-      );
+      expect(
+        screen.getByRole("columnheader", { name: heading }),
+      ).not.toHaveClass("hidden");
     }
     expect(
       screen.queryByRole("columnheader", { name: "Horno" }),

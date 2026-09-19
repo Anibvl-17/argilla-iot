@@ -7,8 +7,8 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import AdminControllers from "./AdminControllers";
-import AdminKilns from "./AdminKilns";
+import AdminControllers from "@pages/AdminControllers";
+import AdminKilns from "@pages/AdminKilns";
 
 const { authState, mocks } = vi.hoisted(() => ({
   authState: { user: { id: 2, name: "Técnico", role: "TECHNICIAN" } },
@@ -303,7 +303,9 @@ describe("technician equipment management", () => {
     const ownedControllerRow = screen
       .getByRole("button", { name: "...fedcba" })
       .closest("tr");
-    expect(within(ownedControllerRow).getByText("Horno #1")).toBeInTheDocument();
+    expect(
+      within(ownedControllerRow).getByText("Horno #1"),
+    ).toBeInTheDocument();
     expect(within(ownedControllerRow).getByText("-")).toHaveClass(
       "italic",
       "text-muted",
@@ -330,9 +332,9 @@ describe("technician equipment management", () => {
         "Busca un horno por su identificador o cliente, si está disponible.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Controlador seleccionado:").closest("p")).toHaveTextContent(
-      "abcdef",
-    );
+    expect(
+      screen.getByText("Controlador seleccionado:").closest("p"),
+    ).toHaveTextContent("abcdef");
     expect(
       screen.getByRole("button", { name: "Cancelar" }),
     ).toBeInTheDocument();

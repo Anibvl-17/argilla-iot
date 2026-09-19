@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import FloatingDropdown from "./FloatingDropdown";
+import FloatingDropdown from "@components/FloatingDropdown";
 
 function DropdownHarness({ constrained = false }) {
   const anchorRef = useRef(null);

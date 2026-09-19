@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import SupportTicketDetails from "./SupportTicketDetails";
+import SupportTicketDetails from "@pages/SupportTicketDetails";
 
 const { authState, mocks } = vi.hoisted(() => ({
   authState: { user: { id: 2, name: "Técnico", role: "TECHNICIAN" } },
@@ -228,9 +228,11 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
-    const actionsSection = (await screen.findByRole("heading", {
-      name: "Acciones",
-    })).closest("section");
+    const actionsSection = (
+      await screen.findByRole("heading", {
+        name: "Acciones",
+      })
+    ).closest("section");
     const claimButton = within(actionsSection).getByRole("button", {
       name: "Tomar ticket",
     });
@@ -311,7 +313,9 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Sin ciclos registrados.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Sin ciclos registrados."),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("columnheader", { name: "Inicio" }),
     ).not.toBeInTheDocument();
@@ -392,9 +396,11 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
-    const actionsSection = (await screen.findByRole("heading", {
-      name: "Acciones",
-    })).closest("section");
+    const actionsSection = (
+      await screen.findByRole("heading", {
+        name: "Acciones",
+      })
+    ).closest("section");
     expect(
       within(actionsSection).getByText("Sin mantenimientos registrados."),
     ).toBeInTheDocument();
@@ -405,10 +411,7 @@ describe("SupportTicketDetails", () => {
     const maintenanceButton = within(
       maintenanceHeading.parentElement,
     ).getByRole("button", { name: "Registrar mantenimiento" });
-    expect(maintenanceButton).toHaveClass(
-      "w-full",
-      "sm:w-auto",
-    );
+    expect(maintenanceButton).toHaveClass("w-full", "sm:w-auto");
     expect(
       within(actionsSection)
         .getByText("Sin mantenimientos registrados.")
@@ -497,13 +500,10 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
+    expect(await screen.findByText("Ajuste de terminales")).toBeInTheDocument();
     expect(
-      await screen.findByText("Ajuste de terminales"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Ajuste de terminales").closest("article")).toHaveClass(
-      "sm:grid-cols-[minmax(0,1fr)_auto]",
-      "sm:items-center",
-    );
+      screen.getByText("Ajuste de terminales").closest("article"),
+    ).toHaveClass("sm:grid-cols-[minmax(0,1fr)_auto]", "sm:items-center");
     expect(
       screen.queryByText("Se ajustaron conexiones del tablero."),
     ).not.toBeInTheDocument();

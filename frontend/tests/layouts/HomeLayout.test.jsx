@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import HomeLayout from "./HomeLayout";
+import HomeLayout from "@layouts/HomeLayout";
 
 const { authState } = vi.hoisted(() => ({
   authState: { user: { id: 1, name: "Administradora", role: "ADMIN" } },
@@ -36,10 +36,20 @@ describe("HomeLayout", () => {
     );
 
     expect(screen.getByRole("link", { name: /Soporte/ })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Usuarios/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Hornos/ })).toHaveAttribute("href", "/management/kilns");
-    expect(screen.getByRole("link", { name: /Controladores/ })).toHaveAttribute("href", "/management/controllers");
-    expect(screen.queryByRole("link", { name: /Simulador/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Usuarios/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Hornos/ })).toHaveAttribute(
+      "href",
+      "/management/kilns",
+    );
+    expect(screen.getByRole("link", { name: /Controladores/ })).toHaveAttribute(
+      "href",
+      "/management/controllers",
+    );
+    expect(
+      screen.queryByRole("link", { name: /Simulador/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps support highlighted while viewing a ticket detail", () => {

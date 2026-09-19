@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CHILE_REGIONS, COUNTRIES } from "../src/constants/userContact.constants.js";
+import {
+  CHILE_REGIONS,
+  COUNTRIES,
+} from "../src/constants/userContact.constants.js";
 import { prisma } from "../src/config/prisma.js";
 import { createUser } from "../src/services/user.service.js";
 import {
@@ -18,11 +21,18 @@ const countries = new Map([
 ]);
 const communes = new Map([
   [101, { communeId: 101, regionId: 8, region: { regionId: 8, countryId: 1 } }],
-  [102, { communeId: 102, regionId: 13, region: { regionId: 13, countryId: 1 } }],
+  [
+    102,
+    { communeId: 102, regionId: 13, region: { regionId: 13, countryId: 1 } },
+  ],
 ]);
 const catalogClient = {
-  country: { findUnique: async ({ where }) => countries.get(where.countryId) ?? null },
-  commune: { findUnique: async ({ where }) => communes.get(where.communeId) ?? null },
+  country: {
+    findUnique: async ({ where }) => countries.get(where.countryId) ?? null,
+  },
+  commune: {
+    findUnique: async ({ where }) => communes.get(where.communeId) ?? null,
+  },
 };
 
 test("the seed source contains all supported countries and Chilean territory", () => {
@@ -34,20 +44,35 @@ test("the seed source contains all supported countries and Chilean territory", (
 });
 
 test("national Chilean, Argentinian and Peruvian phones become E.164", () => {
-  assert.equal(normalizeInternationalPhone("9 8765 4321", "CL"), "+56987654321");
-  assert.equal(normalizeInternationalPhone("11 1234-5678", "AR"), "+541112345678");
-  assert.equal(normalizeInternationalPhone("987 654 321", "PE"), "+51987654321");
+  assert.equal(
+    normalizeInternationalPhone("9 8765 4321", "CL"),
+    "+56987654321",
+  );
+  assert.equal(
+    normalizeInternationalPhone("11 1234-5678", "AR"),
+    "+541112345678",
+  );
+  assert.equal(
+    normalizeInternationalPhone("987 654 321", "PE"),
+    "+51987654321",
+  );
 });
 
 test("an explicit international phone does not depend on an address country", () => {
-  assert.equal(normalizeInternationalPhone("+54 11 1234 5678", "CL"), "+541112345678");
+  assert.equal(
+    normalizeInternationalPhone("+54 11 1234 5678", "CL"),
+    "+541112345678",
+  );
 });
 
 test("a Chilean user requires a valid region and commune relation", async () => {
-  await assert.rejects(normalizeUserContactData({ countryId: 1 }, {}, catalogClient), {
-    code: "INVALID_USER_CONTACT",
-    field: "regionId",
-  });
+  await assert.rejects(
+    normalizeUserContactData({ countryId: 1 }, {}, catalogClient),
+    {
+      code: "INVALID_USER_CONTACT",
+      field: "regionId",
+    },
+  );
   await assert.rejects(
     normalizeUserContactData({ countryId: 1, regionId: 8 }, {}, catalogClient),
     { code: "INVALID_USER_CONTACT", field: "communeId" },
@@ -112,10 +137,13 @@ test("an international user keeps only the country relation", async () => {
 });
 
 test("an incomplete legacy user must choose a country on profile edit", async () => {
-  await assert.rejects(normalizeUserContactData({ addressLine: null }, {}, catalogClient), {
-    code: "INVALID_USER_CONTACT",
-    field: "countryId",
-  });
+  await assert.rejects(
+    normalizeUserContactData({ addressLine: null }, {}, catalogClient),
+    {
+      code: "INVALID_USER_CONTACT",
+      field: "countryId",
+    },
+  );
 });
 
 test("phone country remains independent from the residence country", async () => {
@@ -147,7 +175,10 @@ test("invalid and context-free national phones are rejected with a field", () =>
 });
 
 test("legacy phone backfill and formatted search remain supported", () => {
-  assert.equal(normalizeLegacyInternationalPhone("+56 9 8765 4321"), "+56987654321");
+  assert.equal(
+    normalizeLegacyInternationalPhone("+56 9 8765 4321"),
+    "+56987654321",
+  );
   assert.equal(normalizeLegacyInternationalPhone("987654321"), null);
   assert.equal(normalizePhoneSearch("+56 9 8765-4321"), "+56987654321");
   assert.equal(normalizePhoneSearch("María"), "");
