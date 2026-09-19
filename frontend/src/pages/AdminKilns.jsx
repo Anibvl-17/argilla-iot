@@ -618,7 +618,7 @@ export default function AdminKilns() {
                                 title="Copiar ID"
                                 onClick={() => {
                                   navigator.clipboard.writeText(
-                                    kiln.controller.controllerId,
+                                    kiln.controller.controllerCode,
                                   );
                                   toast.success("¡ID copiada!");
                                 }}
@@ -650,7 +650,7 @@ export default function AdminKilns() {
                               title="Copiar ID"
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  kiln.controller.controllerId,
+                                  kiln.controller.controllerCode,
                                 );
                                 toast.success("¡ID copiada!");
                               }}

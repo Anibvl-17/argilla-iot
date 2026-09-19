@@ -568,7 +568,7 @@ export default function AdminControllers() {
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(
-                              controller.controllerId,
+                              controller.controllerCode,
                             );
                             toast.success("¡ID copiada!");
                           }}
@@ -977,7 +977,7 @@ export default function AdminControllers() {
             <p className="text-sm text-secondary">
               Controlador seleccionado:{" "}
               <span className="break-all font-mono text-content">
-                {associationController?.controllerId.slice(-6)}
+                ...{associationController?.controllerId.slice(-6)}
               </span>
             </p>
             <p className="text-sm text-secondary">
