@@ -265,7 +265,7 @@ export default function Profile() {
               onClick={() => setIsPasswordSectionOpen((current) => !current)}
               className="flex w-full items-center justify-between rounded-lg py-2 text-left text-lg font-semibold text-content transition-colors hover:text-accent"
             >
-              Seguridad y contraseña
+              Modificar contraseña
               <svg
                 aria-hidden="true"
                 className={`h-5 w-5 text-muted transition-transform ${
@@ -350,7 +350,7 @@ export default function Profile() {
       </section>
 
       <section className="rounded-2xl border border-danger-border bg-danger-soft p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-danger">Peligro</h2>
+        <h2 className="text-lg font-bold text-danger">Zona de Peligro</h2>
         <p className="mt-1 text-sm text-secondary">
           Estas acciones afectan tu acceso y requieren confirmación.
         </p>

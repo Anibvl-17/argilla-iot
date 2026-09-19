@@ -69,7 +69,7 @@ describe("Profile page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Tu cuenta fue creada el/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Peligro" }),
+      screen.getByRole("heading", { name: "Zona de Peligro" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Desactivar mi cuenta" }),
