@@ -1,12 +1,7 @@
-import { parsePhoneNumberWithError } from "libphonenumber-js/max";
-import {
-  CHILE_COUNTRY_CODE,
-  CHILE_COMMUNE_REGION_BY_CODE,
-  CHILE_REGION_CODES,
-  COUNTRY_CODES,
-} from "../constants/userContact.constants.js";
+import { getCountries, parsePhoneNumberWithError } from "libphonenumber-js/max";
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+const PHONE_COUNTRY_CODES = new Set(getCountries());
 
 export class UserContactError extends Error {
   constructor(field, message) {
@@ -70,36 +65,29 @@ export function normalizePhoneSearch(value) {
   return /\d/.test(compact) ? compact : "";
 }
 
-export function normalizeUserContactData(data, current = {}) {
+export async function normalizeUserContactData(data, current = {}, client) {
+  if (!client) throw new Error("Se requiere un cliente de catálogo geográfico");
   const updates = {};
   const next = {
     phone: current.phone ?? null,
-    countryCode: current.countryCode ?? null,
-    regionCode: current.regionCode ?? null,
-    communeCode: current.communeCode ?? null,
+    countryId: current.countryId ?? null,
+    regionId: current.regionId ?? current.commune?.regionId ?? null,
+    communeId: current.communeId ?? null,
     addressLine: current.addressLine ?? null,
   };
 
-  if (hasOwn(data, "countryCode")) {
-    const countryCode = data.countryCode?.trim().toUpperCase() || null;
-    if (countryCode && !COUNTRY_CODES.has(countryCode)) {
-      throw new UserContactError(
-        "countryCode",
-        "El país seleccionado no es válido",
-      );
-    }
-    updates.countryCode = countryCode;
-    next.countryCode = countryCode;
+  if (hasOwn(data, "countryId")) {
+    updates.countryId = data.countryId;
+    next.countryId = data.countryId;
   }
 
   const phoneCountryCode = data.phoneCountryCode?.trim().toUpperCase() || null;
-  if (phoneCountryCode && !COUNTRY_CODES.has(phoneCountryCode)) {
+  if (phoneCountryCode && !PHONE_COUNTRY_CODES.has(phoneCountryCode)) {
     throw new UserContactError(
       "phoneCountryCode",
       "El país seleccionado para el teléfono no es válido",
     );
   }
-
   if (hasOwn(data, "addressLine")) {
     const addressLine =
       data.addressLine === null ? null : data.addressLine.trim();
@@ -113,97 +101,68 @@ export function normalizeUserContactData(data, current = {}) {
     next.addressLine = addressLine;
   }
 
-  if (hasOwn(data, "regionCode")) {
-    const regionCode = data.regionCode?.trim() || null;
-    updates.regionCode = regionCode;
-    next.regionCode = regionCode;
+  if (hasOwn(data, "regionId")) {
+    next.regionId = data.regionId;
   }
 
-  if (hasOwn(data, "communeCode")) {
-    const communeCode = data.communeCode?.trim() || null;
-    updates.communeCode = communeCode;
-    next.communeCode = communeCode;
+  if (hasOwn(data, "communeId")) {
+    updates.communeId = data.communeId;
+    next.communeId = data.communeId;
   } else if (
-    hasOwn(data, "regionCode") &&
-    next.regionCode !== (current.regionCode ?? null)
+    hasOwn(data, "regionId") &&
+    next.regionId !== (current.regionId ?? current.commune?.regionId ?? null)
   ) {
-    updates.communeCode = null;
-    next.communeCode = null;
+    updates.communeId = null;
+    next.communeId = null;
   }
 
-  if (next.countryCode !== CHILE_COUNTRY_CODE) {
-    next.regionCode = null;
-    next.communeCode = null;
-    if (
-      hasOwn(data, "regionCode") ||
-      (hasOwn(data, "countryCode") && current.regionCode)
-    ) {
-      updates.regionCode = null;
-    }
-    if (
-      hasOwn(data, "communeCode") ||
-      (hasOwn(data, "countryCode") && current.communeCode)
-    ) {
-      updates.communeCode = null;
+  if (!next.countryId) {
+    throw new UserContactError(
+      "countryId",
+      "Debe seleccionar un país",
+    );
+  }
+
+  const country = await client.country.findUnique({
+    where: { countryId: next.countryId },
+  });
+  if (!country) {
+    throw new UserContactError("countryId", "El país seleccionado no es válido");
+  }
+
+  if (country.isoCode !== "CL") {
+    next.regionId = null;
+    next.communeId = null;
+    if (hasOwn(data, "communeId") || current.communeId) {
+      updates.communeId = null;
     }
   } else {
-    if (next.regionCode && !CHILE_REGION_CODES.has(next.regionCode)) {
+    if (!next.regionId) {
+      throw new UserContactError("regionId", "Debe seleccionar una región");
+    }
+    if (!next.communeId) {
+      throw new UserContactError("communeId", "Debe seleccionar una comuna");
+    }
+
+    const commune = await client.commune.findUnique({
+      where: { communeId: next.communeId },
+      include: { region: true },
+    });
+    if (!commune) {
+      throw new UserContactError("communeId", "La comuna seleccionada no es válida");
+    }
+    if (commune.regionId !== next.regionId) {
       throw new UserContactError(
-        "regionCode",
-        "La región seleccionada no es válida",
+        "communeId",
+        "La comuna seleccionada no pertenece a la región indicada",
       );
     }
-
-    if (next.communeCode) {
-      const communeRegion = CHILE_COMMUNE_REGION_BY_CODE.get(next.communeCode);
-      if (!communeRegion) {
-        throw new UserContactError(
-          "communeCode",
-          "La comuna seleccionada no es válida",
-        );
-      }
-      if (!next.regionCode) {
-        throw new UserContactError(
-          "regionCode",
-          "Debe seleccionar una región para la comuna indicada",
-        );
-      }
-      if (communeRegion !== next.regionCode) {
-        throw new UserContactError(
-          "communeCode",
-          "La comuna seleccionada no pertenece a la región indicada",
-        );
-      }
+    if (commune.region.countryId !== country.countryId) {
+      throw new UserContactError(
+        "communeId",
+        "La comuna seleccionada no pertenece al país indicado",
+      );
     }
-  }
-
-  if (next.addressLine && !next.countryCode) {
-    throw new UserContactError(
-      "countryCode",
-      "Debe seleccionar un país cuando ingresa una dirección",
-    );
-  }
-
-  if (
-    next.addressLine &&
-    next.countryCode === CHILE_COUNTRY_CODE &&
-    !next.regionCode
-  ) {
-    throw new UserContactError(
-      "regionCode",
-      "Debe seleccionar una región para una dirección chilena",
-    );
-  }
-
-  if (
-    next.addressLine &&
-    next.countryCode === CHILE_COUNTRY_CODE &&
-    !next.communeCode
-  ) {
-    throw new UserContactError(
-      "communeCode",
-      "Debe seleccionar una comuna para una dirección chilena",
-    );
   }
 
   if (hasOwn(data, "phone")) {

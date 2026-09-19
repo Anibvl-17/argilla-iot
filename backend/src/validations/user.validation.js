@@ -18,6 +18,7 @@ export const createUserValidation = z
     email: z.email("Debe ser un correo electrónico válido"),
     password,
     ...userContactValidationShape,
+    countryId: userContactValidationShape.countryId.unwrap().unwrap(),
     role: z.enum([ROLES.ADMIN, ROLES.TECHNICIAN, ROLES.CLIENT]).optional(),
   })
   .strict();

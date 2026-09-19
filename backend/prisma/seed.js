@@ -1,6 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import "dotenv/config";
+import {
+  CHILE_REGIONS,
+  COUNTRIES,
+} from "../src/constants/userContact.constants.js";
 
 const prisma = new PrismaClient();
 const PASSWORD_ROUNDS = 10;
@@ -363,17 +367,78 @@ const kilnDefaults = {
   },
 };
 
-async function createUserIfMissing({ email, name, role, password, phone = null }) {
+async function seedGeographicCatalog() {
+  const countriesByIsoCode = new Map();
+  for (const country of COUNTRIES) {
+    const stored = await prisma.country.upsert({
+      where: { isoCode: country.code },
+      update: { name: country.name },
+      create: { isoCode: country.code, name: country.name },
+    });
+    countriesByIsoCode.set(stored.isoCode, stored);
+  }
+
+  const chile = countriesByIsoCode.get("CL");
+  let defaultCommune = null;
+  for (const region of CHILE_REGIONS) {
+    const storedRegion = await prisma.region.upsert({
+      where: {
+        countryId_code: { countryId: chile.countryId, code: region.code },
+      },
+      update: { name: region.name },
+      create: {
+        countryId: chile.countryId,
+        code: region.code,
+        name: region.name,
+      },
+    });
+
+    for (const commune of region.communes) {
+      const storedCommune = await prisma.commune.upsert({
+        where: { code: commune.code },
+        update: { regionId: storedRegion.regionId, name: commune.name },
+        create: {
+          regionId: storedRegion.regionId,
+          code: commune.code,
+          name: commune.name,
+        },
+      });
+      if (commune.code === "08101") defaultCommune = storedCommune;
+    }
+  }
+
+  return { chile, defaultCommune };
+}
+
+async function createUserIfMissing({
+  email,
+  name,
+  role,
+  password,
+  phone = null,
+  countryId,
+  communeId,
+}) {
   const hashedPassword = await bcrypt.hash(password, PASSWORD_ROUNDS);
 
   return prisma.user.upsert({
     where: { email },
-    update: { name, role, phone, isActive: true, anonymizedAt: null },
+    update: {
+      name,
+      role,
+      phone,
+      countryId,
+      communeId,
+      isActive: true,
+      anonymizedAt: null,
+    },
     create: {
       email,
       name,
       role,
       phone,
+      countryId,
+      communeId,
       passwordHash: hashedPassword,
       isActive: true,
     },
@@ -487,6 +552,8 @@ async function createKilnIfMissing(name, data, aliases = []) {
 }
 
 async function main() {
+  const { chile, defaultCommune } = await seedGeographicCatalog();
+
   for (const reason of supportReasons) {
     await prisma.supportReason.upsert({
       where: { code: reason.code },
@@ -500,6 +567,8 @@ async function main() {
     name: admin.name,
     password: admin.password,
     role: "ADMIN",
+    countryId: chile.countryId,
+    communeId: defaultCommune.communeId,
   });
 
   await createUserIfMissing({
@@ -508,6 +577,8 @@ async function main() {
     password: technician.password,
     role: "TECHNICIAN",
     phone: "+56955550101",
+    countryId: chile.countryId,
+    communeId: defaultCommune.communeId,
   });
 
   const seededUsers = {};
@@ -516,6 +587,8 @@ async function main() {
       ...user,
       password: demoPassword,
       role: "CLIENT",
+      countryId: chile.countryId,
+      communeId: defaultCommune.communeId,
     });
   }
 

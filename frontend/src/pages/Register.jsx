@@ -6,16 +6,35 @@ import { register } from "@services/auth.service";
 import { toast } from "sonner";
 import FieldError from "@components/FieldError";
 import PasswordInput from "@components/PasswordInput";
+import UserContactFields from "@components/UserContactFields";
+import useUserContactCatalog from "@hooks/useUserContactCatalog";
 import { hasFormError } from "../utils/formError";
+import { prepareUserContactPayload } from "../utils/userContact";
+
+const emptyContact = {
+  countryId: null,
+  regionId: null,
+  communeId: null,
+  addressLine: "",
+  phoneCountryCode: "CL",
+  phone: "",
+};
 
 const Register = ({ setMode }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [contact, setContact] = useState(emptyContact);
   const [loading, setLoading] = useState(false);
   const { loading: authLoading, user } = useAuth();
   const { error, errorData, handleInputChange } = useAuthForm();
+  const {
+    catalog,
+    loading: catalogLoading,
+    error: catalogError,
+    retry: retryCatalog,
+  } = useUserContactCatalog();
 
   // Evita cargar formulario en caso que haya un usuario con sesión iniciada
   if (authLoading) return null;
@@ -36,7 +55,12 @@ const Register = ({ setMode }) => {
         return;
       }
 
-      const result = await register({ name, email, password });
+      const result = await register({
+        name,
+        email,
+        password,
+        ...prepareUserContactPayload(contact, catalog),
+      });
 
       if (result.success) {
         toast.success("¡Cuenta creada exitosamente!", {
@@ -47,9 +71,9 @@ const Register = ({ setMode }) => {
       } else {
         errorData(result || "Ocurrió un error");
       }
-    } catch (error) {
-      console.error("Error al registrar usuario:", error);
-      errorData("Error inesperado al crear cuenta.");
+    } catch (submitError) {
+      console.error("Error al registrar usuario:", submitError);
+      errorData(submitError);
     } finally {
       setLoading(false);
     }
@@ -163,11 +187,26 @@ const Register = ({ setMode }) => {
           />
         </div>
 
+        <div className="border-t border-border pt-4">
+          <UserContactFields
+            value={contact}
+            onChange={setContact}
+            error={error}
+            onClearError={(field) =>
+              handleInputChange({ target: { name: field } })
+            }
+            catalog={catalog}
+            catalogLoading={catalogLoading}
+            catalogError={catalogError}
+            onRetryCatalog={retryCatalog}
+          />
+        </div>
+
         <FieldError error={error} />
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || catalogLoading || !catalog}
           className="w-full bg-primary text-on-action py-3 rounded-lg mt-4 font-medium transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed "
         >
           {loading ? "Cargando..." : "Crear cuenta"}

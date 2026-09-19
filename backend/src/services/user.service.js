@@ -9,6 +9,10 @@ import {
 } from "../utils/userContact.js";
 
 const HASH_ROUNDS = 10;
+const USER_LOCATION_INCLUDE = {
+  country: true,
+  commune: { select: { regionId: true } },
+};
 
 function serviceError(code, message) {
   const error = new Error(message);
@@ -18,7 +22,7 @@ function serviceError(code, message) {
 
 export async function createUser(data) {
   const passwordHash = await bcrypt.hash(data.password, HASH_ROUNDS);
-  const contactData = normalizeUserContactData(data);
+  const contactData = await normalizeUserContactData(data, {}, prisma);
   const user = await prisma.user.create({
     data: {
       email: data.email,
@@ -27,12 +31,16 @@ export async function createUser(data) {
       ...contactData,
       role: data.role ?? ROLES.CLIENT,
     },
+    include: USER_LOCATION_INCLUDE,
   });
   return presentUser(user);
 }
 
 export async function updateUser(userId, data) {
-  const current = await prisma.user.findUnique({ where: { userId } });
+  const current = await prisma.user.findUnique({
+    where: { userId },
+    include: USER_LOCATION_INCLUDE,
+  });
   if (!current) throw serviceError("P2025", "Usuario no encontrado");
   if (current.anonymizedAt) {
     throw serviceError("USER_ANONYMIZED", "Una cuenta anonimizada no puede modificarse");
@@ -49,13 +57,19 @@ export async function updateUser(userId, data) {
   const updateData = {
     ...(data.name !== undefined ? { name: data.name } : {}),
     ...(data.email !== undefined ? { email: data.email } : {}),
-    ...normalizeUserContactData(data, current),
+    ...(await normalizeUserContactData(data, current, prisma)),
     ...(data.role !== undefined ? { role: data.role } : {}),
   };
   if (data.password) {
     updateData.passwordHash = await bcrypt.hash(data.password, HASH_ROUNDS);
   }
-  return presentUser(await prisma.user.update({ where: { userId }, data: updateData }));
+  return presentUser(
+    await prisma.user.update({
+      where: { userId },
+      data: updateData,
+      include: USER_LOCATION_INCLUDE,
+    }),
+  );
 }
 
 export async function setUserActive(userId, isActive, actingUserId) {
@@ -76,7 +90,13 @@ export async function setUserActive(userId, isActive, actingUserId) {
         throw serviceError("LAST_ACTIVE_ADMIN", "Debe permanecer al menos un administrador activo");
       }
     }
-    return presentUser(await tx.user.update({ where: { userId }, data: { isActive } }));
+    return presentUser(
+      await tx.user.update({
+        where: { userId },
+        data: { isActive },
+        include: USER_LOCATION_INCLUDE,
+      }),
+    );
   });
 }
 
@@ -99,7 +119,11 @@ export async function deactivateOwnUser(userId) {
       }
     }
     return presentUser(
-      await tx.user.update({ where: { userId }, data: { isActive: false } }),
+      await tx.user.update({
+        where: { userId },
+        data: { isActive: false },
+        include: USER_LOCATION_INCLUDE,
+      }),
     );
   });
 }
@@ -116,7 +140,10 @@ async function redactRelatedText(tx, user, replacement) {
 
 async function anonymizeUserRecord(userId) {
   return prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({ where: { userId } });
+    const user = await tx.user.findUnique({
+      where: { userId },
+      include: USER_LOCATION_INCLUDE,
+    });
     if (!user) throw serviceError("P2025", "Usuario no encontrado");
     if (user.anonymizedAt) return presentUser(user);
     if (user.role === ROLES.ADMIN && user.isActive) {
@@ -139,14 +166,14 @@ async function anonymizeUserRecord(userId) {
         email: `anonymous-${userId}@deleted.invalid`,
         name: `Usuario anonimizado ${userId}`,
         phone: null,
-        countryCode: null,
-        regionCode: null,
-        communeCode: null,
+        countryId: null,
+        communeId: null,
         addressLine: null,
         passwordHash,
         isActive: false,
         anonymizedAt: new Date(),
       },
+      include: USER_LOCATION_INCLUDE,
     });
     return presentUser(updated);
   });
@@ -164,23 +191,37 @@ export function anonymizeOwnUser(userId) {
 }
 
 export function findUserByEmail(email) {
-  return prisma.user.findUnique({ where: { email } });
+  return prisma.user.findUnique({
+    where: { email },
+    include: USER_LOCATION_INCLUDE,
+  });
 }
 
 export function findUserById(userId) {
-  return prisma.user.findUnique({ where: { userId } });
+  return prisma.user.findUnique({
+    where: { userId },
+    include: USER_LOCATION_INCLUDE,
+  });
 }
 
 export async function getUserProfile(userId) {
-  return presentUser(await prisma.user.findUnique({ where: { userId } }));
+  return presentUser(
+    await prisma.user.findUnique({
+      where: { userId },
+      include: USER_LOCATION_INCLUDE,
+    }),
+  );
 }
 
 export async function updateOwnProfile(userId, data) {
-  const user = await prisma.user.findUnique({ where: { userId } });
+  const user = await prisma.user.findUnique({
+    where: { userId },
+    include: USER_LOCATION_INCLUDE,
+  });
   if (!user) throw serviceError("P2025", "Usuario no encontrado");
   const updateData = {
     ...(data.name !== undefined ? { name: data.name } : {}),
-    ...normalizeUserContactData(data, user),
+    ...(await normalizeUserContactData(data, user, prisma)),
   };
   if (data.newPassword) {
     const matches = await bcrypt.compare(data.currentPassword, user.passwordHash);
@@ -189,7 +230,13 @@ export async function updateOwnProfile(userId, data) {
     }
     updateData.passwordHash = await bcrypt.hash(data.newPassword, HASH_ROUNDS);
   }
-  return presentUser(await prisma.user.update({ where: { userId }, data: updateData }));
+  return presentUser(
+    await prisma.user.update({
+      where: { userId },
+      data: updateData,
+      include: USER_LOCATION_INCLUDE,
+    }),
+  );
 }
 
 export async function getUsersPage({
@@ -238,6 +285,7 @@ export async function getUsersPage({
       orderBy: { userId: "asc" },
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
+      include: USER_LOCATION_INCLUDE,
     }),
     prisma.user.count({ where }),
     prisma.user.count({ where: filterWhere }),

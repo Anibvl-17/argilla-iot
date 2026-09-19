@@ -27,8 +27,10 @@ vi.mock("@services/user.service", () => ({
 vi.mock("@hooks/useUserContactCatalog", () => ({
   default: () => ({
     catalog: {
-      countries: [{ code: "CL", name: "Chile", callingCode: "+56" }],
-      chileRegions: [],
+      countries: [
+        { countryId: 1, isoCode: "CL", name: "Chile", callingCode: "+56" },
+      ],
+      regions: [],
     },
     loading: false,
     error: "",
@@ -45,9 +47,9 @@ const profile = {
   name: "María Pérez",
   email: "maria@example.com",
   phone: null,
-  countryCode: null,
-  regionCode: null,
-  communeCode: null,
+  countryId: null,
+  regionId: null,
+  communeId: null,
   addressLine: null,
   role: "CLIENT",
   createdAt: "2026-09-06T16:00:00.000Z",

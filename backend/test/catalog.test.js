@@ -1,35 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getUserContactCatalog } from "../src/controllers/catalog.controller.js";
+import { getUserContactCatalogData } from "../src/services/catalog.service.js";
 
-test("GET /catalog/user-contact exposes the shared catalog contract", () => {
-  const response = {
-    statusCode: null,
-    payload: null,
-    status(statusCode) {
-      this.statusCode = statusCode;
-      return this;
+test("the contact catalog is read from relational geographic tables", async () => {
+  const client = {
+    country: {
+      findMany: async () => [
+        { countryId: 1, isoCode: "AR", name: "Argentina" },
+        { countryId: 2, isoCode: "CL", name: "Chile" },
+      ],
     },
-    json(payload) {
-      this.payload = payload;
-      return this;
+    region: {
+      findMany: async () => [
+        {
+          regionId: 8,
+          countryId: 2,
+          code: "08",
+          name: "Biobío",
+          communes: [
+            { communeId: 101, regionId: 8, code: "08101", name: "Concepción" },
+          ],
+        },
+      ],
     },
   };
 
-  getUserContactCatalog({}, response);
+  const catalog = await getUserContactCatalogData(client);
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(response.payload.status, "Success");
-  assert.ok(response.payload.data.countries.length > 200);
-  assert.equal(response.payload.data.chileRegions.length, 16);
-  const communes = response.payload.data.chileRegions.flatMap(
-    (region) => region.communes,
-  );
-  assert.equal(communes.length, 346);
-  assert.deepEqual(
-    response.payload.data.chileRegions
-      .find((region) => region.code === "08")
-      .communes.find((commune) => commune.code === "08101"),
-    { code: "08101", name: "Concepción" },
-  );
+  assert.deepEqual(catalog.countries[0], {
+    countryId: 1,
+    isoCode: "AR",
+    name: "Argentina",
+    callingCode: "+54",
+  });
+  assert.deepEqual(catalog.regions[0].communes[0], {
+    communeId: 101,
+    regionId: 8,
+    code: "08101",
+    name: "Concepción",
+  });
 });

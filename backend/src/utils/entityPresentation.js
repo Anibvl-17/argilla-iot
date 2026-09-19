@@ -17,8 +17,16 @@ export function clearSwitchState(controllerId) {
 
 export function presentUser(user) {
   if (!user) return user;
-  const { passwordHash: _passwordHash, ...safeUser } = user;
-  return safeUser;
+  const {
+    passwordHash: _passwordHash,
+    country: _country,
+    commune,
+    ...safeUser
+  } = user;
+  return {
+    ...safeUser,
+    ...(commune === undefined ? {} : { regionId: commune?.regionId ?? null }),
+  };
 }
 
 export function presentController(

@@ -44,24 +44,28 @@ async function verifyCircuitValidation() {
 }
 
 async function verifyInactiveAndAnonymizedUsers(adminId) {
+  const commune = await prisma.commune.findUniqueOrThrow({
+    where: { code: "08101" },
+    include: { region: { include: { country: true } } },
+  });
   const email = `verify-services-${Date.now()}@argilla.test`;
   const user = await createUser({
     email,
     name: "Persona de Verificación",
     phone: "9 8765 4321",
     phoneCountryCode: "CL",
-    countryCode: "CL",
-    regionCode: "08",
-    communeCode: "08101",
+    countryId: commune.region.country.countryId,
+    regionId: commune.regionId,
+    communeId: commune.communeId,
     addressLine: "Los Carrera 1234",
     password: "Password123!",
     role: "CLIENT",
   });
   try {
     assert.equal(user.phone, "+56987654321");
-    assert.equal(user.countryCode, "CL");
-    assert.equal(user.regionCode, "08");
-    assert.equal(user.communeCode, "08101");
+    assert.equal(user.countryId, commune.region.country.countryId);
+    assert.equal(user.regionId, commune.regionId);
+    assert.equal(user.communeId, commune.communeId);
     assert.equal(user.addressLine, "Los Carrera 1234");
     await setUserActive(user.userId, false, adminId);
     await assert.rejects(() => login(email, "Password123!"), { code: "ACCOUNT_INACTIVE" });
@@ -70,9 +74,9 @@ async function verifyInactiveAndAnonymizedUsers(adminId) {
     assert.equal(anonymized.isActive, false);
     assert.ok(anonymized.anonymizedAt);
     assert.equal(anonymized.phone, null);
-    assert.equal(anonymized.countryCode, null);
-    assert.equal(anonymized.regionCode, null);
-    assert.equal(anonymized.communeCode, null);
+    assert.equal(anonymized.countryId, null);
+    assert.equal(anonymized.regionId, null);
+    assert.equal(anonymized.communeId, null);
     assert.equal(anonymized.addressLine, null);
     assert.equal("passwordHash" in anonymized, false);
   } finally {
@@ -81,12 +85,22 @@ async function verifyInactiveAndAnonymizedUsers(adminId) {
 }
 
 async function verifyOwnAccountActions() {
+  const commune = await prisma.commune.findUniqueOrThrow({
+    where: { code: "08101" },
+    include: { region: { include: { country: true } } },
+  });
+  const location = {
+    countryId: commune.region.country.countryId,
+    regionId: commune.regionId,
+    communeId: commune.communeId,
+  };
   const timestamp = Date.now();
   const deactivated = await createUser({
     email: `verify-own-deactivate-${timestamp}@argilla.test`,
     name: "Cuenta a desactivar",
     password: "Password123!",
     role: "CLIENT",
+    ...location,
   });
   const deleted = await createUser({
     email: `verify-own-delete-${timestamp}@argilla.test`,
@@ -94,6 +108,7 @@ async function verifyOwnAccountActions() {
     phone: "+56987654321",
     password: "Password123!",
     role: "CLIENT",
+    ...location,
   });
 
   try {
@@ -104,9 +119,9 @@ async function verifyOwnAccountActions() {
     assert.equal(anonymized.isActive, false);
     assert.ok(anonymized.anonymizedAt);
     assert.equal(anonymized.phone, null);
-    assert.equal(anonymized.countryCode, null);
-    assert.equal(anonymized.regionCode, null);
-    assert.equal(anonymized.communeCode, null);
+    assert.equal(anonymized.countryId, null);
+    assert.equal(anonymized.regionId, null);
+    assert.equal(anonymized.communeId, null);
     assert.equal(anonymized.addressLine, null);
   } finally {
     await prisma.user.deleteMany({

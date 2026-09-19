@@ -1,6 +1,6 @@
 // Códigos Únicos Territoriales (CUT), División Político Administrativa 2018.
-// Fuente: SUBDERE/MOP. Se mantiene como catálogo estático para no crear tablas
-// territoriales ni depender de un servicio externo en tiempo de ejecución.
+// Fuente: SUBDERE/MOP. Se mantiene como fuente versionada para poblar las
+// tablas territoriales; las consultas de la aplicación se realizan en la BD.
 export const CHILE_COMMUNES_BY_REGION = Object.freeze({
   "01": [{ code: "01107", name: "Alto Hospicio" }, { code: "01402", name: "Camiña" }, { code: "01403", name: "Colchane" }, { code: "01404", name: "Huara" }, { code: "01101", name: "Iquique" }, { code: "01405", name: "Pica" }, { code: "01401", name: "Pozo Almonte" }],
   "02": [{ code: "02101", name: "Antofagasta" }, { code: "02201", name: "Calama" }, { code: "02302", name: "María Elena" }, { code: "02102", name: "Mejillones" }, { code: "02202", name: "Ollagüe" }, { code: "02203", name: "San Pedro de Atacama" }, { code: "02103", name: "Sierra Gorda" }, { code: "02104", name: "Taltal" }, { code: "02301", name: "Tocopilla" }],
@@ -19,9 +19,3 @@ export const CHILE_COMMUNES_BY_REGION = Object.freeze({
   "15": [{ code: "15101", name: "Arica" }, { code: "15102", name: "Camarones" }, { code: "15202", name: "General Lagos" }, { code: "15201", name: "Putre" }],
   "16": [{ code: "16102", name: "Bulnes" }, { code: "16101", name: "Chillán" }, { code: "16103", name: "Chillán Viejo" }, { code: "16202", name: "Cobquecura" }, { code: "16203", name: "Coelemu" }, { code: "16302", name: "Coihueco" }, { code: "16104", name: "El Carmen" }, { code: "16204", name: "Ninhue" }, { code: "16303", name: "Ñiquén" }, { code: "16105", name: "Pemuco" }, { code: "16106", name: "Pinto" }, { code: "16205", name: "Portezuelo" }, { code: "16107", name: "Quillón" }, { code: "16201", name: "Quirihue" }, { code: "16206", name: "Ranquil" }, { code: "16301", name: "San Carlos" }, { code: "16304", name: "San Fabián" }, { code: "16108", name: "San Ignacio" }, { code: "16305", name: "San Nicolás" }, { code: "16207", name: "Treguaco" }, { code: "16109", name: "Yungay" }],
 });
-
-export const CHILE_COMMUNE_REGION_BY_CODE = new Map(
-  Object.entries(CHILE_COMMUNES_BY_REGION).flatMap(([regionCode, communes]) =>
-    communes.map((commune) => [commune.code, regionCode]),
-  ),
-);

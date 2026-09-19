@@ -4,10 +4,7 @@ import {
 } from "libphonenumber-js/max";
 import {
   CHILE_COMMUNES_BY_REGION,
-  CHILE_COMMUNE_REGION_BY_CODE,
 } from "./chileCommunes.constants.js";
-
-export const CHILE_COUNTRY_CODE = "CL";
 
 const CHILE_REGION_BASE = [
   { code: "01", name: "Tarapacá" },
@@ -35,12 +32,6 @@ export const CHILE_REGIONS = Object.freeze(
   })),
 );
 
-export { CHILE_COMMUNE_REGION_BY_CODE };
-
-export const CHILE_REGION_CODES = new Set(
-  CHILE_REGIONS.map((region) => region.code),
-);
-
 const displayNames = new Intl.DisplayNames(["es"], { type: "region" });
 const NON_ISO_PHONE_TERRITORIES = new Set(["AC", "TA", "XK"]);
 
@@ -54,5 +45,3 @@ export const COUNTRIES = Object.freeze(
     }))
     .sort((left, right) => left.name.localeCompare(right.name, "es")),
 );
-
-export const COUNTRY_CODES = new Set(COUNTRIES.map((country) => country.code));

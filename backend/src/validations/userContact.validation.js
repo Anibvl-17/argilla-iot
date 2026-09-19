@@ -12,25 +12,9 @@ export const userContactValidationShape = {
     .transform((value) => value.toUpperCase())
     .nullable()
     .optional(),
-  countryCode: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z]{2}$/, "El país debe usar un código ISO de dos letras")
-    .transform((value) => value.toUpperCase())
-    .nullable()
-    .optional(),
-  regionCode: z
-    .string()
-    .trim()
-    .regex(/^\d{2}$/, "La región debe usar un código de dos dígitos")
-    .nullable()
-    .optional(),
-  communeCode: z
-    .string()
-    .trim()
-    .regex(/^\d{5}$/, "La comuna debe usar un código de cinco dígitos")
-    .nullable()
-    .optional(),
+  countryId: z.number().int().positive("El país seleccionado no es válido").nullable().optional(),
+  regionId: z.number().int().positive("La región seleccionada no es válida").nullable().optional(),
+  communeId: z.number().int().positive("La comuna seleccionada no es válida").nullable().optional(),
   addressLine: z
     .string()
     .trim()

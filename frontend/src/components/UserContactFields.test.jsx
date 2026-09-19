@@ -6,24 +6,28 @@ import { prepareUserContactPayload } from "../utils/userContact";
 
 const catalog = {
   countries: [
-    { code: "AR", name: "Argentina", callingCode: "+54" },
-    { code: "CL", name: "Chile", callingCode: "+56" },
-    { code: "PE", name: "Perú", callingCode: "+51" },
-    { code: "US", name: "Estados Unidos", callingCode: "+1" },
+    { countryId: 1, isoCode: "AR", name: "Argentina", callingCode: "+54" },
+    { countryId: 2, isoCode: "CL", name: "Chile", callingCode: "+56" },
+    { countryId: 3, isoCode: "PE", name: "Perú", callingCode: "+51" },
+    { countryId: 4, isoCode: "US", name: "Estados Unidos", callingCode: "+1" },
   ],
-  chileRegions: [
+  regions: [
     {
+      regionId: 8,
+      countryId: 2,
       code: "08",
       name: "Biobío",
       communes: [
-        { code: "08101", name: "Concepción" },
-        { code: "08102", name: "Coronel" },
+        { communeId: 801, regionId: 8, code: "08101", name: "Concepción" },
+        { communeId: 802, regionId: 8, code: "08102", name: "Coronel" },
       ],
     },
     {
+      regionId: 13,
+      countryId: 2,
       code: "13",
       name: "Metropolitana de Santiago",
-      communes: [{ code: "13101", name: "Santiago" }],
+      communes: [{ communeId: 1301, regionId: 13, code: "13101", name: "Santiago" }],
     },
   ],
 };
@@ -52,9 +56,9 @@ describe("UserContactFields", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: "CL",
-          regionCode: "",
-          communeCode: "",
+          countryId: 2,
+          regionId: null,
+          communeId: null,
           phoneCountryCode: "CL",
           phone: "",
           addressLine: "",
@@ -82,9 +86,9 @@ describe("UserContactFields", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: null,
-          regionCode: null,
-          communeCode: null,
+          countryId: null,
+          regionId: null,
+          communeId: null,
           phoneCountryCode: "CL",
           phone: "",
           addressLine: "",
@@ -112,9 +116,9 @@ describe("UserContactFields", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: "08101",
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           phone: "",
           phoneCountryCode: "CL",
           addressLine: "",
@@ -140,13 +144,72 @@ describe("UserContactFields", () => {
     expect(screen.getByRole("option", { name: "Santiago" })).toBeInTheDocument();
   });
 
+  it("keeps the selected commune pinned above search results", () => {
+    render(
+      <ContactHarness
+        initialValue={{
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
+          phone: "",
+          phoneCountryCode: "CL",
+          addressLine: "",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Comuna" }));
+    const listbox = screen.getByRole("listbox", { name: "Comunas de la región" });
+    expect(within(listbox).getAllByRole("option")).toHaveLength(1);
+    expect(within(listbox).getByRole("option", { name: "Concepción" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar comuna" }), {
+      target: { value: "Coronel" },
+    });
+    const options = within(listbox).getAllByRole("option");
+    expect(options[0]).toHaveTextContent("Concepción");
+    expect(options[1]).toHaveTextContent("Coronel");
+    expect(
+      within(listbox).getByRole("separator", { name: "Otros resultados" }),
+    ).toBeInTheDocument();
+  });
+
+  it("pins the selected phone country instead of duplicating it", () => {
+    render(
+      <ContactHarness
+        initialValue={{
+          countryId: 1,
+          regionId: null,
+          communeId: null,
+          phone: "",
+          phoneCountryCode: "US",
+          addressLine: "",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("País del teléfono"));
+    fireEvent.change(screen.getByLabelText("Buscar país del teléfono"), {
+      target: { value: "Perú" },
+    });
+    const listbox = screen.getByRole("listbox", {
+      name: "Países para el teléfono",
+    });
+    const options = within(listbox).getAllByRole("option");
+    expect(options[0]).toHaveAccessibleName("Estados Unidos (+1)");
+    expect(options[1]).toHaveAccessibleName("Perú (+51)");
+  });
+
   it("clears and hides Chilean territory fields when country changes", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: "08101",
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           phone: "",
           phoneCountryCode: "CL",
           addressLine: "Calle 1",
@@ -162,7 +225,7 @@ describe("UserContactFields", () => {
     expect(screen.queryByRole("button", { name: "Región" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Comuna" })).not.toBeInTheDocument();
     expect(screen.getByTestId("contact-state")).toHaveTextContent(
-      '"regionCode":null,"communeCode":null',
+      '"regionId":null,"communeId":null',
     );
     expect(screen.getByLabelText("País del teléfono")).toHaveTextContent("+56");
   });
@@ -171,9 +234,9 @@ describe("UserContactFields", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: "CL",
-          regionCode: "",
-          communeCode: "",
+          countryId: 2,
+          regionId: null,
+          communeId: null,
           phoneCountryCode: "CL",
           phone: "",
           addressLine: "",
@@ -206,7 +269,8 @@ describe("UserContactFields", () => {
 
   it("does not preload address countries and limits searched results", () => {
     const extraCountries = Array.from({ length: 12 }, (_, index) => ({
-      code: `X${index}`,
+      countryId: index + 10,
+      isoCode: `X${index}`,
       name: `País de prueba ${index + 1}`,
       callingCode: `+99${index}`,
     }));
@@ -218,9 +282,9 @@ describe("UserContactFields", () => {
           countries: [...catalog.countries, ...extraCountries],
         }}
         initialValue={{
-          countryCode: null,
-          regionCode: null,
-          communeCode: null,
+          countryId: null,
+          regionId: null,
+          communeId: null,
           phoneCountryCode: "CL",
           phone: "",
           addressLine: "",
@@ -250,9 +314,9 @@ describe("prepareUserContactPayload", () => {
     expect(
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: "08101",
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           addressLine: "  Los Carrera 1234  ",
           phoneCountryCode: "CL",
           phone: "9 8765 4321",
@@ -260,9 +324,9 @@ describe("prepareUserContactPayload", () => {
         catalog,
       ),
     ).toEqual({
-      countryCode: "CL",
-      regionCode: "08",
-      communeCode: "08101",
+      countryId: 2,
+      regionId: 8,
+      communeId: 801,
       addressLine: "Los Carrera 1234",
       phone: "+56987654321",
       phoneCountryCode: "CL",
@@ -273,9 +337,9 @@ describe("prepareUserContactPayload", () => {
     expect(
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: null,
-          communeCode: null,
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           addressLine: null,
           phone: "+541112345678",
         },
@@ -286,9 +350,9 @@ describe("prepareUserContactPayload", () => {
     expect(() =>
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: null,
-          communeCode: null,
+          countryId: 2,
+          regionId: null,
+          communeId: null,
           addressLine: "Calle 1",
           phone: null,
         },
@@ -299,9 +363,9 @@ describe("prepareUserContactPayload", () => {
     expect(() =>
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: null,
+          countryId: 2,
+          regionId: 8,
+          communeId: null,
           addressLine: "Calle 1",
           phone: null,
         },
@@ -314,9 +378,9 @@ describe("prepareUserContactPayload", () => {
     expect(() =>
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: "13101",
+          countryId: 2,
+          regionId: 8,
+          communeId: 1301,
           addressLine: null,
           phone: null,
         },
@@ -327,24 +391,24 @@ describe("prepareUserContactPayload", () => {
     expect(
       prepareUserContactPayload(
         {
-          countryCode: "AR",
-          regionCode: "08",
-          communeCode: "08101",
+          countryId: 1,
+          regionId: 8,
+          communeId: 801,
           addressLine: "Calle 1",
           phone: null,
         },
         catalog,
       ),
-    ).toMatchObject({ regionCode: null, communeCode: null });
+    ).toMatchObject({ regionId: null, communeId: null });
   });
 
   it("uses the phone country independently from the address country", () => {
     expect(
       prepareUserContactPayload(
         {
-          countryCode: "CL",
-          regionCode: null,
-          communeCode: null,
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           addressLine: null,
           phoneCountryCode: "US",
           phone: "202 555 0123",
@@ -352,7 +416,7 @@ describe("prepareUserContactPayload", () => {
         catalog,
       ),
     ).toMatchObject({
-      countryCode: "CL",
+      countryId: 2,
       phoneCountryCode: "US",
       phone: "+12025550123",
     });
@@ -362,9 +426,9 @@ describe("prepareUserContactPayload", () => {
     render(
       <ContactHarness
         initialValue={{
-          countryCode: "CL",
-          regionCode: "08",
-          communeCode: "08101",
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
           addressLine: "Los Carrera 1234",
           phoneCountryCode: "CL",
           phone: "9 8765 4321",
@@ -381,13 +445,14 @@ describe("prepareUserContactPayload", () => {
     );
     expect(screen.getByLabelText(/Teléfono/)).toHaveValue("");
     expect(screen.getByTestId("contact-state")).toHaveTextContent(
-      '"countryCode":"CL","regionCode":"08","communeCode":"08101","addressLine":"Los Carrera 1234","phoneCountryCode":"US","phone":""',
+      '"countryId":2,"regionId":8,"communeId":801,"addressLine":"Los Carrera 1234","phoneCountryCode":"US","phone":""',
     );
   });
 
   it("shows at most ten searched countries and reports hidden results", () => {
     const extraCountries = Array.from({ length: 12 }, (_, index) => ({
-      code: `X${index}`,
+      countryId: index + 10,
+      isoCode: `X${index}`,
       name: `País de prueba ${index + 1}`,
       callingCode: `+99${index}`,
     }));
@@ -399,9 +464,9 @@ describe("prepareUserContactPayload", () => {
           countries: [...catalog.countries, ...extraCountries],
         }}
         initialValue={{
-          countryCode: null,
-          regionCode: null,
-          communeCode: null,
+          countryId: null,
+          regionId: null,
+          communeId: null,
           phoneCountryCode: "CL",
           phone: "",
           addressLine: "",
@@ -413,7 +478,10 @@ describe("prepareUserContactPayload", () => {
     const listbox = screen.getByRole("listbox", {
       name: "Países para el teléfono",
     });
-    expect(within(listbox).queryAllByRole("option")).toHaveLength(0);
+    expect(within(listbox).getAllByRole("option")).toHaveLength(1);
+    expect(within(listbox).getByRole("option")).toHaveAccessibleName(
+      "Chile (+56)",
+    );
 
     fireEvent.change(screen.getByLabelText("Buscar país del teléfono"), {
       target: { value: "País de prueba" },

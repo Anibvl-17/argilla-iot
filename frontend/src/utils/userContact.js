@@ -45,26 +45,26 @@ export function prepareUserContactPayload(data, catalog) {
     );
   }
 
-  const countryCode = data.countryCode?.trim().toUpperCase() || null;
+  const countryId = data.countryId || null;
   const addressLine = data.addressLine?.trim() || null;
-  let regionCode = data.regionCode?.trim() || null;
-  let communeCode = data.communeCode?.trim() || null;
+  let regionId = data.regionId || null;
+  let communeId = data.communeId || null;
   const phoneInput = data.phone?.trim() || null;
   const phoneCountryCode =
     data.phoneCountryCode?.trim().toUpperCase() ||
     getPhoneCountryCode(phoneInput) ||
     null;
 
-  const validCountry = catalog.countries.some(
-    (country) => country.code === countryCode,
+  const selectedCountry = catalog.countries.find(
+    (country) => country.countryId === countryId,
   );
-  if (countryCode && !validCountry) {
-    throw new UserContactFormError("countryCode", "Selecciona un país válido");
+  if (!selectedCountry) {
+    throw new UserContactFormError("countryId", "Selecciona un país válido");
   }
 
   if (
     phoneCountryCode &&
-    !catalog.countries.some((country) => country.code === phoneCountryCode)
+    !catalog.countries.some((country) => country.isoCode === phoneCountryCode)
   ) {
     throw new UserContactFormError(
       "phoneCountryCode",
@@ -72,53 +72,46 @@ export function prepareUserContactPayload(data, catalog) {
     );
   }
 
-  if (countryCode !== "CL") {
-    regionCode = null;
-    communeCode = null;
+  if (selectedCountry.isoCode !== "CL") {
+    regionId = null;
+    communeId = null;
   }
 
-  const selectedRegion = catalog.chileRegions.find(
-    (region) => region.code === regionCode,
+  const selectedRegion = catalog.regions.find(
+    (region) => region.regionId === regionId,
   );
-  if (regionCode && !selectedRegion) {
-    throw new UserContactFormError("regionCode", "Selecciona una región válida");
+  if (selectedCountry.isoCode === "CL" && !selectedRegion) {
+    throw new UserContactFormError("regionId", "Selecciona una región válida");
   }
 
-  if (communeCode && !selectedRegion) {
+  if (communeId && !selectedRegion) {
     throw new UserContactFormError(
-      "regionCode",
+      "regionId",
       "Selecciona una región para la comuna indicada",
     );
   }
 
   if (
-    communeCode &&
-    !selectedRegion.communes.some((commune) => commune.code === communeCode)
+    communeId &&
+    !selectedRegion.communes.some((commune) => commune.communeId === communeId)
   ) {
     throw new UserContactFormError(
-      "communeCode",
+      "communeId",
       "Selecciona una comuna de la región indicada",
     );
   }
 
-  if (addressLine && !countryCode) {
+  if (selectedCountry.isoCode === "CL" && !regionId) {
     throw new UserContactFormError(
-      "countryCode",
-      "Selecciona un país cuando ingresas una dirección",
+      "regionId",
+      "Selecciona una región",
     );
   }
 
-  if (addressLine && countryCode === "CL" && !regionCode) {
+  if (selectedCountry.isoCode === "CL" && !communeId) {
     throw new UserContactFormError(
-      "regionCode",
-      "Selecciona una región para una dirección chilena",
-    );
-  }
-
-  if (addressLine && countryCode === "CL" && !communeCode) {
-    throw new UserContactFormError(
-      "communeCode",
-      "Selecciona una comuna para una dirección chilena",
+      "communeId",
+      "Selecciona una comuna",
     );
   }
 
@@ -152,35 +145,42 @@ export function prepareUserContactPayload(data, catalog) {
   return {
     phone,
     phoneCountryCode,
-    countryCode,
-    regionCode,
-    communeCode,
+    countryId,
+    regionId,
+    communeId,
     addressLine,
   };
 }
 
-export function getCountryName(catalog, countryCode) {
+export function getCountryName(catalog, countryId) {
   return (
-    catalog?.countries.find((country) => country.code === countryCode)?.name ||
-    countryCode ||
+    catalog?.countries.find((country) => country.countryId === countryId)?.name ||
+    countryId ||
     "Sin país"
   );
 }
 
-export function getRegionName(catalog, regionCode) {
+export function isChileanCountry(catalog, countryId) {
   return (
-    catalog?.chileRegions.find((region) => region.code === regionCode)?.name ||
-    regionCode ||
+    catalog?.countries.find((country) => country.countryId === countryId)
+      ?.isoCode === "CL"
+  );
+}
+
+export function getRegionName(catalog, regionId) {
+  return (
+    catalog?.regions.find((region) => region.regionId === regionId)?.name ||
+    regionId ||
     "Sin región"
   );
 }
 
-export function getCommuneName(catalog, regionCode, communeCode) {
+export function getCommuneName(catalog, regionId, communeId) {
   return (
-    catalog?.chileRegions
-      .find((region) => region.code === regionCode)
-      ?.communes.find((commune) => commune.code === communeCode)?.name ||
-    communeCode ||
+    catalog?.regions
+      .find((region) => region.regionId === regionId)
+      ?.communes.find((commune) => commune.communeId === communeId)?.name ||
+    communeId ||
     "Sin comuna"
   );
 }

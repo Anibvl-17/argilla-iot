@@ -25,6 +25,7 @@ export function SearchableCatalogField({
   noResultsMessage,
   listboxLabel,
   getSearchText = (option) => `${option.name} ${option.code}`,
+  getOptionId = (option) => option.code,
   renderOption = null,
   disabled = false,
   invalid,
@@ -33,15 +34,40 @@ export function SearchableCatalogField({
   const buttonRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const selected = options.find((option) => option.code === value);
+  const selected = options.find((option) => getOptionId(option) === value);
+  const selectedId = selected ? getOptionId(selected) : null;
   const normalizedSearch = search ? normalizeSearchText(search.trim()) : "";
   const matches = normalizedSearch
     ? options.filter((option) =>
         normalizeSearchText(getSearchText(option)).includes(normalizedSearch),
       )
     : [];
-  const visibleOptions = matches.slice(0, MAX_SEARCH_RESULTS);
-  const hiddenCount = matches.length - visibleOptions.length;
+  const otherMatches = matches.filter(
+    (option) => getOptionId(option) !== selectedId,
+  );
+  const resultLimit = selected ? MAX_SEARCH_RESULTS - 1 : MAX_SEARCH_RESULTS;
+  const visibleMatches = otherMatches.slice(0, resultLimit);
+  const hiddenCount = otherMatches.length - visibleMatches.length;
+
+  const renderCatalogOption = (option) => {
+    const isSelected = getOptionId(option) === value;
+    return (
+      <button
+        key={getOptionId(option)}
+        type="button"
+        role="option"
+        aria-selected={isSelected}
+        onClick={() => select(option)}
+        className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover ${isSelected ? "bg-surface-hover text-content" : "text-secondary"}`}
+      >
+        {renderOption ? (
+          renderOption(option, { selected: isSelected })
+        ) : (
+          <span className="truncate">{option.name}</span>
+        )}
+      </button>
+    );
+  };
 
   function close() {
     setOpen(false);
@@ -49,7 +75,7 @@ export function SearchableCatalogField({
   }
 
   function select(option) {
-    onSelect(option.code);
+    onSelect(getOptionId(option));
     close();
   }
 
@@ -101,28 +127,22 @@ export function SearchableCatalogField({
           />
         </div>
         <div role="listbox" aria-label={listboxLabel} className="max-h-44 overflow-y-auto p-1">
+          {selected && renderCatalogOption(selected)}
+          {selected &&
+            (!normalizedSearch || visibleMatches.length > 0 || !matches.length) && (
+              <div
+                role="separator"
+                aria-label="Otros resultados"
+                className="my-1 mx-2 border-t border-border"
+              />
+            )}
           {!normalizedSearch && (
             <p className="px-3 py-4 text-center text-sm text-muted">{searchPrompt}</p>
           )}
           {normalizedSearch && !matches.length && (
             <p className="px-3 py-4 text-center text-sm text-muted">{noResultsMessage}</p>
           )}
-          {visibleOptions.map((option) => (
-            <button
-              key={option.code}
-              type="button"
-              role="option"
-              aria-selected={option.code === value}
-              onClick={() => select(option)}
-              className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover ${option.code === value ? "bg-surface-hover text-content" : "text-secondary"}`}
-            >
-              {renderOption ? (
-                renderOption(option, { selected: option.code === value })
-              ) : (
-                <span className="truncate">{option.name}</span>
-              )}
-            </button>
-          ))}
+          {visibleMatches.map(renderCatalogOption)}
         </div>
         {hiddenCount > 0 && (
           <p className="border-t border-border bg-surface-muted px-3 py-2 text-xs text-muted">
@@ -152,32 +172,36 @@ export default function UserContactFields({
     onClearError(field);
   };
 
-  const updateCountry = (countryCode) => {
+  const updateCountry = (countryId) => {
+    const country = catalog.countries.find(
+      (candidate) => candidate.countryId === countryId,
+    );
+    const isChile = country?.isoCode === "CL";
     onChange(
       {
         ...value,
-        countryCode: countryCode || null,
-        regionCode: countryCode === "CL" ? value.regionCode || null : null,
-        communeCode: countryCode === "CL" ? value.communeCode || null : null,
+        countryId: countryId || null,
+        regionId: isChile ? value.regionId || null : null,
+        communeId: isChile ? value.communeId || null : null,
       },
-      "countryCode",
+      "countryId",
     );
-    onClearError("countryCode");
-    onClearError("regionCode");
-    onClearError("communeCode");
+    onClearError("countryId");
+    onClearError("regionId");
+    onClearError("communeId");
   };
 
-  const updateRegion = (regionCode) => {
+  const updateRegion = (regionId) => {
     onChange(
       {
         ...value,
-        regionCode: regionCode || null,
-        communeCode: null,
+        regionId: regionId || null,
+        communeId: null,
       },
-      "regionCode",
+      "regionId",
     );
-    onClearError("regionCode");
-    onClearError("communeCode");
+    onClearError("regionId");
+    onClearError("communeId");
   };
 
   const updatePhoneCountry = (phoneCountryCode) => {
@@ -218,13 +242,20 @@ export default function UserContactFields({
     );
   }
 
-  const selectedRegion = catalog.chileRegions.find(
-    (region) => region.code === value.regionCode,
+  const selectedCountry = catalog.countries.find(
+    (country) => country.countryId === value.countryId,
+  );
+  const isChile = selectedCountry?.isoCode === "CL";
+  const availableRegions = catalog.regions.filter(
+    (region) => region.countryId === value.countryId,
+  );
+  const selectedRegion = availableRegions.find(
+    (region) => region.regionId === value.regionId,
   );
   const phoneCountryCode =
     value.phoneCountryCode || getPhoneCountryCode(value.phone) || "CL";
   const selectedPhoneCountry = catalog.countries.find(
-    (country) => country.code === phoneCountryCode,
+    (country) => country.isoCode === phoneCountryCode,
   );
   const normalizedPhoneCountrySearch = phoneCountrySearch
     ? normalizeSearchText(phoneCountrySearch.trim())
@@ -236,21 +267,20 @@ export default function UserContactFields({
             normalizedPhoneCountrySearch,
           ) ||
           country.callingCode.includes(normalizedPhoneCountrySearch) ||
-          country.code
+          country.isoCode
             .toLocaleLowerCase("es")
             .includes(normalizedPhoneCountrySearch),
       )
     : [];
-  const preferredPhoneCountry = catalog.countries.find(
-    (country) => country.code === "CL",
+  const preferredPhoneCountry =
+    selectedPhoneCountry ||
+    catalog.countries.find((country) => country.isoCode === "CL");
+  const otherMatchingPhoneCountries = matchingPhoneCountries.filter(
+    (country) => country.isoCode !== preferredPhoneCountry?.isoCode,
   );
-  const orderedPhoneCountries =
-    normalizedPhoneCountrySearch && preferredPhoneCountry
-      ? [
-          preferredPhoneCountry,
-          ...matchingPhoneCountries.filter((country) => country.code !== "CL"),
-        ]
-      : matchingPhoneCountries;
+  const orderedPhoneCountries = preferredPhoneCountry
+    ? [preferredPhoneCountry, ...otherMatchingPhoneCountries]
+    : matchingPhoneCountries;
   const visiblePhoneCountries = orderedPhoneCountries.slice(
     0,
     MAX_SEARCH_RESULTS,
@@ -265,62 +295,65 @@ export default function UserContactFields({
       <div className="sm:col-span-2">
         <SearchableCatalogField
           label="País"
-          value={value.countryCode || ""}
+          value={value.countryId || null}
           options={catalog.countries}
+          getOptionId={(country) => country.countryId}
           onSelect={updateCountry}
           placeholder="Selecciona un país"
           searchPlaceholder="Buscar país"
           searchPrompt="Busca un país para ver resultados."
           noResultsMessage="No encontramos países para esa búsqueda."
           listboxLabel="Países"
-          getSearchText={(country) => `${country.name} ${country.code} ${country.callingCode}`}
-          invalid={hasFormError(error, "countryCode")}
-          describedBy={hasFormError(error, "countryCode") ? "country-code-error" : undefined}
+          getSearchText={(country) => `${country.name} ${country.isoCode} ${country.callingCode}`}
+          invalid={hasFormError(error, "countryId")}
+          describedBy={hasFormError(error, "countryId") ? "country-id-error" : undefined}
         />
-        <FieldError error={error} field="countryCode" id="country-code-error" />
+        <FieldError error={error} field="countryId" id="country-id-error" />
       </div>
 
-      {value.countryCode === "CL" ? (
+      {isChile ? (
         <div>
           <SearchableCatalogField
             label="Región"
-            value={value.regionCode || ""}
-            options={catalog.chileRegions}
+            value={value.regionId || null}
+            options={availableRegions}
+            getOptionId={(region) => region.regionId}
             onSelect={updateRegion}
             placeholder="Selecciona una región"
             searchPlaceholder="Buscar región"
             searchPrompt="Busca una región para ver resultados."
             noResultsMessage="No encontramos regiones para esa búsqueda."
             listboxLabel="Regiones de Chile"
-            invalid={hasFormError(error, "regionCode")}
-            describedBy={hasFormError(error, "regionCode") ? "region-code-error" : undefined}
+            invalid={hasFormError(error, "regionId")}
+            describedBy={hasFormError(error, "regionId") ? "region-id-error" : undefined}
           />
-          <FieldError error={error} field="regionCode" id="region-code-error" />
+          <FieldError error={error} field="regionId" id="region-id-error" />
         </div>
       ) : (
         <div className="hidden sm:block" aria-hidden="true" />
       )}
 
-      {value.countryCode === "CL" ? (
+      {isChile ? (
         <div>
           <SearchableCatalogField
             label="Comuna"
-            value={value.communeCode || ""}
+            value={value.communeId || null}
             options={selectedRegion?.communes || []}
-            onSelect={(communeCode) => updateField("communeCode", communeCode)}
+            getOptionId={(commune) => commune.communeId}
+            onSelect={(communeId) => updateField("communeId", communeId)}
             placeholder={selectedRegion ? "Selecciona una comuna" : "Selecciona primero una región"}
             searchPlaceholder="Buscar comuna"
             searchPrompt="Busca una comuna para ver resultados."
             noResultsMessage="No encontramos comunas para esa búsqueda."
             listboxLabel="Comunas de la región"
             disabled={!selectedRegion}
-            invalid={hasFormError(error, "communeCode")}
-            describedBy={hasFormError(error, "communeCode") ? "commune-code-error" : undefined}
+            invalid={hasFormError(error, "communeId")}
+            describedBy={hasFormError(error, "communeId") ? "commune-id-error" : undefined}
           />
           <FieldError
             error={error}
-            field="communeCode"
-            id="commune-code-error"
+            field="communeId"
+            id="commune-id-error"
           />
         </div>
       ) : (
@@ -406,20 +439,9 @@ export default function UserContactFields({
               aria-label="Países para el teléfono"
               className="max-h-44 overflow-y-auto p-1"
             >
-              {!normalizedPhoneCountrySearch && (
-                <p className="px-3 py-4 text-center text-sm text-muted">
-                  Busca por país o código para ver resultados.
-                </p>
-              )}
-              {normalizedPhoneCountrySearch &&
-                !orderedPhoneCountries.length && (
-                  <p className="px-3 py-4 text-center text-sm text-muted">
-                    No encontramos países para esa búsqueda.
-                  </p>
-                )}
               {visiblePhoneCountries.map((country, index) => (
-                <div key={country.code}>
-                  {index === 1 && visiblePhoneCountries[0]?.code === "CL" && (
+                <div key={country.countryId}>
+                  {index === 1 && (
                     <div
                       role="separator"
                       aria-label="Otros países"
@@ -429,11 +451,11 @@ export default function UserContactFields({
                   <button
                     type="button"
                     role="option"
-                    aria-selected={country.code === phoneCountryCode}
+                    aria-selected={country.isoCode === phoneCountryCode}
                     aria-label={`${country.name} (${country.callingCode})`}
-                    onClick={() => updatePhoneCountry(country.code)}
+                    onClick={() => updatePhoneCountry(country.isoCode)}
                     className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover ${
-                      country.code === phoneCountryCode
+                      country.isoCode === phoneCountryCode
                         ? "bg-surface-hover text-content"
                         : "text-secondary"
                     }`}
@@ -445,6 +467,17 @@ export default function UserContactFields({
                   </button>
                 </div>
               ))}
+              {!normalizedPhoneCountrySearch && (
+                <p className="px-3 py-4 text-center text-sm text-muted">
+                  Busca por país o código para ver resultados.
+                </p>
+              )}
+              {normalizedPhoneCountrySearch &&
+                !matchingPhoneCountries.length && (
+                  <p className="px-3 py-4 text-center text-sm text-muted">
+                    No encontramos países para esa búsqueda.
+                  </p>
+                )}
             </div>
             {hiddenPhoneCountryCount > 0 && (
               <p className="border-t border-border bg-surface-muted px-3 py-2 text-xs text-muted">

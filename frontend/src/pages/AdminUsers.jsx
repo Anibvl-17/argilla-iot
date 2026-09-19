@@ -36,6 +36,7 @@ import {
   getCommuneName,
   getCountryName,
   getRegionName,
+  isChileanCountry,
   prepareUserContactPayload,
 } from "../utils/userContact";
 
@@ -502,7 +503,7 @@ export default function AdminUsers() {
                                   País
                                 </dt>
                                 <dd className="mt-1">
-                                  {getCountryName(catalog, user.countryCode)}
+                                  {getCountryName(catalog, user.countryId)}
                                 </dd>
                               </div>
                               <div>
@@ -510,8 +511,8 @@ export default function AdminUsers() {
                                   Región
                                 </dt>
                                 <dd className="mt-1">
-                                  {user.countryCode === "CL"
-                                    ? getRegionName(catalog, user.regionCode)
+                                  {isChileanCountry(catalog, user.countryId)
+                                    ? getRegionName(catalog, user.regionId)
                                     : "No aplica"}
                                 </dd>
                               </div>
@@ -520,11 +521,11 @@ export default function AdminUsers() {
                                   Comuna
                                 </dt>
                                 <dd className="mt-1">
-                                  {user.countryCode === "CL"
+                                  {isChileanCountry(catalog, user.countryId)
                                     ? getCommuneName(
                                         catalog,
-                                        user.regionCode,
-                                        user.communeCode,
+                                        user.regionId,
+                                        user.communeId,
                                       )
                                     : "No aplica"}
                                 </dd>
@@ -618,9 +619,11 @@ export default function AdminUsers() {
           modalMode === "create"
             ? {
                 role: "CLIENT",
-                countryCode: "CL",
-                regionCode: "",
-                communeCode: "",
+                countryId:
+                  catalog?.countries.find((country) => country.isoCode === "CL")
+                    ?.countryId ?? null,
+                regionId: null,
+                communeId: null,
                 addressLine: "",
                 phone: "",
                 phoneCountryCode: "CL",

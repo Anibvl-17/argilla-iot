@@ -1,12 +1,21 @@
-import { handleSuccess } from "../handlers/response.handler.js";
-import {
-  CHILE_REGIONS,
-  COUNTRIES,
-} from "../constants/userContact.constants.js";
+import { handleErrorServer, handleSuccess } from "../handlers/response.handler.js";
+import { getUserContactCatalogData } from "../services/catalog.service.js";
 
-export function getUserContactCatalog(_req, res) {
-  return handleSuccess(res, 200, "Catálogo de contacto obtenido exitosamente", {
-    countries: COUNTRIES,
-    chileRegions: CHILE_REGIONS,
-  });
+export async function getUserContactCatalog(_req, res) {
+  try {
+    const catalog = await getUserContactCatalogData();
+    return handleSuccess(
+      res,
+      200,
+      "Catálogo de contacto obtenido exitosamente",
+      catalog,
+    );
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "No se pudo obtener el catálogo de contacto",
+      error.message,
+    );
+  }
 }

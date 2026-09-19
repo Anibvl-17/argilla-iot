@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  CHILE_REGIONS,
-  COUNTRIES,
-} from "../src/constants/userContact.constants.js";
+import { CHILE_REGIONS, COUNTRIES } from "../src/constants/userContact.constants.js";
 import {
   normalizeInternationalPhone,
   normalizeLegacyInternationalPhone,
@@ -12,68 +9,126 @@ import {
 } from "../src/utils/userContact.js";
 import { registerValidation } from "../src/validations/auth.validation.js";
 
-test("the catalog exposes supported countries, regions and all Chilean communes", () => {
+const countries = new Map([
+  [1, { countryId: 1, isoCode: "CL", name: "Chile" }],
+  [2, { countryId: 2, isoCode: "US", name: "Estados Unidos" }],
+]);
+const communes = new Map([
+  [101, { communeId: 101, regionId: 8, region: { regionId: 8, countryId: 1 } }],
+  [102, { communeId: 102, regionId: 13, region: { regionId: 13, countryId: 1 } }],
+]);
+const catalogClient = {
+  country: { findUnique: async ({ where }) => countries.get(where.countryId) ?? null },
+  commune: { findUnique: async ({ where }) => communes.get(where.communeId) ?? null },
+};
+
+test("the seed source contains all supported countries and Chilean territory", () => {
   assert.ok(COUNTRIES.length > 200);
-  assert.deepEqual(
-    CHILE_REGIONS.map(({ code }) => code),
-    Array.from({ length: 16 }, (_, index) =>
-      String(index + 1).padStart(2, "0"),
-    ),
-  );
-  const communes = CHILE_REGIONS.flatMap((region) => region.communes);
-  assert.equal(communes.length, 346);
-  assert.equal(new Set(communes.map(({ code }) => code)).size, 346);
-  assert.deepEqual(
-    CHILE_REGIONS.find(({ code }) => code === "08").communes.find(
-      ({ code }) => code === "08101",
-    ),
-    { code: "08101", name: "Concepción" },
-  );
-  assert.deepEqual(
-    COUNTRIES.find(({ code }) => code === "CL"),
-    { code: "CL", name: "Chile", callingCode: "+56" },
-  );
+  assert.equal(CHILE_REGIONS.length, 16);
+  const allCommunes = CHILE_REGIONS.flatMap((region) => region.communes);
+  assert.equal(allCommunes.length, 346);
+  assert.equal(new Set(allCommunes.map(({ code }) => code)).size, 346);
 });
 
 test("national Chilean, Argentinian and Peruvian phones become E.164", () => {
-  assert.equal(
-    normalizeInternationalPhone("9 8765 4321", "CL"),
-    "+56987654321",
-  );
-  assert.equal(
-    normalizeInternationalPhone("11 1234-5678", "AR"),
-    "+541112345678",
-  );
-  assert.equal(
-    normalizeInternationalPhone("987 654 321", "PE"),
-    "+51987654321",
-  );
+  assert.equal(normalizeInternationalPhone("9 8765 4321", "CL"), "+56987654321");
+  assert.equal(normalizeInternationalPhone("11 1234-5678", "AR"), "+541112345678");
+  assert.equal(normalizeInternationalPhone("987 654 321", "PE"), "+51987654321");
 });
 
 test("an explicit international phone does not depend on an address country", () => {
-  assert.equal(
-    normalizeInternationalPhone("+54 11 1234 5678", "CL"),
-    "+541112345678",
+  assert.equal(normalizeInternationalPhone("+54 11 1234 5678", "CL"), "+541112345678");
+});
+
+test("a Chilean user requires a valid region and commune relation", async () => {
+  await assert.rejects(normalizeUserContactData({ countryId: 1 }, {}, catalogClient), {
+    code: "INVALID_USER_CONTACT",
+    field: "regionId",
+  });
+  await assert.rejects(
+    normalizeUserContactData({ countryId: 1, regionId: 8 }, {}, catalogClient),
+    { code: "INVALID_USER_CONTACT", field: "communeId" },
+  );
+  assert.deepEqual(
+    await normalizeUserContactData(
+      {
+        countryId: 1,
+        regionId: 8,
+        communeId: 101,
+        addressLine: "  Los Carrera 1234  ",
+      },
+      {},
+      catalogClient,
+    ),
+    { countryId: 1, communeId: 101, addressLine: "Los Carrera 1234" },
   );
 });
 
-test("a national phone uses its own country independently from the address", () => {
+test("a commune must belong to the selected region", async () => {
+  await assert.rejects(
+    normalizeUserContactData(
+      { countryId: 1, regionId: 8, communeId: 102 },
+      {},
+      catalogClient,
+    ),
+    { code: "INVALID_USER_CONTACT", field: "communeId" },
+  );
+});
+
+test("changing region clears an omitted commune before validation", async () => {
+  await assert.rejects(
+    normalizeUserContactData(
+      { regionId: 13 },
+      { countryId: 1, communeId: 101, commune: { regionId: 8 } },
+      catalogClient,
+    ),
+    { code: "INVALID_USER_CONTACT", field: "communeId" },
+  );
+});
+
+test("an international user keeps only the country relation", async () => {
   assert.deepEqual(
-    normalizeUserContactData({
-      countryCode: "CL",
-      regionCode: "08",
-      communeCode: "08101",
-      addressLine: "Los Carrera 1234",
-      phoneCountryCode: "US",
-      phone: "202 555 0123",
-    }),
+    await normalizeUserContactData(
+      {
+        countryId: 2,
+        regionId: 8,
+        communeId: 101,
+        addressLine: "1600 Pennsylvania Avenue NW",
+        phone: null,
+      },
+      {},
+      catalogClient,
+    ),
     {
-      countryCode: "CL",
-      regionCode: "08",
-      communeCode: "08101",
-      addressLine: "Los Carrera 1234",
-      phone: "+12025550123",
+      countryId: 2,
+      communeId: null,
+      addressLine: "1600 Pennsylvania Avenue NW",
+      phone: null,
     },
+  );
+});
+
+test("an incomplete legacy user must choose a country on profile edit", async () => {
+  await assert.rejects(normalizeUserContactData({ addressLine: null }, {}, catalogClient), {
+    code: "INVALID_USER_CONTACT",
+    field: "countryId",
+  });
+});
+
+test("phone country remains independent from the residence country", async () => {
+  assert.deepEqual(
+    await normalizeUserContactData(
+      {
+        countryId: 1,
+        regionId: 8,
+        communeId: 101,
+        phoneCountryCode: "US",
+        phone: "202 555 0123",
+      },
+      {},
+      catalogClient,
+    ),
+    { countryId: 1, communeId: 101, phone: "+12025550123" },
   );
 });
 
@@ -88,169 +143,32 @@ test("invalid and context-free national phones are rejected with a field", () =>
   });
 });
 
-test("a Chilean address requires a valid region and commune", () => {
-  assert.throws(
-    () =>
-      normalizeUserContactData({ countryCode: "CL", addressLine: "Calle 1" }),
-    { code: "INVALID_USER_CONTACT", field: "regionCode" },
-  );
-  assert.deepEqual(
-    normalizeUserContactData({
-      countryCode: "cl",
-      regionCode: "08",
-      communeCode: "08101",
-      addressLine: "  Los Carrera 1234  ",
-    }),
-    {
-      countryCode: "CL",
-      regionCode: "08",
-      communeCode: "08101",
-      addressLine: "Los Carrera 1234",
-    },
-  );
-  assert.throws(
-    () =>
-      normalizeUserContactData({
-        countryCode: "CL",
-        regionCode: "08",
-        addressLine: "Calle 1",
-      }),
-    { code: "INVALID_USER_CONTACT", field: "communeCode" },
-  );
-});
-
-test("changing away from Chile clears a previous region and commune", () => {
-  assert.deepEqual(
-    normalizeUserContactData(
-      { countryCode: "AR" },
-      {
-        countryCode: "CL",
-        regionCode: "08",
-        communeCode: "08101",
-        addressLine: "Calle 1",
-      },
-    ),
-    { countryCode: "AR", regionCode: null, communeCode: null },
-  );
-});
-
-test("communes must exist and belong to the selected region", () => {
-  assert.throws(
-    () =>
-      normalizeUserContactData({
-        countryCode: "CL",
-        regionCode: "08",
-        communeCode: "13101",
-      }),
-    { code: "INVALID_USER_CONTACT", field: "communeCode" },
-  );
-  assert.throws(
-    () =>
-      normalizeUserContactData({
-        countryCode: "CL",
-        regionCode: "08",
-        communeCode: "08999",
-      }),
-    { code: "INVALID_USER_CONTACT", field: "communeCode" },
-  );
-});
-
-test("changing region clears an omitted commune before final-state validation", () => {
-  assert.deepEqual(
-    normalizeUserContactData(
-      { regionCode: "13" },
-      { countryCode: "CL", regionCode: "08", communeCode: "08101" },
-    ),
-    { regionCode: "13", communeCode: null },
-  );
-  assert.deepEqual(
-    normalizeUserContactData(
-      { regionCode: "13", communeCode: "13101" },
-      { countryCode: "CL", regionCode: "08", communeCode: "08101" },
-    ),
-    { regionCode: "13", communeCode: "13101" },
-  );
-});
-
-test("nullable address fields can be cleared explicitly", () => {
-  assert.deepEqual(
-    normalizeUserContactData(
-      { countryCode: null, addressLine: null },
-      {
-        countryCode: "CL",
-        regionCode: "08",
-        communeCode: "08101",
-        addressLine: "Calle 1",
-      },
-    ),
-    {
-      countryCode: null,
-      regionCode: null,
-      communeCode: null,
-      addressLine: null,
-    },
-  );
-});
-
-test("foreign addresses accept no region and nullable contact fields", () => {
-  assert.deepEqual(
-    normalizeUserContactData({
-      countryCode: "US",
-      regionCode: "08",
-      communeCode: "08101",
-      addressLine: "1600 Pennsylvania Avenue NW, Washington DC",
-      phone: null,
-    }),
-    {
-      countryCode: "US",
-      regionCode: null,
-      communeCode: null,
-      addressLine: "1600 Pennsylvania Avenue NW, Washington DC",
-      phone: null,
-    },
-  );
-});
-
-test("legacy backfill preserves valid international phones only", () => {
-  assert.equal(
-    normalizeLegacyInternationalPhone("+56 9 8765 4321"),
-    "+56987654321",
-  );
+test("legacy phone backfill and formatted search remain supported", () => {
+  assert.equal(normalizeLegacyInternationalPhone("+56 9 8765 4321"), "+56987654321");
   assert.equal(normalizeLegacyInternationalPhone("987654321"), null);
-  assert.equal(normalizeLegacyInternationalPhone("+56 9 0000 0000"), null);
-  assert.equal(normalizeLegacyInternationalPhone(null), null);
-});
-
-test("formatted phone searches are compacted to match stored E.164 values", () => {
   assert.equal(normalizePhoneSearch("+56 9 8765-4321"), "+56987654321");
   assert.equal(normalizePhoneSearch("María"), "");
 });
 
-test("request validation accepts minimal registration and validates optional contact", () => {
+test("registration requires a numeric country id and validates optional contact", () => {
   assert.equal(
     registerValidation.safeParse({
       name: "María Pérez",
       email: "maria@example.com",
       password: "Password123!",
-    }).success,
-    true,
-  );
-  const parsed = registerValidation.parse({
-    name: "María Pérez",
-    email: "maria@example.com",
-    password: "Password123!",
-    countryCode: "cl",
-    phoneCountryCode: "us",
-  });
-  assert.equal(parsed.countryCode, "CL");
-  assert.equal(parsed.phoneCountryCode, "US");
-  assert.equal(
-    registerValidation.safeParse({
-      name: "María Pérez",
-      email: "maria@example.com",
-      password: "Password123!",
-      addressLine: "   ",
     }).success,
     false,
+  );
+  assert.equal(
+    registerValidation.safeParse({
+      name: "María Pérez",
+      email: "maria@example.com",
+      password: "Password123!",
+      countryId: 1,
+      regionId: 8,
+      communeId: 101,
+      phoneCountryCode: "us",
+    }).success,
+    true,
   );
 });

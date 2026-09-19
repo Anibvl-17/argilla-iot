@@ -21,6 +21,17 @@ async function expectConstraintViolation(work, label) {
 }
 
 async function verifySeed() {
+  assert.equal(await prisma.country.count(), 242);
+  assert.equal(await prisma.region.count(), 16);
+  assert.equal(await prisma.commune.count(), 346);
+  const chile = await prisma.country.findUniqueOrThrow({
+    where: { isoCode: "CL" },
+  });
+  assert.equal(
+    await prisma.region.count({ where: { countryId: chile.countryId } }),
+    16,
+  );
+
   const reasons = await prisma.supportReason.findMany({
     orderBy: { code: "asc" },
     select: { code: true },
@@ -43,6 +54,11 @@ async function verifySeed() {
   assert.ok(roles.some(({ role }) => role === "TECHNICIAN"));
   assert.ok(roles.some(({ role }) => role === "CLIENT"));
   assert.equal(await prisma.user.count({ where: { isActive: false } }), 0);
+  const seededClient = await prisma.user.findUniqueOrThrow({
+    where: { email: "maria@argilla.test" },
+  });
+  assert.equal(seededClient.countryId, chile.countryId);
+  assert.ok(seededClient.communeId);
   assert.equal(
     await prisma.kiln.count({
       where: { heatingCircuitConfiguration: { equals: { type: "ROOT", connectionType: "PARALLEL", elements: [] } } },
