@@ -751,7 +751,9 @@ export default function SupportTicketDetails() {
             <h2 className="text-lg font-semibold">Acciones</h2>
             <p className="mt-1 text-sm text-secondary">
               {isAdmin
-                ? "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
+                ? ticket.assignedToUserId
+                  ? "Puedes reasignar el ticket."
+                  : "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
                 : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
             </p>
           </div>
@@ -793,7 +795,7 @@ export default function SupportTicketDetails() {
           {ticket.assignedToUserId &&
             canWork &&
             ticket.status === "IN_PROGRESS" && (
-              <div className="space-y-3 border-t border-border pt-5">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-secondary">
                   Diagnóstico y solución
                   <textarea

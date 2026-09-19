@@ -254,6 +254,7 @@ export default function Profile() {
               catalogLoading={catalogLoading}
               catalogError={catalogError}
               onRetryCatalog={retryCatalog}
+              profileLayout
             />
           </div>
 

@@ -36,6 +36,7 @@ function ContactHarness({
   initialValue,
   error = null,
   catalogValue = catalog,
+  profileLayout = false,
 }) {
   const [value, setValue] = useState(initialValue);
   return (
@@ -45,6 +46,7 @@ function ContactHarness({
         onChange={setValue}
         error={error}
         catalog={catalogValue}
+        profileLayout={profileLayout}
       />
       <output data-testid="contact-state">{JSON.stringify(value)}</output>
     </>
@@ -52,6 +54,28 @@ function ContactHarness({
 }
 
 describe("UserContactFields", () => {
+  it("orders profile contact fields for desktop and mobile layouts", () => {
+    const { container } = render(
+      <ContactHarness
+        profileLayout
+        initialValue={{
+          countryId: 2,
+          regionId: 8,
+          communeId: 801,
+          phoneCountryCode: "CL",
+          phone: "",
+          addressLine: "",
+        }}
+      />,
+    );
+
+    expect(container.querySelector('[name="phone"]').closest(".order-1")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "País" }).closest(".order-2")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Región" }).closest(".order-3")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Comuna" }).closest(".order-4")).toBeTruthy();
+    expect(container.querySelector('[name="addressLine"]').closest(".order-5")).toBeTruthy();
+  });
+
   it("shows country calling codes and the Chilean region and commune selectors", () => {
     render(
       <ContactHarness

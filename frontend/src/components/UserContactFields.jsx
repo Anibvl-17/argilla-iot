@@ -163,6 +163,7 @@ export default function UserContactFields({
   catalogLoading = false,
   catalogError = "",
   onRetryCatalog = () => {},
+  profileLayout = false,
 }) {
   const phoneCountryButtonRef = useRef(null);
   const [isPhoneCountryOpen, setIsPhoneCountryOpen] = useState(false);
@@ -292,7 +293,7 @@ export default function UserContactFields({
     <fieldset className="grid min-w-0 gap-4 sm:grid-cols-2">
       <legend className="sr-only">Información de contacto y dirección</legend>
 
-      <div className="sm:col-span-2">
+      <div className={profileLayout ? "order-2" : "sm:col-span-2"}>
         <SearchableCatalogField
           label="País"
           value={value.countryId || null}
@@ -312,7 +313,7 @@ export default function UserContactFields({
       </div>
 
       {isChile ? (
-        <div>
+        <div className={profileLayout ? "order-3" : undefined}>
           <SearchableCatalogField
             label="Región"
             value={value.regionId || null}
@@ -330,11 +331,14 @@ export default function UserContactFields({
           <FieldError error={error} field="regionId" id="region-id-error" />
         </div>
       ) : (
-        <div className="hidden sm:block" aria-hidden="true" />
+        <div
+          className={`${profileLayout ? "order-3 " : ""}hidden sm:block`}
+          aria-hidden="true"
+        />
       )}
 
       {isChile ? (
-        <div>
+        <div className={profileLayout ? "order-4" : undefined}>
           <SearchableCatalogField
             label="Comuna"
             value={value.communeId || null}
@@ -357,10 +361,15 @@ export default function UserContactFields({
           />
         </div>
       ) : (
-        <div className="hidden sm:block" aria-hidden="true" />
+        <div
+          className={`${profileLayout ? "order-4 " : ""}hidden sm:block`}
+          aria-hidden="true"
+        />
       )}
 
-      <label className="block min-w-0 text-sm font-medium text-muted sm:col-span-2">
+      <label
+        className={`${profileLayout ? "order-5 " : ""}block min-w-0 text-sm font-medium text-muted sm:col-span-2`}
+      >
         Dirección <span className="font-normal">(opcional)</span>
         <input
           className={inputClassName}
@@ -379,7 +388,9 @@ export default function UserContactFields({
         <FieldError error={error} field="addressLine" id="address-line-error" />
       </label>
 
-      <div className="block min-w-0 text-sm font-medium text-muted sm:col-span-2">
+      <div
+        className={`${profileLayout ? "order-1" : "sm:col-span-2"} block min-w-0 text-sm font-medium text-muted`}
+      >
         <span id="phone-label">
           Teléfono <span className="font-normal">(opcional)</span>
         </span>

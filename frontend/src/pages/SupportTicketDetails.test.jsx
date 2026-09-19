@@ -127,6 +127,27 @@ describe("SupportTicketDetails", () => {
     });
   });
 
+  it("tells an administrator that an assigned ticket can be reassigned", async () => {
+    authState.user = { id: 1, name: "Administrador", role: "ADMIN" };
+
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Puedes reasignar el ticket."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Puedes tomar el ticket o asignar un responsable para comenzar la atención.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens a cycle modal and requests only that cycle telemetry", async () => {
     render(
       <MemoryRouter initialEntries={["/support/9"]}>
