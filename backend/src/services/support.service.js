@@ -527,3 +527,66 @@ export async function createTicketMaintenance(actor, supportTicketId, data) {
     });
   });
 }
+
+export async function updateTicketMaintenance(
+  actor,
+  supportTicketId,
+  maintenanceId,
+  data,
+) {
+  if (![ROLES.ADMIN, ROLES.TECHNICIAN].includes(actor.role)) {
+    throw serviceError("FORBIDDEN", "No puedes editar mantenimientos");
+  }
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.supportTicket.findUnique({
+      where: { supportTicketId },
+      include: { kiln: { select: { kilnId: true, controllerId: true } } },
+    });
+    if (!ticket) throw serviceError("NOT_FOUND", "Ticket no encontrado");
+    if (
+      actor.role === ROLES.TECHNICIAN &&
+      ticket.assignedToUserId !== actor.id
+    ) {
+      throw serviceError("NOT_FOUND", "Ticket no encontrado");
+    }
+    if (data.kilnId && data.kilnId !== ticket.kilnId) {
+      throw serviceError("INVALID_TARGET", "El horno no corresponde al ticket");
+    }
+    if (data.controllerId && data.controllerId !== ticket.kiln.controllerId) {
+      throw serviceError(
+        "INVALID_TARGET",
+        "El controlador no corresponde al horno del ticket",
+      );
+    }
+
+    const result = await tx.maintenanceRecord.updateMany({
+      where: {
+        maintenanceId,
+        supportTicketId,
+        performedByUserId: actor.id,
+      },
+      data: {
+        ...data,
+        performedAt: new Date(data.performedAt),
+      },
+    });
+    if (result.count !== 1) {
+      const record = await tx.maintenanceRecord.findFirst({
+        where: { maintenanceId, supportTicketId },
+        select: { maintenanceId: true },
+      });
+      if (!record) throw serviceError("NOT_FOUND", "Mantenimiento no encontrado");
+      throw serviceError(
+        "FORBIDDEN",
+        "Solo puedes editar mantenimientos registrados por ti",
+      );
+    }
+
+    return tx.maintenanceRecord.findUnique({
+      where: { maintenanceId },
+      include: {
+        performedByUser: { select: { userId: true, name: true, role: true } },
+      },
+    });
+  });
+}

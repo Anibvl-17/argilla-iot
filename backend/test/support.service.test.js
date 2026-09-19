@@ -7,6 +7,7 @@ import {
   getSupportTicket,
   getSupportTelemetry,
   listSupportTickets,
+  updateTicketMaintenance,
   updateSupportTicketStatus,
 } from "../src/services/support.service.js";
 
@@ -334,5 +335,81 @@ test("ticket maintenance accepts both matching targets and rejects foreign equip
   await assert.rejects(
     createTicketMaintenance(technician, 9, { ...base, kilnId: 99 }),
     (error) => error.code === "INVALID_TARGET",
+  );
+});
+
+test("ticket maintenance can only be edited by the user who registered it", async (t) => {
+  let updatedWhere;
+  const transaction = {
+    supportTicket: {
+      findUnique: async () => ({
+        supportTicketId: 9,
+        assignedToUserId: technician.id,
+        kilnId: 2,
+        kiln: {
+          kilnId: 2,
+          controllerId: "11111111-1111-4111-8111-111111111111",
+        },
+      }),
+    },
+    maintenanceRecord: {
+      updateMany: async (args) => {
+        updatedWhere = args.where;
+        return { count: 1 };
+      },
+      findUnique: async () => ({
+        maintenanceId: 7,
+        performedByUserId: technician.id,
+      }),
+    },
+  };
+  mockMethod(t, prisma, "$transaction", async (callback) => {
+    return callback(transaction);
+  });
+  const data = {
+    kilnId: 2,
+    type: "CORRECTIVE",
+    title: "Ajuste eléctrico",
+    workPerformed: "Se ajustaron los terminales.",
+    performedAt: "2026-09-14T12:00:00.000Z",
+  };
+
+  await updateTicketMaintenance(technician, 9, 7, data);
+
+  assert.deepEqual(updatedWhere, {
+    maintenanceId: 7,
+    supportTicketId: 9,
+    performedByUserId: technician.id,
+  });
+});
+
+test("ticket maintenance rejects edits from a different user", async (t) => {
+  const transaction = {
+    supportTicket: {
+      findUnique: async () => ({
+        supportTicketId: 9,
+        assignedToUserId: technician.id,
+        kilnId: 2,
+        kiln: { kilnId: 2, controllerId: null },
+      }),
+    },
+    maintenanceRecord: {
+      updateMany: async () => ({ count: 0 }),
+      findFirst: async () => ({ maintenanceId: 7 }),
+    },
+  };
+  mockMethod(t, prisma, "$transaction", async (callback) => {
+    return callback(transaction);
+  });
+
+  await assert.rejects(
+    updateTicketMaintenance(technician, 9, 7, {
+      kilnId: 2,
+      type: "INSPECTION",
+      title: "Inspección",
+      workPerformed: "Trabajo actualizado",
+      performedAt: "2026-09-14T12:00:00.000Z",
+    }),
+    (error) => error.code === "FORBIDDEN",
   );
 });

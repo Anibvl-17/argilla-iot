@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   LuArrowLeft,
   LuChevronDown,
@@ -21,6 +21,7 @@ import {
   getSupportDiagnostics,
   getSupportTelemetry,
   getSupportTicket,
+  updateTicketMaintenance,
   updateSupportTicketStatus,
 } from "@services/support.service";
 import {
@@ -407,14 +408,24 @@ function CycleTelemetryModal({ ticketId, cycle, onClose, unavailable }) {
   );
 }
 
-function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
+function MaintenanceModal({
+  ticketId,
+  diagnostics,
+  record,
+  open,
+  onClose,
+  onSaved,
+}) {
+  const isEditing = Boolean(record);
   const [form, setForm] = useState({
-    type: "INSPECTION",
-    title: "",
-    workPerformed: "",
-    performedAt: new Date().toISOString().slice(0, 16),
-    kiln: true,
-    controller: false,
+    type: record?.type || "INSPECTION",
+    title: record?.title || "",
+    workPerformed: record?.workPerformed || "",
+    performedAt: record?.performedAt
+      ? new Date(record.performedAt).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16),
+    kiln: record ? Boolean(record.kilnId) : true,
+    controller: Boolean(record?.controllerId),
   });
   const [saving, setSaving] = useState(false);
   const update = (event) =>
@@ -427,7 +438,7 @@ function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
     if (!form.kiln && !form.controller)
       return toast.error("Selecciona al menos un equipo.");
     setSaving(true);
-    const result = await createTicketMaintenance(ticketId, {
+    const data = {
       type: form.type,
       title: form.title,
       workPerformed: form.workPerformed,
@@ -436,11 +447,16 @@ function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
       ...(form.controller
         ? { controllerId: diagnostics.controller?.controllerId }
         : {}),
-    });
+    };
+    const result = isEditing
+      ? await updateTicketMaintenance(ticketId, record.maintenanceId, data)
+      : await createTicketMaintenance(ticketId, data);
     setSaving(false);
     if (!result.success) return toast.error(result.message);
-    toast.success("Mantenimiento registrado.");
-    await onCreated();
+    toast.success(
+      isEditing ? "Mantenimiento actualizado." : "Mantenimiento registrado.",
+    );
+    await onSaved();
     onClose();
   }
 
@@ -465,13 +481,18 @@ function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
             id="maintenance-modal-title"
             className="flex items-center gap-2 text-lg font-bold sm:text-xl"
           >
-            <LuWrench className="text-accent" /> Registrar mantenimiento
+            <LuWrench className="text-accent" />
+            {isEditing ? "Editar mantenimiento" : "Registrar mantenimiento"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            aria-label="Cerrar registro de mantenimiento"
+            aria-label={
+              isEditing
+                ? "Cerrar edición de mantenimiento"
+                : "Cerrar registro de mantenimiento"
+            }
             className="rounded-md p-2 text-muted hover:bg-surface-hover hover:text-content disabled:opacity-50"
           >
             ✕
@@ -581,7 +602,11 @@ function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
               disabled={saving}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action disabled:opacity-50"
             >
-              {saving ? "Guardando..." : "Registrar mantenimiento"}
+              {saving
+                ? "Guardando..."
+                : isEditing
+                  ? "Guardar cambios"
+                  : "Registrar mantenimiento"}
             </button>
           </div>
         </form>
@@ -590,35 +615,94 @@ function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
   );
 }
 
-function MaintenanceRecords({ records }) {
+function MaintenanceRecords({ records, currentUserId, onRegister, onEdit }) {
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+
+  function toggleWork(maintenanceId) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(maintenanceId)) next.delete(maintenanceId);
+      else next.add(maintenanceId);
+      return next;
+    });
+  }
+
   return (
     <div className="border-t border-border pt-5">
-      <h3 className="font-semibold">Mantenimientos</h3>
-      {records?.length ? (
-        <div className="mt-2 divide-y divide-border">
-          {records.map((record) => (
-            <article key={record.maintenanceId} className="py-3">
-              <div className="flex flex-wrap justify-between gap-2">
-                <strong>{record.title}</strong>
-                <span className="text-xs text-muted">
-                  {new Date(record.performedAt).toLocaleString("es-CL")}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-secondary">
-                {MAINTENANCE_TYPE_LABELS[record.type]} -{" "}
-                {record.performedByUser.name}
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm">
-                {record.workPerformed}
-              </p>
-            </article>
-          ))}
+      <div className="min-w-0">
+        <h3 className="font-semibold">Mantenimientos</h3>
+        <div className="mt-3 min-w-0">
+          {records?.length ? (
+            <div className="divide-y divide-border">
+              {records.map((record) => (
+                <article
+                  key={record.maintenanceId}
+                  className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <strong>{record.title}</strong>
+                    <p className="mt-1 text-sm text-secondary">
+                      {MAINTENANCE_TYPE_LABELS[record.type]} -{" "}
+                      {record.performedByUser.name}
+                    </p>
+                    <p className="mt-2 text-xs text-muted">
+                      {new Date(record.performedAt).toLocaleString("es-CL")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:col-start-2 sm:row-start-1 sm:self-center sm:justify-end">
+                    <button
+                      type="button"
+                      aria-expanded={expandedIds.has(record.maintenanceId)}
+                      aria-controls={`maintenance-work-${record.maintenanceId}`}
+                      onClick={() => toggleWork(record.maintenanceId)}
+                      className="rounded-lg border border-control-border px-3 py-1.5 text-xs font-medium hover:bg-surface-hover"
+                    >
+                      {expandedIds.has(record.maintenanceId)
+                        ? "Ocultar trabajo"
+                        : "Ver trabajo"}
+                    </button>
+                    {String(
+                      record.performedByUserId ??
+                        record.performedByUser?.userId,
+                    ) === String(currentUserId) && (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(record)}
+                        className="rounded-lg border border-control-border px-3 py-1.5 text-xs font-medium hover:bg-surface-hover"
+                      >
+                        Editar
+                      </button>
+                      )}
+                  </div>
+                  {expandedIds.has(record.maintenanceId) && (
+                    <p
+                      id={`maintenance-work-${record.maintenanceId}`}
+                      className="whitespace-pre-wrap text-sm sm:col-span-2"
+                    >
+                      {record.workPerformed}
+                    </p>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm italic text-muted">
+              Sin mantenimientos registrados.
+            </p>
+          )}
         </div>
-      ) : (
-        <p className="mt-3 text-sm italic text-muted">
-          Sin mantenimientos registrados.
-        </p>
-      )}
+        {onRegister && (
+          <div className="mt-4 flex sm:justify-end">
+            <button
+              type="button"
+              onClick={onRegister}
+              className="inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-control-border px-4 py-2 text-sm font-medium hover:bg-surface-hover sm:w-auto sm:whitespace-nowrap"
+            >
+              <LuWrench /> Registrar mantenimiento
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -627,12 +711,27 @@ export default function SupportTicketDetails() {
   const { ticketId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isClient = user.role === "CLIENT";
   const isAdmin = user.role === "ADMIN";
+  const isAssignedTechnicianView =
+    user.role === "TECHNICIAN" &&
+    location.state?.supportReturnPath === "/support/assigned";
+  const ticketListPath = isClient
+    ? "/support/requests"
+    : isAssignedTechnicianView
+      ? "/support/assigned"
+      : "/support";
+  const ticketListLabel = isClient
+    ? "Volver a mis solicitudes"
+    : isAssignedTechnicianView
+      ? "Volver a solicitudes asignadas"
+      : "Volver a soporte";
   const [ticket, setTicket] = useState(null);
   const [diagnostics, setDiagnostics] = useState(null);
   const [selectedCycle, setSelectedCycle] = useState(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState(null);
   const [assignees, setAssignees] = useState([]);
   const [resolution, setResolution] = useState("");
   const [loading, setLoading] = useState(true);
@@ -640,9 +739,9 @@ export default function SupportTicketDetails() {
   const unavailable = useCallback(
     (message) => {
       toast.error(message || "El ticket ya no está disponible.");
-      navigate("/support", { replace: true });
+      navigate(ticketListPath, { replace: true });
     },
-    [navigate],
+    [navigate, ticketListPath],
   );
 
   const load = useCallback(async () => {
@@ -677,19 +776,44 @@ export default function SupportTicketDetails() {
           [403, 404].includes(result.status) ||
           /tomado/i.test(result.message)
         )
-          navigate("/support", { replace: true });
+          navigate(ticketListPath, { replace: true });
       } else toast.error(result.message);
       return;
     }
     setTicket(result.data);
+    setResolution(result.data.resolution || "");
     toast.success(successMessage);
+  }
+
+  function resolveTicket() {
+    const normalizedResolution = resolution.trim();
+    if (normalizedResolution.length < 3) {
+      toast.error(
+        "Ingresa un diagnóstico y solución de al menos 3 caracteres.",
+      );
+      return;
+    }
+    run(
+      () =>
+        updateSupportTicketStatus(ticketId, {
+          status: "RESOLVED",
+          resolution: normalizedResolution,
+        }),
+      "Ticket resuelto.",
+    );
   }
 
   if (loading || !ticket)
     return (
       <div className="py-20 text-center text-muted">Cargando ticket...</div>
     );
-  const canWork = isAdmin || ticket.assignedToUserId === user.id;
+  const assignedUserId =
+    ticket.assignedToUserId ?? ticket.assignedToUser?.userId;
+  const hasAssignee = assignedUserId !== null && assignedUserId !== undefined;
+  const sessionUserId = user.id ?? user.userId;
+  const canWork =
+    isAdmin ||
+    (hasAssignee && String(assignedUserId) === String(sessionUserId));
   const canRegisterMaintenance =
     canWork &&
     diagnostics &&
@@ -698,10 +822,11 @@ export default function SupportTicketDetails() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
       <Link
-        to="/support"
+        to={ticketListPath}
         className="inline-flex items-center gap-2 text-sm text-muted hover:text-content"
       >
-        <LuArrowLeft /> Volver a soporte
+        <LuArrowLeft />
+        {ticketListLabel}
       </Link>
 
       <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
@@ -747,24 +872,49 @@ export default function SupportTicketDetails() {
 
       {!isClient && (
         <section className="space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <div>
-            <h2 className="text-lg font-semibold">Acciones</h2>
-            <p className="mt-1 text-sm text-secondary">
-              {isAdmin
-                ? ticket.assignedToUserId
-                  ? "Puedes reasignar el ticket."
-                  : "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
-                : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Acciones</h2>
+              <p className="mt-1 text-sm text-secondary">
+                {isAdmin
+                  ? hasAssignee
+                    ? "Puedes reasignar el ticket."
+                    : "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
+                  : hasAssignee
+                    ? "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución. También puedes registrar mantenimientos asociados a este ticket."
+                    : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
+              </p>
+            </div>
+            {!hasAssignee && ticket.status === "OPEN" && (
+              <button
+                onClick={() =>
+                  run(() => claimSupportTicket(ticketId), "Ticket asignado.")
+                }
+                className="shrink-0 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
+              >
+                Tomar ticket
+              </button>
+            )}
+            {hasAssignee &&
+              canWork &&
+              ticket.status === "IN_PROGRESS" && (
+                <button
+                  type="button"
+                  onClick={resolveTicket}
+                  className="shrink-0 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
+                >
+                  Marcar como resuelto
+                </button>
+              )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,28rem)_auto] sm:items-end">
+          {(isAdmin || hasAssignee) && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-secondary">Responsable</p>
               {isAdmin ? (
                 <AssigneeSearch
                   assignees={assignees}
-                  value={ticket.assignedToUserId}
+                  value={assignedUserId}
                   onSelect={(userId) =>
                     run(
                       () => assignSupportTicket(ticketId, userId),
@@ -773,26 +923,16 @@ export default function SupportTicketDetails() {
                   }
                 />
               ) : (
-                <div className={`${inputClass} max-w-md`}>
+                <p className="text-sm font-medium text-content">
                   {ticket.assignedToUser?.name || (
                     <span className="italic text-muted">Sin asignar</span>
                   )}
-                </div>
+                </p>
               )}
             </div>
-            {!ticket.assignedToUserId && ticket.status === "OPEN" && (
-              <button
-                onClick={() =>
-                  run(() => claimSupportTicket(ticketId), "Ticket asignado.")
-                }
-                className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action sm:w-auto"
-              >
-                Tomar ticket
-              </button>
-            )}
-          </div>
+          )}
 
-          {ticket.assignedToUserId &&
+          {hasAssignee &&
             canWork &&
             ticket.status === "IN_PROGRESS" && (
               <div className="space-y-3">
@@ -802,49 +942,17 @@ export default function SupportTicketDetails() {
                     value={resolution}
                     onChange={(event) => setResolution(event.target.value)}
                     rows="3"
+                    required
+                    minLength="3"
+                    maxLength="5000"
                     className={`${inputClass} mt-2`}
                     placeholder="Describe el diagnóstico y la solución aplicada"
                   />
                 </label>
-                <div className="flex flex-col justify-center gap-3 sm:flex-row sm:justify-end">
-                  {canRegisterMaintenance && (
-                    <button
-                      type="button"
-                      onClick={() => setMaintenanceOpen(true)}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-control-border px-5 py-2.5 text-sm font-medium hover:bg-surface-hover"
-                    >
-                      <LuWrench /> Registrar mantenimiento
-                    </button>
-                  )}
-                  <button
-                    onClick={() =>
-                      run(
-                        () =>
-                          updateSupportTicketStatus(ticketId, {
-                            status: "RESOLVED",
-                            resolution,
-                          }),
-                        "Ticket resuelto.",
-                      )
-                    }
-                    className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action"
-                  >
-                    Resolver
-                  </button>
-                </div>
               </div>
             )}
           {canWork && ticket.status === "RESOLVED" && (
             <div className="flex flex-col justify-center gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
-              {canRegisterMaintenance && (
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-control-border px-4 py-2 text-sm font-medium hover:bg-surface-hover"
-                >
-                  <LuWrench /> Registrar mantenimiento
-                </button>
-              )}
               <button
                 onClick={() =>
                   run(
@@ -891,7 +999,24 @@ export default function SupportTicketDetails() {
               </button>
             </div>
           )}
-          <MaintenanceRecords records={ticket.maintenanceRecords} />
+          {hasAssignee && (
+            <MaintenanceRecords
+              records={ticket.maintenanceRecords}
+              currentUserId={sessionUserId}
+              onEdit={(record) => {
+                setEditingMaintenance(record);
+                setMaintenanceOpen(true);
+              }}
+              onRegister={
+                canRegisterMaintenance
+                  ? () => {
+                      setEditingMaintenance(null);
+                      setMaintenanceOpen(true);
+                    }
+                  : undefined
+              }
+            />
+          )}
         </section>
       )}
 
@@ -910,9 +1035,13 @@ export default function SupportTicketDetails() {
             <MaintenanceModal
               ticketId={ticketId}
               diagnostics={diagnostics}
+              record={editingMaintenance}
               open={maintenanceOpen}
-              onClose={() => setMaintenanceOpen(false)}
-              onCreated={load}
+              onClose={() => {
+                setMaintenanceOpen(false);
+                setEditingMaintenance(null);
+              }}
+              onSaved={load}
             />
           )}
         </>

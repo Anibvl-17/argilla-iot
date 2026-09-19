@@ -119,3 +119,14 @@ export function createTicketMaintenance(ticketId, data) {
     "No fue posible registrar el mantenimiento",
   );
 }
+
+export function updateTicketMaintenance(ticketId, maintenanceId, data) {
+  return request(
+    () =>
+      axios.patch(
+        `/support/tickets/${ticketId}/maintenance/${maintenanceId}`,
+        data,
+      ),
+    "No fue posible actualizar el mantenimiento",
+  );
+}

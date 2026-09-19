@@ -7,6 +7,7 @@ import {
   changeTicketStatus,
   claimTicket,
   editReason,
+  editMaintenance,
   getAssignees,
   getDiagnostics,
   getReasons,
@@ -24,6 +25,7 @@ import {
   createSupportReasonValidation,
   createSupportTicketValidation,
   updateSupportReasonValidation,
+  updateMaintenanceValidation,
   updateSupportTicketStatusValidation,
 } from "../validations/support.validation.js";
 
@@ -85,6 +87,12 @@ router.post(
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(createMaintenanceValidation),
   addMaintenance,
+);
+router.patch(
+  "/tickets/:ticketId/maintenance/:maintenanceId",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(updateMaintenanceValidation),
+  editMaintenance,
 );
 
 export default router;

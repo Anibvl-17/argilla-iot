@@ -5,6 +5,7 @@ import {
   createSupportReasonValidation,
   createSupportTicketValidation,
   updateSupportReasonValidation,
+  updateMaintenanceValidation,
 } from "../src/validations/support.validation.js";
 
 test("support tickets require a kiln, active reason payload and meaningful text", () => {
@@ -52,6 +53,10 @@ test("maintenance accepts kiln, controller or both but rejects no target", () =>
     true,
   );
   assert.throws(() => createMaintenanceValidation.parse(base));
+  assert.equal(
+    updateMaintenanceValidation.parse({ ...base, kilnId: 1 }).title,
+    "Revisión eléctrica",
+  );
 });
 
 test("support reason codes are canonical and immutable on update", () => {

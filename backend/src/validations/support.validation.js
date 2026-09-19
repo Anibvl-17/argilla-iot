@@ -63,3 +63,5 @@ export const createMaintenanceValidation = z
     message: "Debe indicar el horno, el controlador o ambos",
     path: ["kilnId"],
   });
+
+export const updateMaintenanceValidation = createMaintenanceValidation;

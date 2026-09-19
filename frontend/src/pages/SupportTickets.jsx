@@ -451,6 +451,12 @@ function TicketTable({ tickets, loading, error, mode }) {
       </div>
     );
   const isClient = mode === "client-requests";
+  const supportReturnPath =
+    mode === "client-requests"
+      ? "/support/requests"
+      : mode === "technician-assigned"
+        ? "/support/assigned"
+        : "/support";
   return (
     <div className="overflow-x-auto">
       <table className="w-full table-fixed text-left text-sm md:min-w-180 md:table-auto">
@@ -523,6 +529,7 @@ function TicketTable({ tickets, loading, error, mode }) {
               <td className="px-3 py-4 text-center md:px-5">
                 <Link
                   to={`/support/${ticket.supportTicketId}`}
+                  state={{ supportReturnPath }}
                   className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-xs font-medium text-content transition-colors hover:bg-surface-hover"
                 >
                   Ver detalle

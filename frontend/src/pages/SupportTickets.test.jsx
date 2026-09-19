@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import SupportTickets from "./SupportTickets";
 
@@ -36,6 +36,11 @@ function arrange(total = 0) {
     success: true,
     data: { kilns: [{ kilnId: 7, name: "Mi horno" }] },
   });
+}
+
+function ReturnPathProbe() {
+  const location = useLocation();
+  return <p>{location.state?.supportReturnPath}</p>;
 }
 
 describe("SupportTickets", () => {
@@ -143,6 +148,41 @@ describe("SupportTickets", () => {
         }),
       );
     });
+  });
+
+  it("preserves the assigned technician view when opening a ticket", async () => {
+    arrange(1);
+    authState.user = { id: 2, name: "Técnico", role: "TECHNICIAN" };
+    mocks.getSupportTickets.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            supportTicketId: 9,
+            kilnId: 7,
+            title: "Temperatura irregular",
+            status: "IN_PROGRESS",
+            createdAt: "2026-09-14T10:00:00.000Z",
+            supportReason: { name: "Temperatura" },
+            createdByUser: { name: "Camila" },
+            assignedToUser: { name: "Técnico" },
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support/assigned"]}>
+        <Routes>
+          <Route path="/support/assigned" element={<SupportTickets />} />
+          <Route path="/support/:ticketId" element={<ReturnPathProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("link", { name: "Ver detalle" }));
+    expect(await screen.findByText("/support/assigned")).toBeInTheDocument();
   });
 
   it("combines client and kiln information and opens details from the action column", async () => {

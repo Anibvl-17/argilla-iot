@@ -16,6 +16,7 @@ import {
   listSupportReasons,
   listSupportTickets,
   updateSupportReason,
+  updateTicketMaintenance,
   updateSupportTicketStatus,
 } from "../services/support.service.js";
 
@@ -236,5 +237,28 @@ export async function addMaintenance(req, res) {
     );
   } catch (error) {
     return handleSupportError(res, error, "Error al registrar mantenimiento");
+  }
+}
+
+export async function editMaintenance(req, res) {
+  try {
+    const ticketId = idFrom(req.params.ticketId);
+    const maintenanceId = idFrom(req.params.maintenanceId);
+    if (!ticketId || !maintenanceId) {
+      return handleErrorClient(res, 404, "Mantenimiento no encontrado");
+    }
+    return handleSuccess(
+      res,
+      200,
+      "Mantenimiento actualizado exitosamente",
+      await updateTicketMaintenance(
+        req.user,
+        ticketId,
+        maintenanceId,
+        req.body,
+      ),
+    );
+  } catch (error) {
+    return handleSupportError(res, error, "Error al actualizar mantenimiento");
   }
 }
