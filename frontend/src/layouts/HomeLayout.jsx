@@ -21,7 +21,7 @@ export default function HomeLayout() {
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-app font-sans text-content xl:flex-row">
       {/* Sidebar */}
-      <aside className="flex w-full shrink-0 flex-col border-b border-nav-border bg-nav text-nav-content xl:w-64 xl:border-b-0 xl:border-r">
+      <aside className="order-last flex w-full shrink-0 flex-col border-t border-nav-border bg-nav text-nav-content xl:order-first xl:w-64 xl:border-r xl:border-t-0">
         {/* Logo*/}
         <div className="hidden h-14 shrink-0 items-center gap-3 px-3 sm:h-16 sm:px-4 xl:flex xl:h-20 xl:px-6">
           <div className="w-8 h-8 rounded-full flex items-center justify-center">
