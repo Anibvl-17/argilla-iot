@@ -2,6 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
 import { CONTROLLER_LINK_STATUS } from "../constants/controller.constants.js";
+import { ROLES } from "../constants/user.constants.js";
 import {
   clearSwitchState,
   presentController,
@@ -241,7 +242,12 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
       throw serviceError("PAIRING_OWNED", "Los equipos pertenecen a otro usuario");
     }
     const user = await tx.user.findUnique({ where: { userId } });
-    if (!user || !user.isActive || user.anonymizedAt || user.role !== "CLIENT") {
+    if (
+      !user ||
+      !user.isActive ||
+      user.anonymizedAt ||
+      user.role !== ROLES.CLIENT
+    ) {
       throw serviceError("PAIRING_USER_INVALID", "El cliente no está habilitado");
     }
     await tx.kiln.update({ where: { kilnId: controller.kiln.kilnId }, data: { userId } });

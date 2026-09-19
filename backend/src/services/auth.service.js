@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail } from "./user.service.js";
+import { JWT_SECRET } from "../config/configEnv.js";
+import { ROLES } from "../constants/user.constants.js";
 import { presentUser } from "../utils/entityPresentation.js";
 
 export async function login(email, password) {
@@ -28,14 +30,14 @@ export async function login(email, password) {
     email: user.email,
     role: user.role,
   };
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
   return { user: presentUser(user), token };
 }
 
 export async function register(data) {
   return createUser(
-    { ...data, role: "CLIENT" },
+    { ...data, role: ROLES.CLIENT },
     { allowIncompleteContact: true },
   );
 }

@@ -204,13 +204,6 @@ export function findUserByEmail(email) {
   });
 }
 
-export function findUserById(userId) {
-  return prisma.user.findUnique({
-    where: { userId },
-    include: USER_LOCATION_INCLUDE,
-  });
-}
-
 export async function getUserProfile(userId) {
   return presentUser(
     await prisma.user.findUnique({

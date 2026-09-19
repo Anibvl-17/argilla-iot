@@ -20,7 +20,6 @@ export default defineConfig({
       "@constants": path.resolve(__dirname, "./src/constants"),
       "@services": path.resolve(__dirname, "./src/services"),
       "@context": path.resolve(__dirname, "./src/context"),
-      "@helpers": path.resolve(__dirname, "./src/helpers"),
       "@layouts": path.resolve(__dirname, "./src/layouts"),
       "@styles": path.resolve(__dirname, "./src/styles"),
       "@assets": path.resolve(__dirname, "./src/assets"),

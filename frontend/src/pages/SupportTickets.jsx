@@ -24,6 +24,7 @@ import {
   SUPPORT_STATUS_LABELS,
   SUPPORT_STATUS_STYLES,
 } from "@constants/support.constants";
+import { ROLES } from "@constants/user.constants";
 
 const PAGE_SIZE = 10;
 const emptyFilters = {
@@ -546,8 +547,8 @@ function TicketTable({ tickets, loading, error, mode }) {
 export default function SupportTickets() {
   const { user } = useAuth();
   const location = useLocation();
-  const isClient = user.role === "CLIENT";
-  const isAdmin = user.role === "ADMIN";
+  const isClient = user.role === ROLES.CLIENT;
+  const isAdmin = user.role === ROLES.ADMIN;
   const isAssignedView = location.pathname.endsWith("/assigned");
   const isClientRequests = location.pathname.endsWith("/requests");
   const mode = isAdmin

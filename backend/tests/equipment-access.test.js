@@ -7,6 +7,7 @@ import {
   edit,
   getKilnsPage,
   linkControllerToKiln,
+  remove as removeKiln,
 } from "../src/services/kiln.service.js";
 import {
   edit as editController,
@@ -107,6 +108,22 @@ test("technician kiln edits use an atomic unowned guard", async (t) => {
   );
   assert.deepEqual(updateWhere, { kilnId: 7, userId: null });
   assert.equal(result.name, "Actualizado");
+});
+
+test("a rejected kiln deletion does not unlink its controller first", async (t) => {
+  let updateCalls = 0;
+  mockMethod(t, prisma.kiln, "findUnique", async () => ({ kilnId: 7 }));
+  mockMethod(t, prisma.kiln, "update", async () => {
+    updateCalls += 1;
+  });
+  mockMethod(t, prisma.kiln, "delete", async () => {
+    const error = new Error("Foreign key constraint failed");
+    error.code = "P2003";
+    throw error;
+  });
+
+  await assert.rejects(removeKiln(7), (error) => error.code === "P2003");
+  assert.equal(updateCalls, 0);
 });
 
 test("technician controller edits reject owned controllers", async (t) => {

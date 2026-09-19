@@ -207,13 +207,7 @@ export async function getAdminKilnTelemetryHistory(req, res) {
   }
 }
 
-/**
- * Endpoint para vincular un controlador a un horno utilizando una porción del
- * UUID del controlador y un PIN generado automaticamente
- *
- * @returns HTTP 400: Pin no proporcionado; HTTP 200: Vinculado con exito;
- * HTTP 500: Error de servidor
- */
+/** Vincula un controlador a un horno. */
 export async function linkController(req, res) {
   try {
     const { kilnId } = req.params;
@@ -271,12 +265,7 @@ export async function unlinkController(req, res) {
   }
 }
 
-/**
- * Endpoint de administrador para enlazar un horno a un usuario. Utilizado en
- * casos donde el horno existe sin controlador
- * @returns HTTP 400: falta ID de horno o ID de usuario, HTTP 200: vinculo
- *          exitoso
- */
+/** Vincula un horno y su controlador a un cliente activo. */
 export async function linkUser(req, res) {
   try {
     const { kilnId } = req.params;

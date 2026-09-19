@@ -18,11 +18,7 @@ import {
 } from "../config/mqttClient.js";
 import { ROLES } from "../constants/user.constants.js";
 
-/**
- * Endpoint para crear un controlador lógico
- *
- * @returns HTTP 200 si se crea con exito, HTTP 500 en caso de error de servidor
- */
+/** Crea un controlador lógico. */
 export async function createController(req, res) {
   try {
     const { body } = req;

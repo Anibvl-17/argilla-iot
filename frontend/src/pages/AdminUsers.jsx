@@ -18,6 +18,7 @@ import { useAuth } from "@context/AuthContext";
 import useUserContactCatalog from "@hooks/useUserContactCatalog";
 import {
   getUserStatus,
+  ROLES,
   ROLE_LABELS,
   ROLE_OPTIONS,
   USER_STATUS_FILTER_OPTIONS,
@@ -85,7 +86,7 @@ const statusStyles = {
 
 export default function AdminUsers() {
   const { user: sessionUser } = useAuth();
-  const isAdmin = sessionUser.role === "ADMIN";
+  const isAdmin = sessionUser.role === ROLES.ADMIN;
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -336,7 +337,7 @@ export default function AdminUsers() {
             <select
               aria-label="Filtrar por rol"
               disabled={!isAdmin}
-              value={isAdmin ? roleFilter : "CLIENT"}
+              value={isAdmin ? roleFilter : ROLES.CLIENT}
               onChange={(event) => {
                 setRoleFilter(event.target.value);
                 setPage(1);
@@ -345,7 +346,7 @@ export default function AdminUsers() {
             >
               {isAdmin && <option value="">Todos los roles</option>}
               {ROLE_OPTIONS.filter(
-                (option) => isAdmin || option.value === "CLIENT",
+                (option) => isAdmin || option.value === ROLES.CLIENT,
               ).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -618,7 +619,7 @@ export default function AdminUsers() {
         initialData={
           modalMode === "create"
             ? {
-                role: "CLIENT",
+                role: ROLES.CLIENT,
                 countryId:
                   catalog?.countries.find((country) => country.isoCode === "CL")
                     ?.countryId ?? null,

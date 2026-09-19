@@ -1,16 +1,45 @@
-# React + Vite
+# Frontend de Argilla IoT
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz React para clientes, técnicos y administradores. Consume la API REST
+del backend y recibe telemetría y resúmenes mediante Socket.IO.
 
-Currently, two official plugins are available:
+La guía completa del proyecto, incluyendo PostgreSQL, MQTT, seed y Docker, está
+en el [README principal](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Configuración local
 
-## React Compiler
+```bash
+npm ci
+cp .env.example .env
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Variables disponibles:
 
-## Expanding the ESLint configuration
+- `VITE_BASE_URL`: URL base de la API, normalmente
+  `http://localhost:3000/api` durante desarrollo.
+- `VITE_SOCKET_URL`: origen del servidor Socket.IO, normalmente
+  `http://localhost:3000`. Si se omite, se deriva de `VITE_BASE_URL`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+En la imagen Docker ambas variables se inyectan durante el build; Nginx sirve
+el frontend y reenvía `/api` y `/socket.io` al backend.
+
+## Estructura
+
+- `src/pages`: pantallas cargadas bajo demanda por el router.
+- `src/components`: componentes compartidos.
+- `src/services`: acceso HTTP y Socket.IO.
+- `src/context` y `src/hooks`: sesión, tema y comportamiento reutilizable.
+- `src/styles`: tokens semánticos y temas claro/oscuro.
+- `tests`: pruebas Vitest y Testing Library.
+
+## Verificación
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
+Desde la raíz del repositorio, `npm run check` ejecuta además las verificaciones
+del backend.

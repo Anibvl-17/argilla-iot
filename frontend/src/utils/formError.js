@@ -1,4 +1,4 @@
-export const DEFAULT_FORM_ERROR =
+const DEFAULT_FORM_ERROR =
   "No pudimos completar la solicitud. Revisa los datos e inténtalo nuevamente.";
 
 function validField(field) {
@@ -37,7 +37,7 @@ function buildFormErrors(items) {
   };
 }
 
-export function formError(message, field = null) {
+function formError(message, field = null) {
   return buildFormErrors([errorItem(message, field)]);
 }
 

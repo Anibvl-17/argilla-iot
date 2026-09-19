@@ -57,7 +57,7 @@ const Login = () => {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
         {/* Input email */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-secondary font-medium ml-1">
+          <label htmlFor="email" className="text-secondary font-medium ml-1">
             Correo electrónico
           </label>
           <input

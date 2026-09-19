@@ -52,6 +52,7 @@ const AuthLayout = () => {
           <p className="mt-6 text-center text-muted sm:mt-8">
             {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
             <button
+              type="button"
               onClick={() =>
                 mode === "login" ? setMode("register") : setMode("login")
               }

@@ -37,7 +37,7 @@ export async function authenticateJWT(req, res, next) {
       role: user.role,
     };
     next();
-  } catch (error) {
+  } catch {
     return handleErrorClient(res, 403, "Token inválido o expirado");
   }
 }

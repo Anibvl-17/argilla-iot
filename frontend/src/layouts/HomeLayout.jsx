@@ -2,6 +2,7 @@ import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { SidebarItem } from "@components/SidebarItem";
 import argillaIcon from "@assets/argilla-icon-light.png";
+import { ROLES } from "@constants/user.constants";
 import {
   LuChartNoAxesCombined,
   LuCircuitBoard,
@@ -14,9 +15,9 @@ import {
 
 export default function HomeLayout() {
   const { user } = useAuth();
-  const isClient = user.role === "CLIENT";
-  const isTechnician = user.role === "TECHNICIAN";
-  const isAdmin = user.role === "ADMIN";
+  const isClient = user.role === ROLES.CLIENT;
+  const isTechnician = user.role === ROLES.TECHNICIAN;
+  const isAdmin = user.role === ROLES.ADMIN;
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-app font-sans text-content xl:flex-row">

@@ -34,7 +34,7 @@ import {
   getOperationalStatusLabel,
   getPhaseCountLabel,
 } from "@constants/controller.constants";
-import { ROLE_LABELS } from "@constants/user.constants";
+import { ROLES, ROLE_LABELS } from "@constants/user.constants";
 
 const inputClass =
   "w-full rounded-lg border-2 border-control-border bg-field px-3 py-2 text-sm text-content outline-none focus:border-focus";
@@ -712,10 +712,10 @@ export default function SupportTicketDetails() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isClient = user.role === "CLIENT";
-  const isAdmin = user.role === "ADMIN";
+  const isClient = user.role === ROLES.CLIENT;
+  const isAdmin = user.role === ROLES.ADMIN;
   const isAssignedTechnicianView =
-    user.role === "TECHNICIAN" &&
+    user.role === ROLES.TECHNICIAN &&
     location.state?.supportReturnPath === "/support/assigned";
   const ticketListPath = isClient
     ? "/support/requests"

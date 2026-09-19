@@ -34,7 +34,6 @@ services:
       MQTT_URL: mqtt://broker-mqtt:1883
       MQTT_USER: ""
       MQTT_PASS: ""
-      TELEMETRY_SAMPLE_SECONDS: ${TELEMETRY_SAMPLE_SECONDS:-30}
       PORT: 3000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       MQTT_COMMAND_TIMEOUT_MS: ${MQTT_COMMAND_TIMEOUT_MS:-6000}
@@ -77,6 +76,8 @@ services:
       SIMULATOR_TEMP_MAX: ${SIMULATOR_TEMP_MAX:-1240}
       SIMULATOR_TEMP_START: ${SIMULATOR_TEMP_START:-25}
       SIMULATOR_REFRESH_MS: ${SIMULATOR_REFRESH_MS:-15000}
+      SIMULATOR_PAIRING_PIN: ${SIMULATOR_PAIRING_PIN:-}
+      SEED_DEVICE_SECRET: ${SEED_DEVICE_SECRET:-argilla-local-device-secret-change-me}
     depends_on:
       backend:
         condition: service_healthy
@@ -99,6 +100,9 @@ services:
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@argilla.test}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
       SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-Password123!}
+      SEED_TECHNICIAN_NAME: ${SEED_TECHNICIAN_NAME:-Técnico Argilla}
+      SEED_TECHNICIAN_EMAIL: ${SEED_TECHNICIAN_EMAIL:-tecnico@argilla.test}
+      SEED_TECHNICIAN_PASSWORD: ${SEED_TECHNICIAN_PASSWORD:-Tecnico123!}
       SEED_DEVICE_SECRET: ${SEED_DEVICE_SECRET:-argilla-local-device-secret-change-me}
     depends_on:
       db:

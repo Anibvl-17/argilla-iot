@@ -4,6 +4,7 @@ import {
   presentKiln as presentKilnEntity,
 } from "../utils/entityPresentation.js";
 import { ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES } from "../constants/controller.constants.js";
+import { ROLES } from "../constants/user.constants.js";
 
 function normalizeDates(data) {
   return {
@@ -113,46 +114,18 @@ export async function edit(
     : presentKilnEntity(kiln);
 }
 
-/**
- * Elimina un Horno de la base de datos. Al eliminarse, se desvincula del
- * usuario y/o controlador si estuviera enlazado, y elimina la telemetría si
- * existiera.
- *
- * @param {number} kilnId El ID del Horno
- * @returns true si se elimina exitosamente, false si no se encuentra el Horno.
- */
+/** Elimina un horno si no existen relaciones históricas que lo impidan. */
 export async function remove(kilnId) {
   const kilnToRemove = await prisma.kiln.findUnique({
     where: { kilnId },
-    include: { controller: true },
+    select: { kilnId: true },
   });
 
-  if (!kilnToRemove) {
-    return false;
-  }
-
-  if (kilnToRemove.controller) {
-    await prisma.kiln.update({
-      where: { kilnId },
-      data: {
-        controller: {
-          disconnect: true,
-        },
-      },
-    });
-  }
+  if (!kilnToRemove) return false;
 
   await prisma.kiln.delete({ where: { kilnId } });
 
   return true;
-}
-
-export async function getAllKilns() {
-  const kilns = await prisma.kiln.findMany({
-    include: { user: true, controller: true },
-  });
-
-  return kilns.map(presentKilnEntity);
 }
 
 export async function getKilnsPage({
@@ -347,36 +320,6 @@ export async function getUserKilnById(userId, kilnId) {
   });
 
   return kiln ? presentKiln(kiln) : null;
-}
-
-export async function renameUserKiln(userId, kilnId, name) {
-  const ownedKiln = await prisma.kiln.findFirst({
-    where: { kilnId, userId },
-    select: { kilnId: true },
-  });
-
-  if (!ownedKiln) return null;
-
-  const kiln = await prisma.kiln.update({
-    where: { kilnId },
-    data: { name },
-    select: {
-      kilnId: true,
-      name: true,
-      liters: true,
-      phaseCount: true,
-      nominalVoltage: true,
-      nominalCurrent: true,
-      manufacturedAt: true,
-      deliveredAt: true,
-      operationalStatus: true,
-      manufacturer: true,
-      heatingCircuitConfiguration: true,
-      controller: { select: controllerSelection },
-    },
-  });
-
-  return presentKiln(kiln);
 }
 
 export async function getOwnedKilnController(userId, kilnId) {
@@ -587,7 +530,7 @@ export async function linkUserToKiln(kilnId, userId) {
     if (!kiln) throw new Error("Horno no encontrado");
     const user = await tx.user.findUnique({ where: { userId } });
     if (!user) throw new Error("Usuario no encontrado");
-    if (!user.isActive || user.anonymizedAt || user.role !== "CLIENT") {
+    if (!user.isActive || user.anonymizedAt || user.role !== ROLES.CLIENT) {
       throw new Error("El propietario debe ser un cliente activo");
     }
     if (!kiln.controller)

@@ -4,40 +4,47 @@ import {
   Outlet,
   RouterProvider,
 } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "@components/ProtectedRoute";
 import ReactDOM from "react-dom/client";
-import Login from "@pages/Login";
 import Root from "@pages/Root";
-import HomeLayout from "@layouts/HomeLayout";
-import Home from "@pages/Home";
+import { ROLES } from "@constants/user.constants";
 import "./index.css";
-import AdminKilns from "@pages/AdminKilns";
-import AdminControllers from "@pages/AdminControllers";
-import AdminUsers from "@pages/AdminUsers";
-import { AdminHome } from "@pages/AdminHome";
-import AuthLayout from "./layouts/AuthLayout";
-import KilnDetails from "@pages/KilnDetails";
-import SimulatorPanel from "./pages/SimulatorPanel";
-import AdminKilnHistory from "@pages/AdminKilnHistory";
-import Profile from "@pages/Profile";
-import SupportTickets from "@pages/SupportTickets";
-import SupportTicketDetails from "@pages/SupportTicketDetails";
+
+const AuthLayout = lazy(() => import("@layouts/AuthLayout"));
+const HomeLayout = lazy(() => import("@layouts/HomeLayout"));
+const Home = lazy(() => import("@pages/Home"));
+const KilnDetails = lazy(() => import("@pages/KilnDetails"));
+const SimulatorPanel = lazy(() => import("@pages/SimulatorPanel"));
+const Profile = lazy(() => import("@pages/Profile"));
+const SupportTickets = lazy(() => import("@pages/SupportTickets"));
+const SupportTicketDetails = lazy(() => import("@pages/SupportTicketDetails"));
+const AdminKilns = lazy(() => import("@pages/AdminKilns"));
+const AdminControllers = lazy(() => import("@pages/AdminControllers"));
+const AdminUsers = lazy(() => import("@pages/AdminUsers"));
+const AdminKilnHistory = lazy(() => import("@pages/AdminKilnHistory"));
+const AdminHome = lazy(() =>
+  import("@pages/AdminHome").then((module) => ({
+    default: module.AdminHome,
+  })),
+);
+
+function RouteLoading() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-app text-content" role="status">
+      Cargando…
+    </div>
+  );
+}
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
-    // errorElement: <Error404 />
     children: [
       {
         path: "auth",
         element: <AuthLayout />,
-        children: [
-          {
-            index: true,
-            element: <Login />,
-          },
-        ],
       },
       {
         path: "/",
@@ -62,7 +69,7 @@ const router = createBrowserRouter([
           {
             path: "simulator",
             element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "CLIENT"]}>
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.CLIENT]}>
                 <SimulatorPanel />
               </ProtectedRoute>
             ),
@@ -74,7 +81,7 @@ const router = createBrowserRouter([
           {
             path: "support/requests",
             element: (
-              <ProtectedRoute allowedRoles={["CLIENT"]}>
+              <ProtectedRoute allowedRoles={[ROLES.CLIENT]}>
                 <SupportTickets />
               </ProtectedRoute>
             ),
@@ -82,7 +89,7 @@ const router = createBrowserRouter([
           {
             path: "support/assigned",
             element: (
-              <ProtectedRoute allowedRoles={["TECHNICIAN"]}>
+              <ProtectedRoute allowedRoles={[ROLES.TECHNICIAN]}>
                 <SupportTickets />
               </ProtectedRoute>
             ),
@@ -98,7 +105,9 @@ const router = createBrowserRouter([
           {
             path: "management",
             element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "TECHNICIAN"]}>
+              <ProtectedRoute
+                allowedRoles={[ROLES.ADMIN, ROLES.TECHNICIAN]}
+              >
                 <Outlet />
               </ProtectedRoute>
             ),
@@ -106,7 +115,7 @@ const router = createBrowserRouter([
               {
                 index: true,
                 element: (
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                     <AdminHome />
                   </ProtectedRoute>
                 ),
@@ -118,7 +127,7 @@ const router = createBrowserRouter([
               {
                 path: "kilns/:kilnId/history",
                 element: (
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                     <AdminKilnHistory />
                   </ProtectedRoute>
                 ),
@@ -130,7 +139,7 @@ const router = createBrowserRouter([
               {
                 path: "users",
                 element: (
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                     <AdminUsers />
                   </ProtectedRoute>
                 ),
@@ -166,5 +175,7 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <RouterProvider router={router} />,
+  <Suspense fallback={<RouteLoading />}>
+    <RouterProvider router={router} />
+  </Suspense>,
 );

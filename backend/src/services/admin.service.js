@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { ROLES } from "../constants/user.constants.js";
 
 export async function getAdminSummary() {
   const [
@@ -26,9 +27,9 @@ export async function getAdminSummary() {
       where: { operationalStatus: "OUT_OF_SERVICE" },
     }),
     prisma.user.count(),
-    prisma.user.count({ where: { role: "ADMIN" } }),
-    prisma.user.count({ where: { role: "TECHNICIAN" } }),
-    prisma.user.count({ where: { role: "CLIENT" } }),
+    prisma.user.count({ where: { role: ROLES.ADMIN } }),
+    prisma.user.count({ where: { role: ROLES.TECHNICIAN } }),
+    prisma.user.count({ where: { role: ROLES.CLIENT } }),
   ]);
 
   return {

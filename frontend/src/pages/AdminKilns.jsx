@@ -26,7 +26,9 @@ import {
   getOperationalStatusLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
+  OPERATIONAL_STATUS_STYLES,
 } from "@constants/controller.constants";
+import { ROLES } from "@constants/user.constants";
 import { getAllControllers } from "@services/controller.service";
 import {
   createKiln,
@@ -47,12 +49,6 @@ import { getPageAfterDeletion } from "../utils/pagination";
 
 const PAGE_SIZE = 10;
 const today = () => new Date().toISOString().slice(0, 10);
-const operationalStyle = {
-  OPERATIONAL: "success",
-  MAINTENANCE: "warning",
-  OUT_OF_SERVICE: "danger",
-};
-
 function emptyForm() {
   return {
     name: "",
@@ -81,7 +77,7 @@ const fieldClass =
 
 export default function AdminKilns() {
   const { user } = useAuth();
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin = user.role === ROLES.ADMIN;
   const [loading, setLoading] = useState(false);
   const [kilns, setKilns] = useState([]);
   const [controllers, setControllers] = useState([]);
@@ -133,7 +129,7 @@ export default function AdminKilns() {
       setClients(
         (userResult.data.items || []).filter(
           (item) =>
-            item.role === "CLIENT" && item.isActive && !item.anonymizedAt,
+            item.role === ROLES.CLIENT && item.isActive && !item.anonymizedAt,
         ),
       );
   }, [isAdmin, operationalStatusFilter, page, searchTerm]);
@@ -666,7 +662,11 @@ export default function AdminKilns() {
                         <td className="hidden px-6 py-5 lg:table-cell">
                           <span className="flex justify-center">
                             <Badge
-                              style={operationalStyle[kiln.operationalStatus]}
+                              style={
+                                OPERATIONAL_STATUS_STYLES[
+                                  kiln.operationalStatus
+                                ]
+                              }
                               text={getOperationalStatusLabel(
                                 kiln.operationalStatus,
                               )}
@@ -1014,7 +1014,9 @@ export default function AdminKilns() {
                     </span>
                   </span>
                   <Badge
-                    style={operationalStyle[option.operationalStatus]}
+                    style={
+                      OPERATIONAL_STATUS_STYLES[option.operationalStatus]
+                    }
                     text={getOperationalStatusLabel(
                       option.operationalStatus,
                     )}

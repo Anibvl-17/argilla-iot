@@ -9,7 +9,7 @@ import { ROLE_NAMES } from "../constants/user.constants.js";
 /**
  * Middleware que controla el acceso basado en roles.
  * @param {string[]} roles Arreglo de roles permitidos
- * @returns HTTP 401: token invalido, HTTP 403: acceso denegado,
+ * @returns HTTP 401: token inválido, HTTP 403: acceso denegado,
  *          HTTP 500: error de servidor
  */
 export function verifyRoles(roles) {

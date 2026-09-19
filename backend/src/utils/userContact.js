@@ -3,7 +3,7 @@ import { getCountries, parsePhoneNumberWithError } from "libphonenumber-js/max";
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 const PHONE_COUNTRY_CODES = new Set(getCountries());
 
-export class UserContactError extends Error {
+class UserContactError extends Error {
   constructor(field, message) {
     super(message);
     this.code = "INVALID_USER_CONTACT";

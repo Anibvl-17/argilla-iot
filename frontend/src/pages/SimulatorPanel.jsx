@@ -11,6 +11,7 @@ import {
   getFiringCommandLabel,
   getSwitchLabel,
 } from "@constants/controller.constants";
+import { ROLES } from "@constants/user.constants";
 
 export default function SimulatorPanel() {
   const { user } = useAuth();
@@ -96,7 +97,7 @@ export default function SimulatorPanel() {
                 </dd>
               </div>
             </dl>
-            {user.role !== "TECHNICIAN" && controller.kiln && (
+            {user.role !== ROLES.TECHNICIAN && controller.kiln && (
               <button
                 disabled={controller.connectionStatus !== "ONLINE"}
                 onClick={() => command(controller)}

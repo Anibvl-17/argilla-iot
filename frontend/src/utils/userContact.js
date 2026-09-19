@@ -3,7 +3,7 @@ import {
   parsePhoneNumberWithError,
 } from "libphonenumber-js/max";
 
-export class UserContactFormError extends Error {
+class UserContactFormError extends Error {
   constructor(field, message) {
     super(message);
     this.field = field;

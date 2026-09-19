@@ -26,6 +26,11 @@ describe("Register", () => {
     for (const name of ["name", "email", "password", "confirmPassword"]) {
       expect(container.querySelector(`[name="${name}"]`)).toBeRequired();
     }
+    expect(screen.getByLabelText("Nombre")).toHaveAttribute("name", "name");
+    expect(screen.getByLabelText("Correo electrónico")).toHaveAttribute(
+      "name",
+      "email",
+    );
     expect(screen.queryByRole("button", { name: "País" })).toBeNull();
     expect(container.querySelector('[name="phone"]')).toBeNull();
     expect(container.querySelector('[name="addressLine"]')).toBeNull();

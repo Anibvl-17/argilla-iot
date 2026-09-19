@@ -71,9 +71,11 @@ const Register = ({ setMode }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:gap-5">
-        {/* Input email */}
+        {/* Input nombre */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-secondary font-medium ml-1">Nombre</label>
+          <label htmlFor="name" className="text-secondary font-medium ml-1">
+            Nombre
+          </label>
           <input
             type="text"
             id="name"
@@ -95,7 +97,7 @@ const Register = ({ setMode }) => {
 
         {/* Input email */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-secondary font-medium ml-1">
+          <label htmlFor="email" className="text-secondary font-medium ml-1">
             Correo electrónico
           </label>
           <input

@@ -121,7 +121,7 @@ Contraseña común: Password123!
 
 Técnico
 Correo: tecnico@argilla.test
-Contraseña: Technician123!
+Contraseña: Tecnico123!
 ```
 
 Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de `backend/.env`.
@@ -130,9 +130,9 @@ Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de
 
 | Ubicación | Variables principales |
 | --- | --- |
-| `backend/.env` | `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `MQTT_URL`, `MQTT_USER`, `MQTT_PASS`, `TELEMETRY_SAMPLE_SECONDS`, `MQTT_COMMAND_TIMEOUT_MS`. |
+| `backend/.env` | `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `MQTT_URL`, `MQTT_USER`, `MQTT_PASS`, `MQTT_COMMAND_TIMEOUT_MS` y variables `SEED_*`. |
 | `frontend/.env` | `VITE_BASE_URL`, `VITE_SOCKET_URL`. |
-| `backend/.env` (simulador) | `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`, `SIMULATOR_PAIRING_PIN`. |
+| `backend/.env` (simulador) | `SEED_DEVICE_SECRET`, `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`, `SIMULATOR_PAIRING_PIN`. |
 
 ## Docker Compose (opcional)
 
@@ -148,14 +148,28 @@ No usar los valores por defecto de Compose ni la configuración MQTT anónima fu
 
 ## Verificación disponible
 
-```bash
-cd frontend
-npm run lint
-npm test
-npm run build
+Después de instalar las dependencias de `backend` y `frontend`, ejecuta desde
+la raíz:
 
-cd ../backend
-npx prisma validate
-npm test
+```bash
+npm run check
+```
+
+Este comando ejecuta el lint de ambos módulos, todas las pruebas, la validación
+estática del esquema Prisma y el build de producción. La validación del esquema
+usa una URL sintácticamente válida, pero no se conecta a PostgreSQL.
+
+Las verificaciones del modelo y de los servicios sí necesitan una base de datos
+migrada y con el seed cargado:
+
+```bash
+cd backend
 npm run verify:model
+npm run verify:services
+```
+
+También puede comprobarse la configuración de contenedores sin levantarlos:
+
+```bash
+docker compose config --quiet
 ```

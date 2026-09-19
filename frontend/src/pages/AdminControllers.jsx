@@ -20,6 +20,7 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
   ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
   CONTROLLER_ACTIVITY_STYLES,
+  CONTROLLER_CONNECTION_STYLES,
   getControllerActivityLabel,
   getControllerConnectionLabel,
   getFiringCommandLabel,
@@ -27,7 +28,9 @@ import {
   getPhaseCountLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
+  OPERATIONAL_STATUS_STYLES,
 } from "@constants/controller.constants";
+import { ROLES } from "@constants/user.constants";
 import {
   createController,
   deleteController,
@@ -87,13 +90,6 @@ const defaultController = {
   deliveredAt: "",
   firmwareVersion: "1.0.0",
   firmwareUpdatedAt: "",
-};
-
-const connectionStyle = { ONLINE: "info", OFFLINE: "default" };
-const operationalStyle = {
-  OPERATIONAL: "success",
-  MAINTENANCE: "warning",
-  OUT_OF_SERVICE: "danger",
 };
 
 function CredentialDialog({ credential, onClose }) {
@@ -156,7 +152,7 @@ function CredentialDialog({ credential, onClose }) {
 
 export default function AdminControllers() {
   const { user } = useAuth();
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin = user.role === ROLES.ADMIN;
   const [loading, setLoading] = useState(false);
   const [controllers, setControllers] = useState([]);
   const [kilns, setKilns] = useState([]);
@@ -620,7 +616,11 @@ export default function AdminControllers() {
                           <td className="px-3 py-5 sm:px-6">
                             <span className="flex justify-center">
                               <Badge
-                                style={connectionStyle[controller.connectionStatus]}
+                                style={
+                                  CONTROLLER_CONNECTION_STYLES[
+                                    controller.connectionStatus
+                                  ]
+                                }
                                 text={getControllerConnectionLabel(
                                   controller.connectionStatus,
                                 )}
@@ -653,7 +653,9 @@ export default function AdminControllers() {
                         <span className="flex justify-center">
                           <Badge
                             style={
-                              operationalStyle[controller.operationalStatus]
+                              OPERATIONAL_STATUS_STYLES[
+                                controller.operationalStatus
+                              ]
                             }
                             text={getOperationalStatusLabel(
                               controller.operationalStatus,
@@ -1010,7 +1012,9 @@ export default function AdminControllers() {
                     </span>
                   </span>
                   <Badge
-                    style={operationalStyle[option.operationalStatus]}
+                    style={
+                      OPERATIONAL_STATUS_STYLES[option.operationalStatus]
+                    }
                     text={getOperationalStatusLabel(
                       option.operationalStatus,
                     )}

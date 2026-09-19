@@ -240,11 +240,7 @@ export async function removeUser(req, res) {
 
 export async function getAllUsers(req, res) {
   try {
-    const users = await getUsersPage({
-      ...req.query,
-      roleFilter:
-        req.user.role === "TECHNICIAN" ? "CLIENT" : req.query.roleFilter,
-    });
+    const users = await getUsersPage(req.query);
 
     return handleSuccess(res, 200, "Usuarios obtenidos exitosamente", users);
   } catch (error) {
