@@ -82,14 +82,14 @@ export default function HomeLayout() {
           )}
           {isTechnician && (
             <>
-              <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
-              <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
               <SidebarItem
                 path="/support"
                 title="Soporte"
                 icon={LuLifeBuoy}
                 matchDescendants
               />
+              <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
+              <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
             </>
           )}
           {(isAdmin || isClient) && (
