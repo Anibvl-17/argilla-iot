@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
 import HeatingCircuitEditor from "@components/HeatingCircuitEditor";
+import Modal from "@components/Modal";
 import Pagination from "@components/Pagination";
 import { SearchableCatalogField } from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
@@ -100,6 +101,9 @@ export default function AdminKilns() {
   const [formError, setFormError] = useState("");
   const [expandedKilnId, setExpandedKilnId] = useState(null);
   const [selectedKiln, setSelectedKiln] = useState(null);
+  const [associationKiln, setAssociationKiln] = useState(null);
+  const [associationControllerId, setAssociationControllerId] = useState("");
+  const [associationLoading, setAssociationLoading] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const fetchKilns = useCallback(async () => {
@@ -225,11 +229,41 @@ export default function AdminKilns() {
 
   async function attach(kiln, controllerId) {
     if (!controllerId) return;
+    setAssociationLoading(true);
     const result = await linkController(kiln.kilnId, controllerId);
+    setAssociationLoading(false);
     if (!result.success)
       return toast.error(result.data?.errorDetails || result.message);
     toast.success("Controlador asociado exitosamente.");
+    closeAssociationModal();
     await fetchKilns();
+  }
+
+  function closeAssociationModal() {
+    setAssociationKiln(null);
+    setAssociationControllerId("");
+    setAssociationLoading(false);
+  }
+
+  function getAvailableControllerOptions(kiln) {
+    return controllers
+      .filter(
+        (controller) =>
+          (!controller.kiln || controller.kiln.kilnId === kiln.kilnId) &&
+          ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+            controller.operationalStatus,
+          ) &&
+          (!controller.user ||
+            !kiln.user ||
+            controller.user.userId === kiln.user.userId),
+      )
+      .map((controller) => ({
+        code: controller.controllerId,
+        name: `...${controller.controllerCode} - ${controller.user?.name || "Sin propietario"}`,
+        secondary: `${getSwitchLabel(controller.switchType)} ${controller.switchCurrentCapacity} A`,
+        operationalStatus: controller.operationalStatus,
+        searchText: `${controller.controllerId} ...${controller.controllerCode} ${controller.user?.name || ""}`,
+      }));
   }
 
   async function detach(kiln) {
@@ -451,7 +485,7 @@ export default function AdminKilns() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="hidden grid-cols-3 gap-4 sm:grid">
         {[
           ["Total hornos", summary.total],
           ["Sin controlador", summary.withoutController],
@@ -459,12 +493,14 @@ export default function AdminKilns() {
         ].map(([label, value]) => (
           <div
             key={label}
-            className="rounded-xl border border-border bg-surface p-5 shadow-card"
+            className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5"
           >
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-muted">
+            <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
               {label}
             </p>
-            <p className={`text-3xl font-bold text-content`}>{value}</p>
+            <p className="text-xl font-bold text-content sm:text-3xl">
+              {value}
+            </p>
           </div>
         ))}
       </div>
@@ -524,7 +560,7 @@ export default function AdminKilns() {
               <tr>
                 <th className="px-4 py-4 sm:px-6">ID</th>
                 <th className="px-3 py-4 sm:px-6">
-                  <span className="lg:hidden">Propietario / Controlador</span>
+                  <span className="lg:hidden">Propietario<br />Controlador</span>
                   <span className="hidden lg:inline">Propietario</span>
                 </th>
                 <th className="hidden px-6 py-4 text-center lg:table-cell">
@@ -539,32 +575,16 @@ export default function AdminKilns() {
                 <th className="hidden px-6 py-4 text-center lg:table-cell">
                   Estado
                 </th>
-                <th className="px-3 py-4 text-center sm:px-6">Acciones</th>
+                <th className="py-4 pl-3 pr-5 text-center sm:px-6">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {!loading &&
                 kilns.map((kiln) => {
-                  const availableControllers = controllers.filter(
-                    (controller) =>
-                      (!controller.kiln ||
-                        controller.kiln.kilnId === kiln.kilnId) &&
-                      ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
-                        controller.operationalStatus,
-                      ) &&
-                      (!controller.user ||
-                        !kiln.user ||
-                        controller.user.userId === kiln.user.userId),
-                  );
-                  const availableControllerOptions = availableControllers.map(
-                    (controller) => ({
-                      code: controller.controllerId,
-                      name: `...${controller.controllerCode} - ${controller.user?.name || "Sin propietario"}`,
-                      secondary: `${getSwitchLabel(controller.switchType)} ${controller.switchCurrentCapacity} A`,
-                      operationalStatus: controller.operationalStatus,
-                      searchText: `${controller.controllerId} ...${controller.controllerCode} ${controller.user?.name || ""}`,
-                    }),
-                  );
+                  const availableControllerOptions =
+                    getAvailableControllerOptions(kiln);
                   const circuitSummary = summarizeHeatingCircuit(
                     kiln.heatingCircuitConfiguration,
                   );
@@ -653,7 +673,7 @@ export default function AdminKilns() {
                             />
                           </span>
                         </td>
-                        <td className="px-3 py-5 sm:px-6">
+                        <td className="py-5 pl-3 pr-5 sm:px-6">
                           <div className="flex justify-center gap-2">
                             <button
                               type="button"
@@ -840,42 +860,33 @@ export default function AdminKilns() {
                                   </button>
                                 )
                               ) : (
-                                <SearchableCatalogField
-                                  label="Asociar controlador"
-                                  value=""
-                                  options={availableControllerOptions}
-                                  onSelect={(controllerId) =>
-                                    attach(kiln, controllerId)
-                                  }
-                                  placeholder="Selecciona un controlador"
-                                  searchPlaceholder="Buscar por ID o cliente"
-                                  searchPrompt="Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible."
-                                  noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
-                                  listboxLabel="Controladores disponibles"
-                                  getSearchText={(option) => option.searchText}
-                                  renderOption={(option) => (
-                                    <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                                      <span className="min-w-0">
-                                        <span className="block truncate font-medium text-content">
-                                          {option.name}
-                                        </span>
-                                        <span className="mt-0.5 block truncate text-xs text-muted">
-                                          {option.secondary}
-                                        </span>
-                                      </span>
-                                      <Badge
-                                        style={
-                                          operationalStyle[
-                                            option.operationalStatus
-                                          ]
-                                        }
-                                        text={getOperationalStatusLabel(
-                                          option.operationalStatus,
-                                        )}
-                                      />
-                                    </span>
-                                  )}
-                                />
+                                isAdmin ? (
+                                  <SearchableCatalogField
+                                    label="Asociar controlador"
+                                    value=""
+                                    options={availableControllerOptions}
+                                    onSelect={(controllerId) =>
+                                      attach(kiln, controllerId)
+                                    }
+                                    placeholder="Selecciona un controlador"
+                                    searchPlaceholder="Buscar por ID o cliente"
+                                    searchPrompt="Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible."
+                                    noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
+                                    listboxLabel="Controladores disponibles"
+                                    getSearchText={(option) => option.searchText}
+                                  />
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAssociationKiln(kiln);
+                                      setAssociationControllerId("");
+                                    }}
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                  >
+                                    Asociar controlador
+                                  </button>
+                                )
                               )}
                               {isAdmin &&
                                 (kiln.user ? (
@@ -952,6 +963,68 @@ export default function AdminKilns() {
           onPageChange={setPage}
         />
       </div>
+
+      <Modal
+        isOpen={!isAdmin && Boolean(associationKiln)}
+        onClose={closeAssociationModal}
+        title="Asociar controlador"
+        fields={[]}
+        onSubmit={() =>
+          attach(associationKiln, associationControllerId)
+        }
+        submitLabel="Confirmar vinculación"
+        submitDisabled={!associationControllerId}
+        loading={associationLoading}
+        renderContent={() => (
+          <div className="space-y-4">
+            <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-secondary">
+              Horno seleccionado:{" "}
+              <span className="font-mono text-content">
+                {associationKiln?.kilnId}
+              </span>
+            </p>
+            <p className="text-sm text-secondary">
+              Busca un controlador por sus últimos 6 dígitos o cliente, si está
+              disponible.
+            </p>
+            <SearchableCatalogField
+              label="Controlador disponible"
+              value={associationControllerId}
+              options={
+                associationKiln
+                  ? getAvailableControllerOptions(associationKiln)
+                  : []
+              }
+              onSelect={setAssociationControllerId}
+              placeholder="Selecciona un controlador"
+              searchPlaceholder="Buscar por ID o cliente"
+              searchPrompt="Escribe los últimos 6 dígitos o el nombre del cliente para buscar controladores."
+              noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
+              listboxLabel="Controladores disponibles"
+              getSearchText={(option) => option.searchText}
+              disabled={associationLoading}
+              renderOption={(option) => (
+                <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-content">
+                      {option.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted">
+                      {option.secondary}
+                    </span>
+                  </span>
+                  <Badge
+                    style={operationalStyle[option.operationalStatus]}
+                    text={getOperationalStatusLabel(
+                      option.operationalStatus,
+                    )}
+                  />
+                </span>
+              )}
+            />
+          </div>
+        )}
+      />
 
       <AlertDialog
         isOpen={isAlertOpen}

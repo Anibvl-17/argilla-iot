@@ -302,7 +302,9 @@ export default function AdminUsers() {
             <p className="text-sm text-muted md:text-base">
               Busca por nombre, correo electrónico, teléfono o ID.
             </p>
-            <Badge style="default" text={`${totalUsers} usuarios`} />
+            <span className="hidden sm:block">
+              <Badge style="default" text={`${totalUsers} usuarios`} />
+            </span>
           </div>
           <div className="grid gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_12rem]">
             <div className="relative">

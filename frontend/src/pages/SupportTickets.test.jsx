@@ -175,6 +175,17 @@ describe("SupportTickets", () => {
 
     expect(await screen.findByText("Camila")).toBeInTheDocument();
     expect(screen.getByText("Horno #7")).toBeInTheDocument();
+    for (const heading of ["Cliente", "Responsable", "Estado", "Fecha"]) {
+      expect(screen.getByRole("columnheader", { name: heading })).toHaveClass(
+        "hidden",
+        "md:table-cell",
+      );
+    }
+    for (const heading of ["ID", "Solicitud", "Acciones"]) {
+      expect(screen.getByRole("columnheader", { name: heading })).not.toHaveClass(
+        "hidden",
+      );
+    }
     expect(
       screen.queryByRole("columnheader", { name: "Horno" }),
     ).not.toBeInTheDocument();

@@ -11,7 +11,6 @@ import {
 } from "react-icons/lu";
 import { toast } from "sonner";
 import { useAuth } from "@context/AuthContext";
-import { Badge } from "@components/Badge";
 import FloatingDropdown from "@components/FloatingDropdown";
 import Pagination from "@components/Pagination";
 import {
@@ -28,8 +27,6 @@ import {
   FIRING_CYCLE_EXECUTION_TYPE_LABELS,
   FIRING_CYCLE_STATUS_LABELS,
   MAINTENANCE_TYPE_LABELS,
-  SUPPORT_STATUS_LABELS,
-  SUPPORT_STATUS_STYLES,
 } from "@constants/support.constants";
 import {
   getControllerConnectionLabel,
@@ -94,7 +91,7 @@ function AssigneeSearch({ assignees, value, onSelect }) {
   }
 
   return (
-    <div ref={anchorRef} className="w-full max-w-xs">
+    <div ref={anchorRef} className="w-full max-w-md">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -103,8 +100,10 @@ function AssigneeSearch({ assignees, value, onSelect }) {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={selected ? "truncate" : "truncate text-muted"}>
-          {selected?.name || "Asignar responsable"}
+        <span
+          className={selected ? "truncate" : "truncate italic text-muted"}
+        >
+          {selected?.name || "Sin asignar"}
         </span>
         <LuChevronDown className="shrink-0 text-muted" />
       </button>
@@ -219,21 +218,21 @@ function Diagnostics({ data, onCycleOpen }) {
 
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <h2 className="font-semibold">Ciclos recientes</h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-180 text-left text-sm">
-            <thead className="text-xs uppercase text-muted">
-              <tr>
-                <th className="py-2">Inicio</th>
-                <th>Fin</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Objetivo</th>
-                <th className="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {data.firingCycles.length ? (
-                data.firingCycles.map((cycle) => (
+        {data.firingCycles.length ? (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-180 text-left text-sm">
+              <thead className="text-xs uppercase text-muted">
+                <tr>
+                  <th className="py-2">Inicio</th>
+                  <th>Fin</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Objetivo</th>
+                  <th className="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.firingCycles.map((cycle) => (
                   <tr key={cycle.firingCycleId}>
                     <td className="py-3">
                       {new Date(cycle.startedAt).toLocaleString("es-CL")}
@@ -267,17 +266,15 @@ function Diagnostics({ data, onCycleOpen }) {
                       </button>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="py-8 text-center text-muted">
-                    Sin ciclos registrados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="py-8 text-center text-muted">
+            Sin ciclos registrados.
+          </p>
+        )}
       </div>
     </section>
   );
@@ -410,7 +407,7 @@ function CycleTelemetryModal({ ticketId, cycle, onClose, unavailable }) {
   );
 }
 
-function MaintenanceForm({ ticketId, diagnostics, onCreated }) {
+function MaintenanceModal({ ticketId, diagnostics, open, onClose, onCreated }) {
   const [form, setForm] = useState({
     type: "INSPECTION",
     title: "",
@@ -442,91 +439,187 @@ function MaintenanceForm({ ticketId, diagnostics, onCreated }) {
     });
     setSaving(false);
     if (!result.success) return toast.error(result.message);
-    setForm((current) => ({ ...current, title: "", workPerformed: "" }));
     toast.success("Mantenimiento registrado.");
-    onCreated();
+    await onCreated();
+    onClose();
   }
+
+  if (!open) return null;
+
   return (
-    <form
-      onSubmit={submit}
-      className="space-y-3 rounded-2xl border border-border bg-surface p-4 sm:p-5"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm"
+      onMouseDown={(event) =>
+        event.target === event.currentTarget && !saving && onClose()
+      }
+      role="presentation"
     >
-      <h2 className="flex items-center gap-2 font-semibold">
-        <LuWrench className="text-accent" /> Registrar mantenimiento
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <select
-          name="type"
-          value={form.type}
-          onChange={update}
-          className={inputClass}
-        >
-          {Object.entries(MAINTENANCE_TYPE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <input
-          required
-          type="datetime-local"
-          name="performedAt"
-          value={form.performedAt}
-          onChange={update}
-          className={inputClass}
-        />
-      </div>
-      <div className="flex gap-5 text-sm">
-        <label>
-          <input
-            type="checkbox"
-            checked={form.kiln}
-            onChange={(event) =>
-              setForm({ ...form, kiln: event.target.checked })
-            }
-          />{" "}
-          <span className="ml-1">Horno</span>
-        </label>
-        <label className={!diagnostics.controller ? "text-disabled" : ""}>
-          <input
-            type="checkbox"
-            disabled={!diagnostics.controller}
-            checked={form.controller}
-            onChange={(event) =>
-              setForm({ ...form, controller: event.target.checked })
-            }
-          />{" "}
-          <span className="ml-1">Controlador</span>
-        </label>
-      </div>
-      <input
-        required
-        minLength="3"
-        maxLength="150"
-        name="title"
-        value={form.title}
-        onChange={update}
-        className={inputClass}
-        placeholder="Título de la intervención"
-      />
-      <textarea
-        required
-        minLength="3"
-        maxLength="5000"
-        rows="4"
-        name="workPerformed"
-        value={form.workPerformed}
-        onChange={update}
-        className={inputClass}
-        placeholder="Trabajo realizado"
-      />
-      <button
-        disabled={saving}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action disabled:opacity-50"
+      <section
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="maintenance-modal-title"
       >
-        {saving ? "Guardando..." : "Registrar"}
-      </button>
-    </form>
+        <header className="flex items-center justify-between border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+          <h2
+            id="maintenance-modal-title"
+            className="flex items-center gap-2 text-lg font-bold sm:text-xl"
+          >
+            <LuWrench className="text-accent" /> Registrar mantenimiento
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Cerrar registro de mantenimiento"
+            className="rounded-md p-2 text-muted hover:bg-surface-hover hover:text-content disabled:opacity-50"
+          >
+            ✕
+          </button>
+        </header>
+        <form
+          onSubmit={submit}
+          className="min-h-0 space-y-4 overflow-y-auto p-4 sm:p-6"
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-medium text-secondary">
+              Tipo de mantenimiento
+              <select
+                name="type"
+                value={form.type}
+                onChange={update}
+                className={`${inputClass} mt-2`}
+              >
+                {Object.entries(MAINTENANCE_TYPE_LABELS).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+            <label className="text-sm font-medium text-secondary">
+              Fecha y hora
+              <input
+                required
+                type="datetime-local"
+                name="performedAt"
+                value={form.performedAt}
+                onChange={update}
+                className={`${inputClass} mt-2`}
+              />
+            </label>
+          </div>
+          <fieldset>
+            <legend className="text-sm font-medium text-secondary">
+              Equipos intervenidos
+            </legend>
+            <div className="mt-2 flex flex-wrap gap-5 text-sm">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.kiln}
+                  onChange={(event) =>
+                    setForm({ ...form, kiln: event.target.checked })
+                  }
+                />
+                <span className="ml-2">Horno</span>
+              </label>
+              <label
+                className={!diagnostics.controller ? "text-disabled" : ""}
+              >
+                <input
+                  type="checkbox"
+                  disabled={!diagnostics.controller}
+                  checked={form.controller}
+                  onChange={(event) =>
+                    setForm({ ...form, controller: event.target.checked })
+                  }
+                />
+                <span className="ml-2">Controlador</span>
+              </label>
+            </div>
+          </fieldset>
+          <label className="block text-sm font-medium text-secondary">
+            Título de la intervención
+            <input
+              required
+              minLength="3"
+              maxLength="150"
+              name="title"
+              value={form.title}
+              onChange={update}
+              className={`${inputClass} mt-2`}
+              placeholder="Título de la intervención"
+            />
+          </label>
+          <label className="block text-sm font-medium text-secondary">
+            Trabajo realizado
+            <textarea
+              required
+              minLength="3"
+              maxLength="5000"
+              rows="4"
+              name="workPerformed"
+              value={form.workPerformed}
+              onChange={update}
+              className={`${inputClass} mt-2`}
+              placeholder="Describe el trabajo realizado"
+            />
+          </label>
+          <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="rounded-lg border border-control-border px-4 py-2 text-sm font-medium disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={saving}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action disabled:opacity-50"
+            >
+              {saving ? "Guardando..." : "Registrar mantenimiento"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function MaintenanceRecords({ records }) {
+  return (
+    <div className="border-t border-border pt-5">
+      <h3 className="font-semibold">Mantenimientos</h3>
+      {records?.length ? (
+        <div className="mt-2 divide-y divide-border">
+          {records.map((record) => (
+            <article key={record.maintenanceId} className="py-3">
+              <div className="flex flex-wrap justify-between gap-2">
+                <strong>{record.title}</strong>
+                <span className="text-xs text-muted">
+                  {new Date(record.performedAt).toLocaleString("es-CL")}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-secondary">
+                {MAINTENANCE_TYPE_LABELS[record.type]} -{" "}
+                {record.performedByUser.name}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm">
+                {record.workPerformed}
+              </p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm italic text-muted">
+          Sin mantenimientos registrados.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -539,6 +632,7 @@ export default function SupportTicketDetails() {
   const [ticket, setTicket] = useState(null);
   const [diagnostics, setDiagnostics] = useState(null);
   const [selectedCycle, setSelectedCycle] = useState(null);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [assignees, setAssignees] = useState([]);
   const [resolution, setResolution] = useState("");
   const [loading, setLoading] = useState(true);
@@ -596,6 +690,10 @@ export default function SupportTicketDetails() {
       <div className="py-20 text-center text-muted">Cargando ticket...</div>
     );
   const canWork = isAdmin || ticket.assignedToUserId === user.id;
+  const canRegisterMaintenance =
+    canWork &&
+    diagnostics &&
+    ["IN_PROGRESS", "RESOLVED"].includes(ticket.status);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
@@ -605,35 +703,32 @@ export default function SupportTicketDetails() {
       >
         <LuArrowLeft /> Volver a soporte
       </Link>
-      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div>
-          <p className="font-mono text-sm text-muted">
-            Ticket #{ticket.supportTicketId}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
-            {ticket.title}
-          </h1>
-          <p className="mt-2 text-sm text-secondary">
-            {ticket.supportReason.name} - {ticket.kiln.name} -{" "}
-            {new Date(ticket.createdAt).toLocaleString("es-CL")}
-          </p>
-        </div>
-        <Badge
-          text={SUPPORT_STATUS_LABELS[ticket.status]}
-          style={SUPPORT_STATUS_STYLES[ticket.status]}
-        />
-      </header>
 
       <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        {!isClient && ticket.createdByUser && (
-          <p className="mb-4 text-sm text-secondary">
-            <strong className="text-content">Cliente:</strong>{" "}
-            {ticket.createdByUser.name} - {ticket.createdByUser.email} -{" "}
-            {ticket.createdByUser.phone || "sin teléfono"}
+        <header className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-start">
+          <div>
+            <h1 className="text-base font-semibold sm:text-lg">
+              {ticket.title}
+            </h1>
+            <p className="mt-1 text-xs text-secondary sm:text-sm">
+              Ticket #{ticket.supportTicketId} - {ticket.supportReason.name}
+            </p>
+          </div>
+          <p className="shrink-0 text-xs text-secondary sm:text-sm">
+            {new Date(ticket.createdAt).toLocaleString("es-CL")}
           </p>
+        </header>
+        {!isClient && ticket.createdByUser && (
+          <>
+            <h2 className="mt-5 text-sm font-semibold">Cliente</h2>
+            <p className="mt-1 text-sm text-secondary">
+              {ticket.createdByUser.name} - {ticket.createdByUser.email} -{" "}
+              {ticket.createdByUser.phone || "Sin teléfono"}
+            </p>
+          </>
         )}
-        <h2 className="font-semibold">Descripción</h2>
-        <p className="mt-3 whitespace-pre-wrap text-secondary">
+        <h2 className="mt-5 text-sm font-semibold">Descripción</h2>
+        <p className="mt-1 text-sm whitespace-pre-wrap text-secondary">
           {ticket.description}
         </p>
         {ticket.resolution && (
@@ -651,57 +746,103 @@ export default function SupportTicketDetails() {
       </section>
 
       {!isClient && (
-        <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          {!ticket.assignedToUserId && ticket.status === "OPEN" && (
-            <button
-              onClick={() =>
-                run(() => claimSupportTicket(ticketId), "Ticket asignado.")
-              }
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
-            >
-              Tomar ticket
-            </button>
-          )}
-          {isAdmin && (
-            <AssigneeSearch
-              assignees={assignees}
-              value={ticket.assignedToUserId}
-              onSelect={(userId) =>
-                run(
-                  () => assignSupportTicket(ticketId, userId),
-                  "Responsable actualizado.",
-                )
-              }
-            />
-          )}
-          {canWork && ticket.status === "IN_PROGRESS" && (
-            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-              <textarea
-                value={resolution}
-                onChange={(event) => setResolution(event.target.value)}
-                rows="2"
-                className={inputClass}
-                placeholder="Diagnóstico y solución"
-              />
+        <section className="space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Acciones</h2>
+            <p className="mt-1 text-sm text-secondary">
+              {isAdmin
+                ? "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
+                : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,28rem)_auto] sm:items-end">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-secondary">Responsable</p>
+              {isAdmin ? (
+                <AssigneeSearch
+                  assignees={assignees}
+                  value={ticket.assignedToUserId}
+                  onSelect={(userId) =>
+                    run(
+                      () => assignSupportTicket(ticketId, userId),
+                      "Responsable actualizado.",
+                    )
+                  }
+                />
+              ) : (
+                <div className={`${inputClass} max-w-md`}>
+                  {ticket.assignedToUser?.name || (
+                    <span className="italic text-muted">Sin asignar</span>
+                  )}
+                </div>
+              )}
+            </div>
+            {!ticket.assignedToUserId && ticket.status === "OPEN" && (
               <button
                 onClick={() =>
-                  run(
-                    () =>
-                      updateSupportTicketStatus(ticketId, {
-                        status: "RESOLVED",
-                        resolution,
-                      }),
-                    "Ticket resuelto.",
-                  )
+                  run(() => claimSupportTicket(ticketId), "Ticket asignado.")
                 }
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
+                className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action sm:w-auto"
               >
-                Resolver
+                Tomar ticket
               </button>
-            </div>
-          )}
+            )}
+          </div>
+
+          {ticket.assignedToUserId &&
+            canWork &&
+            ticket.status === "IN_PROGRESS" && (
+              <div className="space-y-3 border-t border-border pt-5">
+                <label className="block text-sm font-medium text-secondary">
+                  Diagnóstico y solución
+                  <textarea
+                    value={resolution}
+                    onChange={(event) => setResolution(event.target.value)}
+                    rows="3"
+                    className={`${inputClass} mt-2`}
+                    placeholder="Describe el diagnóstico y la solución aplicada"
+                  />
+                </label>
+                <div className="flex flex-col justify-center gap-3 sm:flex-row sm:justify-end">
+                  {canRegisterMaintenance && (
+                    <button
+                      type="button"
+                      onClick={() => setMaintenanceOpen(true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-control-border px-5 py-2.5 text-sm font-medium hover:bg-surface-hover"
+                    >
+                      <LuWrench /> Registrar mantenimiento
+                    </button>
+                  )}
+                  <button
+                    onClick={() =>
+                      run(
+                        () =>
+                          updateSupportTicketStatus(ticketId, {
+                            status: "RESOLVED",
+                            resolution,
+                          }),
+                        "Ticket resuelto.",
+                      )
+                    }
+                    className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action"
+                  >
+                    Resolver
+                  </button>
+                </div>
+              </div>
+            )}
           {canWork && ticket.status === "RESOLVED" && (
-            <>
+            <div className="flex flex-col justify-center gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+              {canRegisterMaintenance && (
+                <button
+                  type="button"
+                  onClick={() => setMaintenanceOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-control-border px-4 py-2 text-sm font-medium hover:bg-surface-hover"
+                >
+                  <LuWrench /> Registrar mantenimiento
+                </button>
+              )}
               <button
                 onClick={() =>
                   run(
@@ -728,77 +869,51 @@ export default function SupportTicketDetails() {
               >
                 Reabrir
               </button>
-            </>
+            </div>
           )}
           {canWork && ticket.status === "CLOSED" && (
-            <button
-              onClick={() =>
-                run(
-                  () =>
-                    updateSupportTicketStatus(ticketId, {
-                      status: "IN_PROGRESS",
-                    }),
-                  "Ticket reabierto.",
-                )
-              }
-              className="rounded-lg border border-control-border px-4 py-2 text-sm"
-            >
-              Reabrir
-            </button>
+            <div className="flex justify-center border-t border-border pt-5 sm:justify-end">
+              <button
+                onClick={() =>
+                  run(
+                    () =>
+                      updateSupportTicketStatus(ticketId, {
+                        status: "IN_PROGRESS",
+                      }),
+                    "Ticket reabierto.",
+                  )
+                }
+                className="rounded-lg border border-control-border px-4 py-2 text-sm"
+              >
+                Reabrir
+              </button>
+            </div>
           )}
-          <span className="text-sm text-muted">
-            Responsable:{" "}
-            {ticket.assignedToUser?.name || (
-              <span className="italic text-muted">Sin asignar</span>
-            )}
-          </span>
+          <MaintenanceRecords records={ticket.maintenanceRecords} />
         </section>
       )}
 
       {!isClient && (
         <Diagnostics data={diagnostics} onCycleOpen={setSelectedCycle} />
       )}
-      {!isClient &&
-        canWork &&
-        diagnostics &&
-        ["IN_PROGRESS", "RESOLVED"].includes(ticket.status) && (
-          <MaintenanceForm
-            ticketId={ticketId}
-            diagnostics={diagnostics}
-            onCreated={load}
-          />
-        )}
-      {!isClient && ticket.maintenanceRecords?.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <h2 className="font-semibold">Mantenimientos</h2>
-          <div className="mt-3 divide-y divide-border">
-            {ticket.maintenanceRecords.map((record) => (
-              <article key={record.maintenanceId} className="py-3">
-                <div className="flex flex-wrap justify-between gap-2">
-                  <strong>{record.title}</strong>
-                  <span className="text-xs text-muted">
-                    {new Date(record.performedAt).toLocaleString("es-CL")}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-secondary">
-                  {MAINTENANCE_TYPE_LABELS[record.type]} -{" "}
-                  {record.performedByUser.name}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm">
-                  {record.workPerformed}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
       {!isClient && (
-        <CycleTelemetryModal
-          ticketId={ticketId}
-          cycle={selectedCycle}
-          onClose={() => setSelectedCycle(null)}
-          unavailable={unavailable}
-        />
+        <>
+          <CycleTelemetryModal
+            ticketId={ticketId}
+            cycle={selectedCycle}
+            onClose={() => setSelectedCycle(null)}
+            unavailable={unavailable}
+          />
+          {diagnostics && maintenanceOpen && (
+            <MaintenanceModal
+              ticketId={ticketId}
+              diagnostics={diagnostics}
+              open={maintenanceOpen}
+              onClose={() => setMaintenanceOpen(false)}
+              onCreated={load}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LuArrowLeft,
   LuClipboardList,
-  LuEye,
   LuLifeBuoy,
   LuPlus,
   LuSearch,
@@ -454,16 +453,24 @@ function TicketTable({ tickets, loading, error, mode }) {
   const isClient = mode === "client-requests";
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-180 text-left text-sm">
+      <table className="w-full table-fixed text-left text-sm md:min-w-180 md:table-auto">
         <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
           <tr>
-            <th className="px-5 py-4">ID</th>
-            <th className="px-5 py-4">Solicitud</th>
-            <th className="px-5 py-4">{isClient ? "Horno" : "Cliente"}</th>
-            {!isClient && <th className="px-5 py-4">Responsable</th>}
-            <th className="px-5 py-4 text-center">Estado</th>
-            <th className="px-5 py-4">Fecha</th>
-            <th className="px-5 py-4 text-center">Acciones</th>
+            <th className="w-14 px-3 py-4 md:w-auto md:px-5">ID</th>
+            <th className="px-3 py-4 md:px-5">Solicitud</th>
+            <th className="hidden px-5 py-4 md:table-cell">
+              {isClient ? "Horno" : "Cliente"}
+            </th>
+            {!isClient && (
+              <th className="hidden px-5 py-4 md:table-cell">Responsable</th>
+            )}
+            <th className="hidden px-5 py-4 text-center md:table-cell">
+              Estado
+            </th>
+            <th className="hidden px-5 py-4 md:table-cell">Fecha</th>
+            <th className="w-28 px-3 py-4 text-center md:w-auto md:px-5">
+              Acciones
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -472,16 +479,18 @@ function TicketTable({ tickets, loading, error, mode }) {
               key={ticket.supportTicketId}
               className="transition-colors hover:bg-surface-hover"
             >
-              <td className="px-5 py-4 font-mono text-muted">
+              <td className="px-3 py-4 font-mono text-muted md:px-5">
                 #{ticket.supportTicketId}
               </td>
-              <td className="max-w-72 px-5 py-4">
-                <p className="font-medium text-content">{ticket.title}</p>
+              <td className="text-xs sm:text-sm max-w-72 px-3 py-4 md:px-5">
+                <p className="font-medium text-content">
+                  {ticket.title}
+                </p>
                 <p className="mt-1 truncate text-xs text-muted">
                   {ticket.supportReason?.name}
                 </p>
               </td>
-              <td className="px-5 py-4">
+              <td className="hidden px-5 py-4 md:table-cell">
                 <p>
                   {isClient
                     ? ticket.kiln?.name
@@ -494,13 +503,13 @@ function TicketTable({ tickets, loading, error, mode }) {
                 )}
               </td>
               {!isClient && (
-                <td className="px-5 py-4">
+                <td className="hidden px-5 py-4 md:table-cell">
                   {ticket.assignedToUser?.name || (
                     <span className="italic text-muted">Sin asignar</span>
                   )}
                 </td>
               )}
-              <td className="px-5 py-4">
+              <td className="hidden px-5 py-4 md:table-cell">
                 <span className="flex justify-center">
                   <Badge
                     text={SUPPORT_STATUS_LABELS[ticket.status]}
@@ -508,15 +517,15 @@ function TicketTable({ tickets, loading, error, mode }) {
                   />
                 </span>
               </td>
-              <td className="px-5 py-4 text-muted">
+              <td className="hidden px-5 py-4 text-muted md:table-cell">
                 {new Date(ticket.createdAt).toLocaleDateString("es-CL")}
               </td>
-              <td className="px-5 py-4 text-center">
+              <td className="px-3 py-4 text-center md:px-5">
                 <Link
                   to={`/support/${ticket.supportTicketId}`}
                   className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-xs font-medium text-content transition-colors hover:bg-surface-hover"
                 >
-                  <LuEye /> Ver detalle
+                  Ver detalle
                 </Link>
               </td>
             </tr>

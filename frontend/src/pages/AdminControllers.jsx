@@ -429,7 +429,7 @@ export default function AdminControllers() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="hidden grid-cols-3 gap-4 sm:grid">
         {[
           ["Total controladores", summary.total],
           ["Sin horno", Math.max(0, summary.total - summary.linkedToKiln)],
@@ -506,17 +506,29 @@ export default function AdminControllers() {
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="w-32 px-3 py-4 text-center sm:px-6">ID</th>
-                {isAdmin ? (
-                  <th className="hidden px-6 py-4 md:table-cell">
-                    Propietario / ID Horno
+                <th
+                  className={
+                    isAdmin
+                      ? "w-32 px-3 py-4 text-center sm:px-6"
+                      : "w-24 px-2 py-4 text-center sm:px-4"
+                  }
+                >
+                  ID
+                </th>
+                <th
+                  aria-label="Propietario / Horno"
+                  className={
+                    isAdmin
+                      ? "hidden px-6 py-4 md:table-cell"
+                      : "px-3 py-4 sm:px-6"
+                  }
+                >
+                  Propietario<br />Horno
+                </th>
+                {!isAdmin && (
+                  <th className="hidden px-3 py-4 text-center lg:table-cell lg:px-6">
+                    Switch
                   </th>
-                ) : (
-                  <>
-                    <th className="px-3 py-4 sm:px-6">Propietario</th>
-                    <th className="px-3 py-4 sm:px-6">ID Horno</th>
-                    <th className="px-3 py-4 text-center sm:px-6">Switch</th>
-                  </>
                 )}
                 {isAdmin && (
                   <>
@@ -533,7 +545,7 @@ export default function AdminControllers() {
                   className={
                     isAdmin
                       ? "hidden px-6 py-4 text-center xl:table-cell"
-                      : "px-3 py-4 text-center sm:px-6"
+                      : "hidden px-3 py-4 text-center lg:table-cell lg:px-6"
                   }
                 >
                   Estado
@@ -546,7 +558,13 @@ export default function AdminControllers() {
                 controllers.map((controller) => (
                   <Fragment key={controller.controllerId}>
                     <tr className="transition-colors hover:bg-surface-hover">
-                      <td className="w-32 px-3 py-5 text-center font-mono text-accent sm:px-6">
+                      <td
+                        className={
+                          isAdmin
+                            ? "w-32 px-3 py-5 text-center font-mono text-accent sm:px-6"
+                            : "w-24 px-2 py-5 text-center font-mono text-accent sm:px-4"
+                        }
+                      >
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(
@@ -555,51 +573,38 @@ export default function AdminControllers() {
                             toast.success("¡ID copiada!");
                           }}
                           title="Copiar identificador del controlador"
-                          className="text-sm hover:underline hover:cursor-pointer"
+                          className={`${isAdmin ? "text-sm" : "text-xs"} hover:cursor-pointer hover:underline`}
                         >
                           ...{controller.controllerCode}
                         </button>
                       </td>
-                      {isAdmin ? (
-                        <td className="hidden px-6 py-5 md:table-cell">
-                          {controller.user ? (
-                            <p>{controller.user.name}</p>
-                          ) : (
-                            <p className="italic text-muted">Sin propietario</p>
-                          )}
-                          {controller.kiln ? (
-                            <p className="mt-1 text-secondary">
-                              Horno #{controller.kiln.kilnId}
-                            </p>
-                          ) : (
-                            <p className="mt-1 italic text-muted">
-                              Sin horno asociado
-                            </p>
-                          )}
+                      <td
+                        className={
+                          isAdmin
+                            ? "hidden px-6 py-5 md:table-cell"
+                            : "px-3 py-5 sm:px-6"
+                        }
+                      >
+                        {controller.user ? (
+                          <p>{controller.user.name}</p>
+                        ) : (
+                          <p className="italic text-muted">Sin propietario</p>
+                        )}
+                        {controller.kiln ? (
+                          <p className="mt-1 text-xs text-secondary sm:text-sm">
+                            Horno #{controller.kiln.kilnId}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs italic text-muted sm:text-sm">
+                            Sin horno asociado
+                          </p>
+                        )}
+                      </td>
+                      {!isAdmin && (
+                        <td className="hidden px-3 py-5 text-center lg:table-cell lg:px-6">
+                          {getSwitchLabel(controller.switchType)}{" "}
+                          {controller.switchCurrentCapacity} A
                         </td>
-                      ) : (
-                        <>
-                          <td className="px-3 py-5 sm:px-6">
-                            {controller.user?.name || (
-                              <span className="italic text-muted">
-                                Sin propietario
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-5 sm:px-6">
-                            {controller.kiln ? (
-                              `Horno #${controller.kiln.kilnId}`
-                            ) : (
-                              <span className="italic text-muted">
-                                Sin horno asociado
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-5 text-center sm:px-6">
-                            {getSwitchLabel(controller.switchType)}{" "}
-                            {controller.switchCurrentCapacity} A
-                          </td>
-                        </>
                       )}
                       {isAdmin && (
                         <>
@@ -642,7 +647,7 @@ export default function AdminControllers() {
                         className={
                           isAdmin
                             ? "hidden px-6 py-5 xl:table-cell"
-                            : "px-3 py-5 sm:px-6"
+                            : "hidden px-3 py-5 lg:table-cell lg:px-6"
                         }
                       >
                         <span className="flex justify-center">
@@ -658,31 +663,29 @@ export default function AdminControllers() {
                       </td>
                       <td className="px-3 py-5 sm:px-6">
                         <div className="flex justify-center gap-2">
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedControllerId(
-                                  expandedControllerId === controller.controllerId
-                                    ? null
-                                    : controller.controllerId,
-                                )
-                              }
-                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
-                              title={
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedControllerId(
                                 expandedControllerId === controller.controllerId
-                                  ? "Ocultar detalles"
-                                  : "Ver detalles"
-                              }
-                            >
-                              {expandedControllerId ===
-                              controller.controllerId ? (
-                                <LuEyeOff className="text-base" />
-                              ) : (
-                                <LuEye className="text-base" />
-                              )}
-                            </button>
-                          )}
+                                  ? null
+                                  : controller.controllerId,
+                              )
+                            }
+                            className={`${isAdmin ? "" : "lg:hidden"} rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content`}
+                            title={
+                              expandedControllerId === controller.controllerId
+                                ? "Ocultar detalles"
+                                : "Ver detalles"
+                            }
+                          >
+                            {expandedControllerId ===
+                            controller.controllerId ? (
+                              <LuEyeOff className="text-base" />
+                            ) : (
+                              <LuEye className="text-base" />
+                            )}
+                          </button>
                           {!controller.kiln && (
                             <button
                               type="button"
@@ -719,17 +722,42 @@ export default function AdminControllers() {
                             {renderControllerActions(controller)}
                           </div>
                           {!isAdmin && controller.kiln && controller.user && (
-                            <span className="text-sm italic text-muted">
-                              Sin acciones disponibles
+                            <span className="hidden text-sm italic text-muted lg:inline">
+                              -
                             </span>
                           )}
                         </div>
                       </td>
                     </tr>
-                    {isAdmin &&
-                      expandedControllerId === controller.controllerId && (
+                    {expandedControllerId === controller.controllerId && (
                       <tr className="bg-surface-muted">
-                        <td colSpan={7} className="px-6 py-5">
+                        <td
+                          colSpan={isAdmin ? 7 : 5}
+                          className="px-4 py-5 sm:px-6"
+                        >
+                          {!isAdmin && (
+                            <dl className="grid grid-cols-2 gap-4">
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Switch
+                                </dt>
+                                <dd className="mt-1">
+                                  {getSwitchLabel(controller.switchType)}{" "}
+                                  {controller.switchCurrentCapacity} A
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Estado
+                                </dt>
+                                <dd className="mt-1">
+                                  {getOperationalStatusLabel(
+                                    controller.operationalStatus,
+                                  )}
+                                </dd>
+                              </div>
+                            </dl>
+                          )}
                           {isAdmin && (
                             <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                             <div className="md:hidden">
@@ -851,7 +879,7 @@ export default function AdminControllers() {
                             </div>
                             </dl>
                           )}
-                          {!controller.kiln && (
+                          {isAdmin && !controller.kiln && (
                             <div className="mt-5 max-w-2xl border-t border-border pt-4">
                               <SearchableCatalogField
                                 label="Asociar horno"
@@ -906,7 +934,7 @@ export default function AdminControllers() {
               {!loading && controllers.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 7 : 6}
+                    colSpan={isAdmin ? 7 : 5}
                     className="px-6 py-12 text-center text-muted"
                   >
                     No se encontraron controladores.
@@ -916,7 +944,7 @@ export default function AdminControllers() {
               {loading && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 7 : 6}
+                    colSpan={isAdmin ? 7 : 5}
                     className="px-6 py-12 text-center text-muted"
                   >
                     Cargando controladores...
@@ -946,10 +974,10 @@ export default function AdminControllers() {
         loading={associationLoading}
         renderContent={() => (
           <div className="space-y-4">
-            <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-secondary">
+            <p className="text-sm text-secondary">
               Controlador seleccionado:{" "}
               <span className="break-all font-mono text-content">
-                {associationController?.controllerId}
+                {associationController?.controllerId.slice(-6)}
               </span>
             </p>
             <p className="text-sm text-secondary">

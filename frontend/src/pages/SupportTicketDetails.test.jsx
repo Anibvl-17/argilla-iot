@@ -13,6 +13,7 @@ const { authState, mocks } = vi.hoisted(() => ({
   authState: { user: { id: 2, name: "Técnico", role: "TECHNICIAN" } },
   mocks: {
     assignSupportTicket: vi.fn(),
+    createTicketMaintenance: vi.fn(),
     getSupportAssignees: vi.fn(),
     getSupportTicket: vi.fn(),
     getSupportDiagnostics: vi.fn(),
@@ -26,7 +27,7 @@ vi.mock("@context/AuthContext", () => ({
 vi.mock("@services/support.service", () => ({
   assignSupportTicket: mocks.assignSupportTicket,
   claimSupportTicket: vi.fn(),
-  createTicketMaintenance: vi.fn(),
+  createTicketMaintenance: mocks.createTicketMaintenance,
   getSupportAssignees: mocks.getSupportAssignees,
   getSupportDiagnostics: mocks.getSupportDiagnostics,
   getSupportTelemetry: mocks.getSupportTelemetry,
@@ -56,6 +57,36 @@ function buildTicket(overrides = {}) {
   };
 }
 
+function buildDiagnostics(overrides = {}) {
+  return {
+    kilnId: 7,
+    name: "Horno gres",
+    liters: 100,
+    nominalVoltage: 220,
+    nominalCurrent: 20,
+    phaseCount: 1,
+    operationalStatus: "OPERATIONAL",
+    controller: {
+      controllerId: "11111111-1111-4111-8111-111111abcdef",
+      controllerCode: "abcdef",
+      connectionStatus: "ONLINE",
+      temperature: 700,
+      firmwareVersion: "1.0.0",
+    },
+    firingCycles: [
+      {
+        firingCycleId: 44,
+        startedAt: "2026-09-14T11:00:00.000Z",
+        endedAt: "2026-09-14T12:00:00.000Z",
+        executionType: "DIRECT",
+        status: "COMPLETED",
+        targetTemperature: 950,
+      },
+    ],
+    ...overrides,
+  };
+}
+
 describe("SupportTicketDetails", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -71,32 +102,7 @@ describe("SupportTicketDetails", () => {
     mocks.getSupportAssignees.mockResolvedValue({ success: true, data: [] });
     mocks.getSupportDiagnostics.mockResolvedValue({
       success: true,
-      data: {
-        kilnId: 7,
-        name: "Horno gres",
-        liters: 100,
-        nominalVoltage: 220,
-        nominalCurrent: 20,
-        phaseCount: 1,
-        operationalStatus: "OPERATIONAL",
-        controller: {
-          controllerId: "11111111-1111-4111-8111-111111abcdef",
-          controllerCode: "abcdef",
-          connectionStatus: "ONLINE",
-          temperature: 700,
-          firmwareVersion: "1.0.0",
-        },
-        firingCycles: [
-          {
-            firingCycleId: 44,
-            startedAt: "2026-09-14T11:00:00.000Z",
-            endedAt: "2026-09-14T12:00:00.000Z",
-            executionType: "DIRECT",
-            status: "COMPLETED",
-            targetTemperature: 950,
-          },
-        ],
-      },
+      data: buildDiagnostics(),
     });
     mocks.getSupportTelemetry.mockResolvedValue({
       success: true,
@@ -114,6 +120,10 @@ describe("SupportTicketDetails", () => {
         ],
         pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1 },
       },
+    });
+    mocks.createTicketMaintenance.mockResolvedValue({
+      success: true,
+      data: {},
     });
   });
 
@@ -137,6 +147,29 @@ describe("SupportTicketDetails", () => {
     expect(within(dialog).getByText("700.0 °C")).toBeInTheDocument();
   });
 
+  it("hides the cycle table headers when there are no recent cycles", async () => {
+    mocks.getSupportDiagnostics.mockResolvedValue({
+      success: true,
+      data: buildDiagnostics({ firingCycles: [] }),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Sin ciclos registrados.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Inicio" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Acciones" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("uses friendly equipment labels and copies the controller identifier", async () => {
     render(
       <MemoryRouter initialEntries={["/support/9"]}>
@@ -154,10 +187,96 @@ describe("SupportTicketDetails", () => {
     expect(screen.getByText("Control directo")).toBeInTheDocument();
     expect(screen.getByText("Completado")).toBeInTheDocument();
 
+    const ticketHeading = screen.getByRole("heading", {
+      name: "Temperatura irregular",
+    });
+    const descriptionSection = ticketHeading.closest("section");
+    expect(
+      within(descriptionSection).getByText("Ticket #9 - Temperatura"),
+    ).toBeInTheDocument();
+    expect(within(descriptionSection).getByText(/Camila/)).toBeInTheDocument();
+    expect(
+      within(descriptionSection).getByText(
+        "La temperatura cae durante el ciclo.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Volver a soporte" }).closest("section"),
+    ).toBeNull();
+
+    const actionsSection = screen
+      .getByRole("heading", { name: "Acciones" })
+      .closest("section");
+    expect(within(actionsSection).getByText("Responsable")).toBeInTheDocument();
+    expect(
+      within(actionsSection).getByRole("textbox", {
+        name: "Diagnóstico y solución",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(actionsSection).getByRole("button", { name: "Resolver" })
+        .parentElement,
+    ).toHaveClass("justify-center", "sm:justify-end");
+
     fireEvent.click(
       screen.getByRole("button", { name: "Copiar ID del controlador" }),
     );
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("abcdef");
+  });
+
+  it("registers maintenance from a modal beside the resolve action", async () => {
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const actionsSection = (await screen.findByRole("heading", {
+      name: "Acciones",
+    })).closest("section");
+    expect(
+      within(actionsSection).getByText("Sin mantenimientos registrados."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(actionsSection).getByRole("button", {
+        name: "Registrar mantenimiento",
+      }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Registrar mantenimiento",
+    });
+    fireEvent.change(
+      within(dialog).getByRole("textbox", {
+        name: "Título de la intervención",
+      }),
+      { target: { value: "Revisión eléctrica" } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole("textbox", { name: "Trabajo realizado" }),
+      { target: { value: "Se revisaron terminales y conexiones." } },
+    );
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Registrar mantenimiento" }),
+    );
+
+    await waitFor(() => {
+      expect(mocks.createTicketMaintenance).toHaveBeenCalledWith(
+        "9",
+        expect.objectContaining({
+          type: "INSPECTION",
+          title: "Revisión eléctrica",
+          workPerformed: "Se revisaron terminales y conexiones.",
+          kilnId: 7,
+        }),
+      );
+      expect(
+        screen.queryByRole("dialog", { name: "Registrar mantenimiento" }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("searches responsible technicians by name before assigning them", async () => {

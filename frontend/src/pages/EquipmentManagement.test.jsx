@@ -172,8 +172,26 @@ describe("technician equipment management", () => {
     });
     fireEvent.click(controllerSearch);
     expect(
-      await screen.findByText(
+      await screen.findByRole("heading", { name: "Asociar controlador" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
         "Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Horno seleccionado:")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirmar vinculación" }),
+    ).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Controlador disponible",
+        expanded: false,
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Escribe los últimos 6 dígitos o el nombre del cliente para buscar controladores.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -202,6 +220,10 @@ describe("technician equipment management", () => {
       await screen.findByRole("option", {
         name: /\.\.\.abcdef - Sin propietario.*Contactor 25 A.*Operativo/i,
       }),
+    );
+    expect(mocks.linkController).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar vinculación" }),
     );
     await waitFor(() =>
       expect(mocks.linkController).toHaveBeenCalledWith(
@@ -253,13 +275,13 @@ describe("technician equipment management", () => {
     await waitFor(() => expect(mocks.getAllControllers).toHaveBeenCalled());
     expect(screen.getByTitle("Asociar horno")).toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: "Propietario" }),
+      screen.getByRole("columnheader", { name: "Propietario / Horno" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: "ID Horno" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("columnheader", { name: "Propietario" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("columnheader", { name: "Propietario / Horno" }),
+      screen.queryByRole("columnheader", { name: "ID Horno" }),
     ).not.toBeInTheDocument();
     expect(screen.getAllByTitle("Editar controlador").length).toBeGreaterThan(
       0,
@@ -267,15 +289,35 @@ describe("technician equipment management", () => {
     expect(screen.queryByText("Temperatura")).not.toBeInTheDocument();
     expect(screen.queryByText("Actividad")).not.toBeInTheDocument();
     expect(screen.queryByText("Firmware")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("columnheader", { name: "Switch" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Switch" })).toHaveClass(
+      "hidden",
+      "lg:table-cell",
+    );
+    expect(screen.getByRole("columnheader", { name: "Estado" })).toHaveClass(
+      "hidden",
+      "lg:table-cell",
+    );
     expect(screen.getByText("Contactor 20 A")).toBeInTheDocument();
     expect(screen.getByText("SSR 40 A")).toBeInTheDocument();
-    expect(screen.getByText("Sin acciones disponibles")).toHaveClass(
+    expect(screen.getByText("Horno #1")).toBeInTheDocument();
+    const ownedControllerRow = screen
+      .getByRole("button", { name: "...fedcba" })
+      .closest("tr");
+    expect(within(ownedControllerRow).getByText("Horno #1")).toBeInTheDocument();
+    expect(within(ownedControllerRow).getByText("-")).toHaveClass(
       "italic",
       "text-muted",
     );
+
+    const availableControllerRow = screen
+      .getByRole("button", { name: "...abcdef" })
+      .closest("tr");
+    fireEvent.click(within(availableControllerRow).getByTitle("Ver detalles"));
+    expect(
+      within(availableControllerRow.nextElementSibling).getByText(
+        "Contactor 20 A",
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle("Asociar horno"));
     expect(
@@ -288,9 +330,9 @@ describe("technician equipment management", () => {
         "Busca un horno por su identificador o cliente, si está disponible.",
       ),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/11111111-1111-4111-8111-111111abcdef/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Controlador seleccionado:").closest("p")).toHaveTextContent(
+      "abcdef",
+    );
     expect(
       screen.getByRole("button", { name: "Cancelar" }),
     ).toBeInTheDocument();
