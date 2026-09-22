@@ -487,7 +487,7 @@ function TicketTable({ tickets, loading, error, mode }) {
               className="transition-colors hover:bg-surface-hover"
             >
               <td className="px-3 py-4 font-mono text-muted md:px-5">
-                #{ticket.supportTicketId}
+                {ticket.supportTicketId}
               </td>
               <td className="text-xs sm:text-sm max-w-72 px-3 py-4 md:px-5">
                 <p className="font-medium text-content">

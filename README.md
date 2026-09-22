@@ -19,13 +19,14 @@ Aplicación local para monitorear y controlar hornos cerámicos eléctricos. Inc
 - Registro e inicio de sesión con JWT; roles `CLIENT`, `TECHNICIAN` y `ADMIN`.
 - Gestión de usuarios, hornos, controladores y circuitos de resistencias jerárquicos.
 - Vinculación de conjuntos horno–controlador mediante PIN temporal generado por el ESP32.
-- Visualización de temperatura, estado de conexión y estado del switch en tiempo real.
-- Control `ON`/`OFF` del controlador vinculado a un horno.
+- Programas globales de quema y selección persistente por horno.
+- Ciclos confirmados por el controlador con pausa, reanudación, cancelación e historial.
+- Visualización en tiempo real y telemetría histórica inicial, cada diez minutos y final.
 - Soporte por tickets con motivos administrables, asignación atómica, diagnóstico
   contextual, resolución y mantenimientos asociados. Los técnicos acceden a los
   equipos únicamente desde tickets sin asignar o asignados a ellos.
-- Modelo de historial basado en ciclos de quema; su lógica funcional se implementará en una iteración posterior.
-- Simulador MQTT integrado: cada controlador de la base de datos recibe su propia instancia simulada.
+- Ejecución local y sincronización posterior cuando un controlador pierde conexión MQTT.
+- Simulador MQTT integrado con el mismo contrato de ciclos que los controladores físicos.
 
 ## Desarrollo local (flujo principal)
 
@@ -79,7 +80,7 @@ En otra terminal, desde `backend` y usando el mismo archivo `.env`:
 npm run simulator
 ```
 
-El servicio sincroniza periódicamente los controladores registrados. Cada controlador tiene una sola instancia de simulación, que publica temperatura y estado MQTT, y recibe comandos `ON` y `OFF`.
+El servicio sincroniza periódicamente los controladores registrados. Cada instancia conserva su catálogo, ciclo activo, comandos deduplicados y muestras pendientes en `.simulator-state`. `SIMULATOR_TIME_SCALE` permite acelerar las curvas durante desarrollo. Por defecto actualiza la simulación cada segundo, sin acreditar tiempo antes del primer intervalo.
 
 ### 4. Configurar e iniciar el frontend
 
@@ -173,3 +174,16 @@ También puede comprobarse la configuración de contenedores sin levantarlos:
 ```bash
 docker compose config --quiet
 ```
+
+### Alcance de la simulación
+
+El simulador permite verificar el contrato MQTT versionado, la idempotencia de
+comandos persistidos, las curvas y mesetas, pausa y recuperación lógica,
+telemetría inicial/periódica/final, mensajes desordenados o duplicados,
+continuidad offline y reconciliación de ciclos.
+
+Siguen pendientes de firmware y validación con hardware real el control PID y
+la modulación del relé, la lectura y seguridad eléctrica de sensores, la
+persistencia no volátil del ESP32, el umbral físico de arranque bajo 35 °C, las
+tolerancias exactas de recuperación térmica y el comportamiento ante cortes de
+energía o fallas de componentes.
