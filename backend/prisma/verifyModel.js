@@ -61,7 +61,11 @@ async function verifySeed() {
   assert.ok(seededClient.communeId);
   assert.equal(
     await prisma.kiln.count({
-      where: { heatingCircuitConfiguration: { equals: { type: "ROOT", connectionType: "PARALLEL", elements: [] } } },
+      where: {
+        heatingCircuitConfiguration: {
+          equals: { type: "ROOT", connectionType: "PARALLEL", elements: [] },
+        },
+      },
     }),
     0,
   );
@@ -90,7 +94,12 @@ async function verifyFiringCycleCheck() {
           },
         });
         const kiln = await tx.kiln.create({
-          data: { userId: user.userId, liters: 1, nominalCurrent: 1, heatingCircuitConfiguration: validCircuit },
+          data: {
+            userId: user.userId,
+            liters: 1,
+            nominalCurrent: 1,
+            heatingCircuitConfiguration: validCircuit,
+          },
         });
         const program = await tx.program.create({
           data: {
@@ -124,7 +133,12 @@ async function verifyFiringCycleCheck() {
         },
       });
       const kiln = await tx.kiln.create({
-        data: { userId: user.userId, liters: 1, nominalCurrent: 1, heatingCircuitConfiguration: validCircuit },
+        data: {
+          userId: user.userId,
+          liters: 1,
+          nominalCurrent: 1,
+          heatingCircuitConfiguration: validCircuit,
+        },
       });
       const configuration = {
         schemaVersion: 1,

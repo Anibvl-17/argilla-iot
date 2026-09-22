@@ -1,10 +1,5 @@
-import {
-  getCountries,
-  getCountryCallingCode,
-} from "libphonenumber-js/max";
-import {
-  CHILE_COMMUNES_BY_REGION,
-} from "./chileCommunes.constants.js";
+import { getCountries, getCountryCallingCode } from "libphonenumber-js/max";
+import { CHILE_COMMUNES_BY_REGION } from "./chileCommunes.constants.js";
 
 const CHILE_REGION_BASE = [
   { code: "01", name: "Tarapacá" },

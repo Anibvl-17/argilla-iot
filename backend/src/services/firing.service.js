@@ -80,7 +80,10 @@ export async function selectOwnedKilnProgram(userId, kilnId, programId) {
     });
     if (!kiln) throw serviceError("NOT_FOUND", "Horno no encontrado");
     if (!kiln.controller) {
-      throw serviceError("CONTROLLER_REQUIRED", "El horno no tiene controlador");
+      throw serviceError(
+        "CONTROLLER_REQUIRED",
+        "El horno no tiene controlador",
+      );
     }
     if (kiln.controller.connectionStatus !== "ONLINE") {
       throw serviceError(
@@ -107,7 +110,8 @@ export async function selectOwnedKilnProgram(userId, kilnId, programId) {
         configuration: true,
       },
     });
-    if (!program) throw serviceError("PROGRAM_NOT_FOUND", "Programa no disponible");
+    if (!program)
+      throw serviceError("PROGRAM_NOT_FOUND", "Programa no disponible");
     await tx.kiln.update({
       where: { kilnId },
       data: { selectedProgramId: programId },
@@ -145,10 +149,16 @@ export async function assertCanStart(context) {
     throw serviceError("CONTROLLER_REQUIRED", "El horno no tiene controlador");
   }
   if (context.controller.connectionStatus !== "ONLINE") {
-    throw serviceError("CONTROLLER_OFFLINE", "El controlador está desconectado");
+    throw serviceError(
+      "CONTROLLER_OFFLINE",
+      "El controlador está desconectado",
+    );
   }
   if (context.controller.operationalStatus !== "OPERATIONAL") {
-    throw serviceError("CONTROLLER_UNAVAILABLE", "El controlador no está operativo");
+    throw serviceError(
+      "CONTROLLER_UNAVAILABLE",
+      "El controlador no está operativo",
+    );
   }
   if (context.firingCycles.length > 0) {
     throw serviceError("CYCLE_ACTIVE", "El horno ya tiene una quema activa");
@@ -209,9 +219,13 @@ function assertValidCycleSnapshot(snapshot) {
     );
   if (
     !snapshot?.controllerCycleId ||
-    ![...ACTIVE_FIRING_STATUSES, "COMPLETED", "CANCELLED", "ERROR", "UNKNOWN"].includes(
-      snapshot.status,
-    ) ||
+    ![
+      ...ACTIVE_FIRING_STATUSES,
+      "COMPLETED",
+      "CANCELLED",
+      "ERROR",
+      "UNKNOWN",
+    ].includes(snapshot.status) ||
     !validProgram ||
     Number.isNaN(Date.parse(snapshot.startedAt)) ||
     (snapshot.endedAt && Number.isNaN(Date.parse(snapshot.endedAt)))
@@ -361,8 +375,7 @@ export async function persistControllerSample(
       temperature: Number(sample.temperature),
       setpointTemperature: Number(sample.setpointTemperature),
       switchState: Boolean(sample.switchState),
-      stageIndex:
-        sample.stageIndex == null ? null : Number(sample.stageIndex),
+      stageIndex: sample.stageIndex == null ? null : Number(sample.stageIndex),
       voltage: Number(sample.voltage),
       current: Number(sample.current),
       timestamp: new Date(sample.timestamp),

@@ -41,13 +41,14 @@ function normalizeDates(data) {
 
 function decorateController(controller, { restrictUserDetails = false } = {}) {
   if (!controller) return controller;
-  const linkStatus = controller.kiln && controller.user
-    ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
-    : controller.kiln
-      ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN
-      : controller.user
-        ? CONTROLLER_LINK_STATUS.LINKED_TO_USER
-        : CONTROLLER_LINK_STATUS.UNLINKED;
+  const linkStatus =
+    controller.kiln && controller.user
+      ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN_AND_USER
+      : controller.kiln
+        ? CONTROLLER_LINK_STATUS.LINKED_TO_KILN
+        : controller.user
+          ? CONTROLLER_LINK_STATUS.LINKED_TO_USER
+          : CONTROLLER_LINK_STATUS.UNLINKED;
   const presented = presentController(controller);
   const decorated = {
     ...presented,
@@ -139,11 +140,15 @@ export async function edit(
     where: { controllerId },
     include: { kiln: true, user: true },
   });
-  return decorateController(updated, { restrictUserDetails: restrictPresentation });
+  return decorateController(updated, {
+    restrictUserDetails: restrictPresentation,
+  });
 }
 
 export async function remove(controllerId) {
-  const controller = await prisma.controller.findUnique({ where: { controllerId } });
+  const controller = await prisma.controller.findUnique({
+    where: { controllerId },
+  });
   if (!controller) return false;
   await prisma.controller.delete({ where: { controllerId } });
   clearSwitchState(controllerId);
@@ -155,19 +160,36 @@ export async function receivePairingPin(controllerId, pin, deviceSecret) {
     where: { controllerId },
     select: { deviceSecretHash: true },
   });
-  if (!authenticated || !(await bcrypt.compare(deviceSecret, authenticated.deviceSecretHash))) {
-    throw serviceError("PAIRING_AUTH_FAILED", "Credencial de dispositivo inválida");
+  if (
+    !authenticated ||
+    !(await bcrypt.compare(deviceSecret, authenticated.deviceSecretHash))
+  ) {
+    throw serviceError(
+      "PAIRING_AUTH_FAILED",
+      "Credencial de dispositivo inválida",
+    );
   }
   const pairingPinHash = await bcrypt.hash(pin, HASH_ROUNDS);
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "controllerId" FROM "Controller" WHERE "controllerId" = ${controllerId} FOR UPDATE`;
-    const controller = await tx.controller.findUnique({ where: { controllerId } });
+    const controller = await tx.controller.findUnique({
+      where: { controllerId },
+    });
     if (controller.operationalStatus !== "OPERATIONAL") {
-      throw serviceError("PAIRING_NOT_OPERATIONAL", "El controlador no está operacional");
+      throw serviceError(
+        "PAIRING_NOT_OPERATIONAL",
+        "El controlador no está operacional",
+      );
     }
     const now = new Date();
-    if (controller.pairingBlockedUntil && controller.pairingBlockedUntil > now) {
-      const error = serviceError("PAIRING_BLOCKED", "La vinculación está bloqueada");
+    if (
+      controller.pairingBlockedUntil &&
+      controller.pairingBlockedUntil > now
+    ) {
+      const error = serviceError(
+        "PAIRING_BLOCKED",
+        "La vinculación está bloqueada",
+      );
       error.blockedUntil = controller.pairingBlockedUntil;
       throw error;
     }
@@ -177,7 +199,8 @@ export async function receivePairingPin(controllerId, pin, deviceSecret) {
       data: {
         pairingPinHash,
         pairingPinExpiresAt: expiresAt,
-        ...(controller.pairingBlockedUntil && controller.pairingBlockedUntil <= now
+        ...(controller.pairingBlockedUntil &&
+        controller.pairingBlockedUntil <= now
           ? { pairingFailedAttempts: 0, pairingBlockedUntil: null }
           : {}),
       },
@@ -201,14 +224,27 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
       include: { kiln: true },
     });
     const now = new Date();
-    if (controller.pairingBlockedUntil && controller.pairingBlockedUntil > now) {
-      const error = serviceError("PAIRING_BLOCKED", "La vinculación está bloqueada temporalmente");
+    if (
+      controller.pairingBlockedUntil &&
+      controller.pairingBlockedUntil > now
+    ) {
+      const error = serviceError(
+        "PAIRING_BLOCKED",
+        "La vinculación está bloqueada temporalmente",
+      );
       error.blockedUntil = controller.pairingBlockedUntil;
       error.controllerId = controller.controllerId;
       throw error;
     }
-    if (!controller.pairingPinHash || !controller.pairingPinExpiresAt || controller.pairingPinExpiresAt <= now) {
-      throw serviceError("PAIRING_PIN_EXPIRED", "El PIN no existe o está vencido");
+    if (
+      !controller.pairingPinHash ||
+      !controller.pairingPinExpiresAt ||
+      controller.pairingPinExpiresAt <= now
+    ) {
+      throw serviceError(
+        "PAIRING_PIN_EXPIRED",
+        "El PIN no existe o está vencido",
+      );
     }
     const matches = await bcrypt.compare(pin, controller.pairingPinHash);
     if (!matches) {
@@ -224,7 +260,10 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
             pairingPinExpiresAt: null,
           },
         });
-        const error = serviceError("PAIRING_BLOCKED", "Se alcanzó el límite de intentos");
+        const error = serviceError(
+          "PAIRING_BLOCKED",
+          "Se alcanzó el límite de intentos",
+        );
         error.blockedUntil = blockedUntil;
         error.controllerId = controller.controllerId;
         return { error };
@@ -236,10 +275,19 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
       return { error: serviceError("PAIRING_PIN_INVALID", "PIN incorrecto") };
     }
     if (!controller.kiln) {
-      throw serviceError("PAIRING_KILN_REQUIRED", "El controlador no tiene un horno asociado");
+      throw serviceError(
+        "PAIRING_KILN_REQUIRED",
+        "El controlador no tiene un horno asociado",
+      );
     }
-    if (![null, userId].includes(controller.userId) || ![null, userId].includes(controller.kiln.userId)) {
-      throw serviceError("PAIRING_OWNED", "Los equipos pertenecen a otro usuario");
+    if (
+      ![null, userId].includes(controller.userId) ||
+      ![null, userId].includes(controller.kiln.userId)
+    ) {
+      throw serviceError(
+        "PAIRING_OWNED",
+        "Los equipos pertenecen a otro usuario",
+      );
     }
     const user = await tx.user.findUnique({ where: { userId } });
     if (
@@ -248,9 +296,15 @@ export async function claimControllerBundle(partialControllerId, userId, pin) {
       user.anonymizedAt ||
       user.role !== ROLES.CLIENT
     ) {
-      throw serviceError("PAIRING_USER_INVALID", "El cliente no está habilitado");
+      throw serviceError(
+        "PAIRING_USER_INVALID",
+        "El cliente no está habilitado",
+      );
     }
-    await tx.kiln.update({ where: { kilnId: controller.kiln.kilnId }, data: { userId } });
+    await tx.kiln.update({
+      where: { kilnId: controller.kiln.kilnId },
+      data: { userId },
+    });
     const claimed = await tx.controller.update({
       where: { controllerId: controller.controllerId },
       data: {
@@ -288,7 +342,10 @@ export async function updateControllerTelemetry(controllerId, data) {
   return { ...presentController(controller), telemetrySaved: false };
 }
 
-export async function updateControllerConnectionStatus(controllerId, connectionStatus) {
+export async function updateControllerConnectionStatus(
+  controllerId,
+  connectionStatus,
+) {
   const controller = await prisma.controller.update({
     where: { controllerId },
     data: { connectionStatus },
@@ -411,23 +468,46 @@ export async function getControllersPage({
   const where = {
     ...scopeWhere,
     ...searchWhere,
-    ...(["ONLINE", "OFFLINE"].includes(connectionStatus) ? { connectionStatus } : {}),
+    ...(["ONLINE", "OFFLINE"].includes(connectionStatus)
+      ? { connectionStatus }
+      : {}),
     ...(kilnStatus === "linked" ? { kiln: { isNot: null } } : {}),
     ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
   };
-  const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] = await prisma.$transaction([
-    prisma.controller.findMany({ where, include: { kiln: { include: { _count: { select: { firingCycles: true } } } }, user: true }, orderBy: { controllerId: "asc" }, skip: (safePage - 1) * safePageSize, take: safePageSize }),
-    prisma.controller.count({ where }),
-    prisma.controller.count({ where: scopeWhere }),
-    prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null } } }),
-    prisma.controller.count({ where: { ...scopeWhere, user: { isNot: null } } }),
-    prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null }, user: { isNot: null } } }),
-  ]);
+  const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] =
+    await prisma.$transaction([
+      prisma.controller.findMany({
+        where,
+        include: {
+          kiln: { include: { _count: { select: { firingCycles: true } } } },
+          user: true,
+        },
+        orderBy: { controllerId: "asc" },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+      prisma.controller.count({ where }),
+      prisma.controller.count({ where: scopeWhere }),
+      prisma.controller.count({
+        where: { ...scopeWhere, kiln: { isNot: null } },
+      }),
+      prisma.controller.count({
+        where: { ...scopeWhere, user: { isNot: null } },
+      }),
+      prisma.controller.count({
+        where: { ...scopeWhere, kiln: { isNot: null }, user: { isNot: null } },
+      }),
+    ]);
   return {
     items: items.map((controller) =>
       decorateController(controller, { restrictUserDetails }),
     ),
-    pagination: { page: safePage, pageSize: safePageSize, total, totalPages: Math.max(1, Math.ceil(total / safePageSize)) },
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    },
     summary: { total: scopeTotal, linkedToKiln, linkedToUser, fullyLinked },
   };
 }

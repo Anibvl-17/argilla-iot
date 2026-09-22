@@ -24,7 +24,9 @@ describe("logout", () => {
 
   it("removes the local token when the backend request fails", async () => {
     axios.post.mockRejectedValueOnce(new Error("Servidor no disponible"));
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     await logout();
 

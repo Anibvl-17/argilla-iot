@@ -574,7 +574,8 @@ export async function updateTicketMaintenance(
         where: { maintenanceId, supportTicketId },
         select: { maintenanceId: true },
       });
-      if (!record) throw serviceError("NOT_FOUND", "Mantenimiento no encontrado");
+      if (!record)
+        throw serviceError("NOT_FOUND", "Mantenimiento no encontrado");
       throw serviceError(
         "FORBIDDEN",
         "Solo puedes editar mantenimientos registrados por ti",

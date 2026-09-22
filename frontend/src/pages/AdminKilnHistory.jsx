@@ -42,7 +42,9 @@ export default function AdminKilnHistory() {
   );
 
   if (loading) {
-    return <div className="py-20 text-center text-muted">Cargando horno...</div>;
+    return (
+      <div className="py-20 text-center text-muted">Cargando horno...</div>
+    );
   }
 
   if (error || !kiln) {
@@ -85,7 +87,9 @@ export default function AdminKilnHistory() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge
-            style={controller?.connectionStatus === "ONLINE" ? "info" : "default"}
+            style={
+              controller?.connectionStatus === "ONLINE" ? "info" : "default"
+            }
             text={
               controller
                 ? getControllerConnectionLabel(controller.connectionStatus)
@@ -105,7 +109,9 @@ export default function AdminKilnHistory() {
         <Metric label="Quemas realizadas" value={kiln.firingCycleCount ?? 0} />
         <Metric
           label="Controlador"
-          value={controller ? `...${controller.controllerCode}` : "Sin vincular"}
+          value={
+            controller ? `...${controller.controllerCode}` : "Sin vincular"
+          }
           mono
         />
       </section>

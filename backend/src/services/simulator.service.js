@@ -17,7 +17,10 @@ const MQTT_PASS = process.env.MQTT_PASS || "";
 const SEED_DEVICE_SECRET =
   process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
 const SIMULATOR_PAIRING_PIN = process.env.SIMULATOR_PAIRING_PIN || "";
-const TEMP_INTERVAL_MS = positiveInt(process.env.SIMULATOR_TEMP_INTERVAL_MS, 1000);
+const TEMP_INTERVAL_MS = positiveInt(
+  process.env.SIMULATOR_TEMP_INTERVAL_MS,
+  1000,
+);
 const REFRESH_MS = positiveInt(process.env.SIMULATOR_REFRESH_MS, 15000);
 const TIME_SCALE = finiteNumber(process.env.SIMULATOR_TIME_SCALE, 60);
 const TEMP_MIN = finiteNumber(process.env.SIMULATOR_TEMP_MIN, 20);
@@ -52,7 +55,10 @@ function commandSignature(command) {
   });
 }
 
-export function normalizePersistedCycle(cycle, stateFile = "estado persistido") {
+export function normalizePersistedCycle(
+  cycle,
+  stateFile = "estado persistido",
+) {
   if (!cycle) return cycle;
   if (cycle.executionType === "DIRECT") {
     throw new Error(
@@ -162,7 +168,10 @@ export class ControllerSimulator {
       connectTimeout: 10000,
       will: {
         topic: this.topics.status,
-        payload: JSON.stringify({ deviceId: this.controllerId, status: "offline" }),
+        payload: JSON.stringify({
+          deviceId: this.controllerId,
+          status: "offline",
+        }),
         qos: 1,
         retain: true,
       },
@@ -203,7 +212,8 @@ export class ControllerSimulator {
       });
     });
     this.client.on("error", (error) => {
-      if (!this.shuttingDown) console.error(`[SIM:${this.controllerId}]`, error.message);
+      if (!this.shuttingDown)
+        console.error(`[SIM:${this.controllerId}]`, error.message);
     });
   }
 
@@ -216,7 +226,9 @@ export class ControllerSimulator {
     }
     if (topic === this.topics.pairingStatus) return;
     if (topic === this.topics.legacyCommand) {
-      console.warn(`[SIM:${this.controllerId.slice(-6)}] Comando ON/OFF ignorado; use ciclos`);
+      console.warn(
+        `[SIM:${this.controllerId.slice(-6)}] Comando ON/OFF ignorado; use ciclos`,
+      );
       return;
     }
     const validFiringEnvelope =
@@ -270,7 +282,8 @@ export class ControllerSimulator {
       command.protocolVersion !== FIRING_PROTOCOL_VERSION ||
       command.deviceId !== this.controllerId ||
       !command.commandId
-    ) return;
+    )
+      return;
     const previous = this.processedCommands.get(command.commandId);
     const signature = commandSignature(command);
     if (previous) {
@@ -288,10 +301,13 @@ export class ControllerSimulator {
     }
     let result;
     try {
-      if (command.command === "START_PROGRAM") result = await this.startProgram(command);
+      if (command.command === "START_PROGRAM")
+        result = await this.startProgram(command);
       else if (command.command === "PAUSE") result = await this.pause(command);
-      else if (command.command === "RESUME") result = await this.resume(command);
-      else if (command.command === "CANCEL") result = await this.cancel(command);
+      else if (command.command === "RESUME")
+        result = await this.resume(command);
+      else if (command.command === "CANCEL")
+        result = await this.cancel(command);
       else throw new Error("Comando no soportado");
     } catch (error) {
       result = this.commandResult(command.commandId, "REJECTED", {
@@ -399,7 +415,10 @@ export class ControllerSimulator {
   }
 
   async cancel(command) {
-    if (!this.activeCycle || !["RUNNING", "PAUSED"].includes(this.activeCycle.status)) {
+    if (
+      !this.activeCycle ||
+      !["RUNNING", "PAUSED"].includes(this.activeCycle.status)
+    ) {
       throw new Error("No existe una quema cancelable");
     }
     this.assertCycleIdentity(command);
@@ -449,8 +468,10 @@ export class ControllerSimulator {
     const simulatedMinutes = (elapsedMs / 60_000) * TIME_SCALE;
     if (this.activeCycle) {
       this.activeCycle.wallElapsedMinutes += simulatedMinutes;
-      if (this.activeCycle.status === "RUNNING") this.advanceRunningCycle(simulatedMinutes);
-      else if (this.activeCycle.recoveryInProgress) this.advanceRecovery(simulatedMinutes);
+      if (this.activeCycle.status === "RUNNING")
+        this.advanceRunningCycle(simulatedMinutes);
+      else if (this.activeCycle.recoveryInProgress)
+        this.advanceRecovery(simulatedMinutes);
       else this.relayState = false;
     } else this.relayState = false;
     this.applyThermalChange(simulatedMinutes);
@@ -507,14 +528,23 @@ export class ControllerSimulator {
       : this.currentTemp > TEMP_MIN
         ? -COOL_C_PER_MIN * minutes
         : 0;
-    this.currentTemp = round(Math.min(TEMP_MAX, Math.max(TEMP_MIN, this.currentTemp)));
+    this.currentTemp = round(
+      Math.min(TEMP_MAX, Math.max(TEMP_MIN, this.currentTemp)),
+    );
   }
 
   async completeProgramStageIfReady() {
     const cycle = this.activeCycle;
     if (!cycle || cycle.status !== "RUNNING") return;
     const stage = cycle.programConfig.stages[cycle.stageIndex];
-    if (!isProgramStageComplete(stage, cycle.stageElapsedMinutes, this.currentTemp)) return;
+    if (
+      !isProgramStageComplete(
+        stage,
+        cycle.stageElapsedMinutes,
+        this.currentTemp,
+      )
+    )
+      return;
     if (cycle.stageIndex === cycle.programConfig.stages.length - 1) {
       await this.finishCycle("COMPLETED");
       return;
@@ -572,7 +602,8 @@ export class ControllerSimulator {
       deviceId: this.controllerId,
       controllerCycleId: this.activeCycle?.controllerCycleId || null,
       temperature: this.currentTemp,
-      setpointTemperature: this.activeCycle?.setpointTemperature ?? this.currentTemp,
+      setpointTemperature:
+        this.activeCycle?.setpointTemperature ?? this.currentTemp,
       switchState: this.relayState,
       stageIndex: this.activeCycle?.stageIndex ?? null,
       stageElapsedMinutes: this.activeCycle?.stageElapsedMinutes ?? null,
@@ -749,7 +780,10 @@ export class SimulatorService {
   async start() {
     console.log("[SIM] Iniciando simulador MQTT");
     await this.syncControllers();
-    this.refreshTimer = setInterval(() => void this.syncControllers(), REFRESH_MS);
+    this.refreshTimer = setInterval(
+      () => void this.syncControllers(),
+      REFRESH_MS,
+    );
   }
 
   async syncControllers() {
@@ -782,7 +816,9 @@ export class SimulatorService {
     this.shuttingDown = true;
     if (this.refreshTimer) clearInterval(this.refreshTimer);
     await Promise.allSettled(
-      Array.from(this.controllers.values()).map((simulator) => simulator.stop()),
+      Array.from(this.controllers.values()).map((simulator) =>
+        simulator.stop(),
+      ),
     );
     this.controllers.clear();
     await prisma.$disconnect();

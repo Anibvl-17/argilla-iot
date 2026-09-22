@@ -493,7 +493,9 @@ export default function AdminControllers() {
                       : "px-3 py-4 sm:px-6"
                   }
                 >
-                  Propietario<br />Horno
+                  Propietario
+                  <br />
+                  Horno
                 </th>
                 {!isAdmin && (
                   <th className="hidden px-3 py-4 text-center lg:table-cell lg:px-6">
@@ -724,126 +726,126 @@ export default function AdminControllers() {
                           )}
                           {isAdmin && (
                             <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                            <div className="md:hidden">
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Propietario
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.user?.name || (
-                                  <span className="italic text-muted">
-                                    Sin propietario
-                                  </span>
-                                )}
-                              </dd>
-                            </div>
-                            <div className="md:hidden">
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Horno
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.kiln ? (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setKilnInfoController(controller)
-                                    }
-                                    className="text-left text-accent hover:underline"
-                                    title="Ver información del horno"
-                                  >
-                                    {controller.kiln.name ||
-                                      `Horno #${controller.kiln.kilnId}`}
-                                  </button>
-                                ) : (
-                                  <span className="italic text-muted">
-                                    Sin horno asociado
-                                  </span>
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Temperatura
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.temperature == null ? (
-                                  <span className="italic text-muted font-normal">
-                                    No disponible
-                                  </span>
-                                ) : (
-                                  `${controller.temperature.toFixed(1)} °C`
-                                )}
-                              </dd>
-                            </div>
-                            <div className="lg:hidden">
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Estado operacional
-                              </dt>
-                              <dd className="mt-1">
-                                {getOperationalStatusLabel(
-                                  controller.operationalStatus,
-                                )}
-                              </dd>
-                            </div>
-                            <div className="lg:hidden">
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Actividad
-                              </dt>
-                              <dd className="mt-1">
-                                {getControllerActivityLabel(
-                                  controller.activityStatus,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Firmware
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.firmwareVersion}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Fabricación
-                              </dt>
-                              <dd className="mt-1">
-                                {new Date(
-                                  controller.manufacturedAt,
-                                ).toLocaleDateString("es-CL")}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Entrega
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.deliveredAt ? (
-                                  new Date(
-                                    controller.deliveredAt,
-                                  ).toLocaleDateString("es-CL")
-                                ) : (
-                                  <span className="italic text-muted">
-                                    Pendiente
-                                  </span>
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Actualización de firmware
-                              </dt>
-                              <dd className="mt-1">
-                                {controller.firmwareUpdatedAt ? (
-                                  new Date(
-                                    controller.firmwareUpdatedAt,
-                                  ).toLocaleDateString("es-CL")
-                                ) : (
-                                  <span className="italic text-muted">
-                                    Sin registro
-                                  </span>
-                                )}
-                              </dd>
-                            </div>
+                              <div className="md:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Propietario
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.user?.name || (
+                                    <span className="italic text-muted">
+                                      Sin propietario
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              <div className="md:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Horno
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.kiln ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setKilnInfoController(controller)
+                                      }
+                                      className="text-left text-accent hover:underline"
+                                      title="Ver información del horno"
+                                    >
+                                      {controller.kiln.name ||
+                                        `Horno #${controller.kiln.kilnId}`}
+                                    </button>
+                                  ) : (
+                                    <span className="italic text-muted">
+                                      Sin horno asociado
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Temperatura
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.temperature == null ? (
+                                    <span className="italic text-muted font-normal">
+                                      No disponible
+                                    </span>
+                                  ) : (
+                                    `${controller.temperature.toFixed(1)} °C`
+                                  )}
+                                </dd>
+                              </div>
+                              <div className="lg:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Estado operacional
+                                </dt>
+                                <dd className="mt-1">
+                                  {getOperationalStatusLabel(
+                                    controller.operationalStatus,
+                                  )}
+                                </dd>
+                              </div>
+                              <div className="lg:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Actividad
+                                </dt>
+                                <dd className="mt-1">
+                                  {getControllerActivityLabel(
+                                    controller.activityStatus,
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Firmware
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.firmwareVersion}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Fabricación
+                                </dt>
+                                <dd className="mt-1">
+                                  {new Date(
+                                    controller.manufacturedAt,
+                                  ).toLocaleDateString("es-CL")}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Entrega
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.deliveredAt ? (
+                                    new Date(
+                                      controller.deliveredAt,
+                                    ).toLocaleDateString("es-CL")
+                                  ) : (
+                                    <span className="italic text-muted">
+                                      Pendiente
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Actualización de firmware
+                                </dt>
+                                <dd className="mt-1">
+                                  {controller.firmwareUpdatedAt ? (
+                                    new Date(
+                                      controller.firmwareUpdatedAt,
+                                    ).toLocaleDateString("es-CL")
+                                  ) : (
+                                    <span className="italic text-muted">
+                                      Sin registro
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
                             </dl>
                           )}
                           {isAdmin && !controller.kiln && (
@@ -990,9 +992,7 @@ export default function AdminControllers() {
         onClose={closeAssociationModal}
         title="Asociar horno"
         fields={[]}
-        onSubmit={() =>
-          attachKiln(associationController, associationKilnId)
-        }
+        onSubmit={() => attachKiln(associationController, associationKilnId)}
         submitLabel="Confirmar vinculación"
         submitDisabled={!associationKilnId}
         loading={associationLoading}
@@ -1034,12 +1034,8 @@ export default function AdminControllers() {
                     </span>
                   </span>
                   <Badge
-                    style={
-                      OPERATIONAL_STATUS_STYLES[option.operationalStatus]
-                    }
-                    text={getOperationalStatusLabel(
-                      option.operationalStatus,
-                    )}
+                    style={OPERATIONAL_STATUS_STYLES[option.operationalStatus]}
+                    text={getOperationalStatusLabel(option.operationalStatus)}
                   />
                 </span>
               )}

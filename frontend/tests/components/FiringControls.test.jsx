@@ -59,8 +59,12 @@ describe("FiringControls", () => {
         programs={programs}
       />,
     );
-    expect(screen.getByRole("button", { name: "Reanudar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Detener quema" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reanudar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Detener quema" }),
+    ).toBeInTheDocument();
   });
 
   it("blocks operations while controller state is being reconciled", () => {
@@ -74,7 +78,9 @@ describe("FiringControls", () => {
       />,
     );
     expect(screen.getByText(/Reconciliando el estado/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Iniciar quema" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Iniciar quema" }),
+    ).toBeDisabled();
     expect(screen.queryByText("Quema directa")).not.toBeInTheDocument();
   });
 
@@ -100,7 +106,9 @@ describe("FiringControls", () => {
     );
     expect(screen.getByText("Setpoint: 240.0 °C")).toBeInTheDocument();
     expect(screen.getByText("Etapa: 3")).toBeInTheDocument();
-    expect(screen.getByText("Recuperación térmica en curso")).toBeInTheDocument();
+    expect(
+      screen.getByText("Recuperación térmica en curso"),
+    ).toBeInTheDocument();
   });
 
   it.each([
@@ -147,7 +155,9 @@ describe("FiringControls", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "Ver detalles" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver detalles" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });

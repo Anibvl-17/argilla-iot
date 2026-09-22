@@ -6,6 +6,7 @@
     "test": "npm --prefix backend test && npm --prefix frontend test",
     "build": "npm --prefix frontend run build",
     "validate:schema": "DATABASE_URL=postgresql://validation:validation@localhost:5432/validation npm --prefix backend run validate:schema",
-    "check": "npm run lint && npm test && npm run validate:schema && npm run build"
+    "check": "npm run lint && npm test && npm run validate:schema && npm run build",
+    "prettier": "cd backend && npx prettier --write ./ && cd ../frontend/ && npx prettier --write ./"
   }
 }

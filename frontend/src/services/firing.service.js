@@ -39,9 +39,12 @@ export async function selectFiringProgram(kilnId, programId) {
 
 export async function startProgram(kilnId) {
   try {
-    const response = await axios.post(`/firing/kilns/${kilnId}/cycles/program`, {
-      commandId: crypto.randomUUID(),
-    });
+    const response = await axios.post(
+      `/firing/kilns/${kilnId}/cycles/program`,
+      {
+        commandId: crypto.randomUUID(),
+      },
+    );
     return { success: true, data: response.data.data };
   } catch (error) {
     return resultError(error, "No fue posible confirmar el inicio");

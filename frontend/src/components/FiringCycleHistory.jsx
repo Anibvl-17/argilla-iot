@@ -29,7 +29,8 @@ function formatDateTime(value) {
 function formatDuration(startedAt, endedAt) {
   const start = new Date(startedAt).getTime();
   const end = endedAt ? new Date(endedAt).getTime() : Date.now();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return "-";
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
+    return "-";
   const totalMinutes = Math.floor((end - start) / 60_000);
   if (totalMinutes < 1) return "< 1 min";
   const days = Math.floor(totalMinutes / 1440);
@@ -78,10 +79,15 @@ function CycleModal({
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
           <div>
-            <h2 id="admin-cycle-modal-title" className="text-lg font-semibold sm:text-xl">
+            <h2
+              id="admin-cycle-modal-title"
+              className="text-lg font-semibold sm:text-xl"
+            >
               Detalle del ciclo
             </h2>
-            <p className="mt-1 text-sm text-muted">Ciclo #{cycle.firingCycleId}</p>
+            <p className="mt-1 text-sm text-muted">
+              Ciclo #{cycle.firingCycleId}
+            </p>
           </div>
           <button
             type="button"
@@ -95,11 +101,26 @@ function CycleModal({
 
         <div className="min-h-0 overflow-y-auto">
           <dl className="grid grid-cols-2 gap-x-5 gap-y-4 border-b border-border px-4 py-5 sm:grid-cols-3 sm:px-6 lg:grid-cols-5">
-            <CycleDetail label="Inicio" value={formatDateTime(cycle.startedAt)} />
-            <CycleDetail label="Término" value={formatDateTime(cycle.endedAt)} />
-            <CycleDetail label="Duración" value={formatDuration(cycle.startedAt, cycle.endedAt)} />
-            <CycleDetail label="Estado" value={FIRING_STATUS_LABELS[cycle.status] || cycle.status} />
-            <CycleDetail label="Programa" value={cycle.program?.name || "No disponible"} />
+            <CycleDetail
+              label="Inicio"
+              value={formatDateTime(cycle.startedAt)}
+            />
+            <CycleDetail
+              label="Término"
+              value={formatDateTime(cycle.endedAt)}
+            />
+            <CycleDetail
+              label="Duración"
+              value={formatDuration(cycle.startedAt, cycle.endedAt)}
+            />
+            <CycleDetail
+              label="Estado"
+              value={FIRING_STATUS_LABELS[cycle.status] || cycle.status}
+            />
+            <CycleDetail
+              label="Programa"
+              value={cycle.program?.name || "No disponible"}
+            />
           </dl>
 
           <section className="border-b border-border px-4 py-5 sm:px-6">
@@ -108,7 +129,9 @@ function CycleModal({
               <TelemetryChart telemetry={chartTelemetry} />
             ) : (
               <p className="py-8 text-center text-sm text-muted">
-                {chartLoading ? "Cargando gráfico…" : "Sin muestras para graficar."}
+                {chartLoading
+                  ? "Cargando gráfico…"
+                  : "Sin muestras para graficar."}
               </p>
             )}
           </section>
@@ -117,7 +140,9 @@ function CycleModal({
             <table className="w-full min-w-120 text-left text-xs sm:text-sm">
               <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
                 <tr>
-                  <th className="px-2 py-3 text-center font-medium sm:px-4">Etapa</th>
+                  <th className="px-2 py-3 text-center font-medium sm:px-4">
+                    Etapa
+                  </th>
                   <th className="px-2 py-3 font-medium sm:px-4">Hora</th>
                   <th className="px-2 py-3 font-medium sm:px-4">Temperatura</th>
                   <th className="px-2 py-3 font-medium sm:px-4">Setpoint</th>
@@ -159,7 +184,10 @@ function CycleModal({
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-10 text-center text-muted">
+                    <td
+                      colSpan="5"
+                      className="px-6 py-10 text-center text-muted"
+                    >
                       {loading ? "Cargando…" : "Sin muestras históricas."}
                     </td>
                   </tr>
@@ -190,8 +218,14 @@ export default function FiringCycleHistory({
   const [loading, setLoading] = useState(true);
   const [telemetryLoading, setTelemetryLoading] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
-  const [cyclePagination, setCyclePagination] = useState({ page: 1, totalPages: 1 });
-  const [telemetryPagination, setTelemetryPagination] = useState({ page: 1, totalPages: 1 });
+  const [cyclePagination, setCyclePagination] = useState({
+    page: 1,
+    totalPages: 1,
+  });
+  const [telemetryPagination, setTelemetryPagination] = useState({
+    page: 1,
+    totalPages: 1,
+  });
 
   const fetchCycles = useCallback(
     async (page = 1) => {
@@ -204,7 +238,9 @@ export default function FiringCycleHistory({
       setCyclePagination(result.data.pagination || { page: 1, totalPages: 1 });
       setSelectedCycle((current) =>
         current
-          ? items.find(({ firingCycleId }) => firingCycleId === current.firingCycleId) || current
+          ? items.find(
+              ({ firingCycleId }) => firingCycleId === current.firingCycleId,
+            ) || current
           : null,
       );
     },
@@ -233,7 +269,9 @@ export default function FiringCycleHistory({
       setTelemetryLoading(false);
       if (result.success) {
         setTelemetry(result.data.items || []);
-        setTelemetryPagination(result.data.pagination || { page: 1, totalPages: 1 });
+        setTelemetryPagination(
+          result.data.pagination || { page: 1, totalPages: 1 },
+        );
       }
     },
     [getTelemetry, kilnId, selectedCycle?.firingCycleId],
@@ -294,9 +332,13 @@ export default function FiringCycleHistory({
             <tr>
               <th className="px-4 py-3 font-medium sm:px-6">Inicio</th>
               <th className="px-4 py-3 font-medium sm:px-6">Programa</th>
-              <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">Duración</th>
+              <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">
+                Duración
+              </th>
               <th className="px-4 py-3 font-medium sm:px-6">Estado</th>
-              <th className="px-4 py-3 text-center font-medium sm:px-6">Acciones</th>
+              <th className="px-4 py-3 text-center font-medium sm:px-6">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -351,7 +393,9 @@ export default function FiringCycleHistory({
         loading={telemetryLoading}
         chartLoading={chartLoading}
         pagination={telemetryPagination}
-        onPageChange={(page) => fetchTelemetry(page, selectedCycle?.firingCycleId)}
+        onPageChange={(page) =>
+          fetchTelemetry(page, selectedCycle?.firingCycleId)
+        }
         onClose={closeCycle}
       />
     </section>

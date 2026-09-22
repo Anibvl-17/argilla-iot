@@ -94,7 +94,9 @@ export function SearchableCatalogField({
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
       >
-        <span className={selected ? "truncate text-content" : "truncate text-muted"}>
+        <span
+          className={selected ? "truncate text-content" : "truncate text-muted"}
+        >
           {selected?.name || placeholder}
         </span>
         <svg
@@ -105,7 +107,11 @@ export function SearchableCatalogField({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m7 10 5 5 5-5"
+          />
         </svg>
       </button>
       <FloatingDropdown
@@ -126,10 +132,16 @@ export function SearchableCatalogField({
             className="w-full rounded-lg border border-control-border bg-field px-3 py-2 text-sm text-content outline-none focus:border-focus"
           />
         </div>
-        <div role="listbox" aria-label={listboxLabel} className="max-h-44 overflow-y-auto p-1">
+        <div
+          role="listbox"
+          aria-label={listboxLabel}
+          className="max-h-44 overflow-y-auto p-1"
+        >
           {selected && renderCatalogOption(selected)}
           {selected &&
-            (!normalizedSearch || visibleMatches.length > 0 || !matches.length) && (
+            (!normalizedSearch ||
+              visibleMatches.length > 0 ||
+              !matches.length) && (
               <div
                 role="separator"
                 aria-label="Otros resultados"
@@ -137,16 +149,21 @@ export function SearchableCatalogField({
               />
             )}
           {!normalizedSearch && (
-            <p className="px-3 py-4 text-center text-sm text-muted">{searchPrompt}</p>
+            <p className="px-3 py-4 text-center text-sm text-muted">
+              {searchPrompt}
+            </p>
           )}
           {normalizedSearch && !matches.length && (
-            <p className="px-3 py-4 text-center text-sm text-muted">{noResultsMessage}</p>
+            <p className="px-3 py-4 text-center text-sm text-muted">
+              {noResultsMessage}
+            </p>
           )}
           {visibleMatches.map(renderCatalogOption)}
         </div>
         {hiddenCount > 0 && (
           <p className="border-t border-border bg-surface-muted px-3 py-2 text-xs text-muted">
-            Hay {hiddenCount} resultados ocultos. Haz una búsqueda más específica.
+            Hay {hiddenCount} resultados ocultos. Haz una búsqueda más
+            específica.
           </p>
         )}
       </FloatingDropdown>
@@ -305,9 +322,13 @@ export default function UserContactFields({
           searchPrompt="Busca un país para ver resultados."
           noResultsMessage="No encontramos países para esa búsqueda."
           listboxLabel="Países"
-          getSearchText={(country) => `${country.name} ${country.isoCode} ${country.callingCode}`}
+          getSearchText={(country) =>
+            `${country.name} ${country.isoCode} ${country.callingCode}`
+          }
           invalid={hasFormError(error, "countryId")}
-          describedBy={hasFormError(error, "countryId") ? "country-id-error" : undefined}
+          describedBy={
+            hasFormError(error, "countryId") ? "country-id-error" : undefined
+          }
         />
         <FieldError error={error} field="countryId" id="country-id-error" />
       </div>
@@ -326,7 +347,9 @@ export default function UserContactFields({
             noResultsMessage="No encontramos regiones para esa búsqueda."
             listboxLabel="Regiones de Chile"
             invalid={hasFormError(error, "regionId")}
-            describedBy={hasFormError(error, "regionId") ? "region-id-error" : undefined}
+            describedBy={
+              hasFormError(error, "regionId") ? "region-id-error" : undefined
+            }
           />
           <FieldError error={error} field="regionId" id="region-id-error" />
         </div>
@@ -345,20 +368,22 @@ export default function UserContactFields({
             options={selectedRegion?.communes || []}
             getOptionId={(commune) => commune.communeId}
             onSelect={(communeId) => updateField("communeId", communeId)}
-            placeholder={selectedRegion ? "Selecciona una comuna" : "Selecciona primero una región"}
+            placeholder={
+              selectedRegion
+                ? "Selecciona una comuna"
+                : "Selecciona primero una región"
+            }
             searchPlaceholder="Buscar comuna"
             searchPrompt="Busca una comuna para ver resultados."
             noResultsMessage="No encontramos comunas para esa búsqueda."
             listboxLabel="Comunas de la región"
             disabled={!selectedRegion}
             invalid={hasFormError(error, "communeId")}
-            describedBy={hasFormError(error, "communeId") ? "commune-id-error" : undefined}
+            describedBy={
+              hasFormError(error, "communeId") ? "commune-id-error" : undefined
+            }
           />
-          <FieldError
-            error={error}
-            field="communeId"
-            id="commune-id-error"
-          />
+          <FieldError error={error} field="communeId" id="commune-id-error" />
         </div>
       ) : (
         <div

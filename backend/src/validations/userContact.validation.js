@@ -12,9 +12,24 @@ export const userContactValidationShape = {
     .transform((value) => value.toUpperCase())
     .nullable()
     .optional(),
-  countryId: z.number().int().positive("El país seleccionado no es válido").nullable().optional(),
-  regionId: z.number().int().positive("La región seleccionada no es válida").nullable().optional(),
-  communeId: z.number().int().positive("La comuna seleccionada no es válida").nullable().optional(),
+  countryId: z
+    .number()
+    .int()
+    .positive("El país seleccionado no es válido")
+    .nullable()
+    .optional(),
+  regionId: z
+    .number()
+    .int()
+    .positive("La región seleccionada no es válida")
+    .nullable()
+    .optional(),
+  communeId: z
+    .number()
+    .int()
+    .positive("La comuna seleccionada no es válida")
+    .nullable()
+    .optional(),
   addressLine: z
     .string()
     .trim()

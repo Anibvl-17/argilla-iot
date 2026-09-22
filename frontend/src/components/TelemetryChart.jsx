@@ -16,10 +16,14 @@ export default function TelemetryChart({ telemetry }) {
   const chartRef = useRef(null);
   const { theme } = useTheme();
   const samples = useMemo(
-    () => [...telemetry].sort((a, b) => {
-      const sequenceDifference = (a.sampleSequence ?? 0) - (b.sampleSequence ?? 0);
-      return sequenceDifference || new Date(a.timestamp) - new Date(b.timestamp);
-    }),
+    () =>
+      [...telemetry].sort((a, b) => {
+        const sequenceDifference =
+          (a.sampleSequence ?? 0) - (b.sampleSequence ?? 0);
+        return (
+          sequenceDifference || new Date(a.timestamp) - new Date(b.timestamp)
+        );
+      }),
     [telemetry],
   );
 

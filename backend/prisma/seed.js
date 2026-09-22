@@ -499,8 +499,7 @@ async function createKilnIfMissing(name, data, aliases = []) {
     nominalVoltage: data.nominalVoltage ?? kilnDefaults.nominalVoltage,
     nominalCurrent: data.nominalCurrent ?? kilnDefaults.nominalCurrent,
     manufacturer: data.manufacturer ?? kilnDefaults.manufacturer,
-    manufacturedAt:
-      data.manufacturedAt ?? new Date("2024-11-01T12:00:00.000Z"),
+    manufacturedAt: data.manufacturedAt ?? new Date("2024-11-01T12:00:00.000Z"),
     deliveredAt: data.deliveredAt ?? null,
     heatingCircuitConfiguration:
       data.heatingCircuitConfiguration ??

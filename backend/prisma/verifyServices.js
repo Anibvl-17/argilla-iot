@@ -26,12 +26,21 @@ async function verifyCircuitValidation() {
     type: "ROOT",
     connectionType: "SERIES",
     elements: [
-      { type: "CHANNEL", name: "Puerta", resistanceOhms: 18.5, lengthMeters: 6.2 },
+      {
+        type: "CHANNEL",
+        name: "Puerta",
+        resistanceOhms: 18.5,
+        lengthMeters: 6.2,
+      },
     ],
   };
-  assert.equal(heatingCircuitConfigurationValidation.safeParse(valid).success, true);
   assert.equal(
-    heatingCircuitConfigurationValidation.safeParse({ ...valid, elements: [] }).success,
+    heatingCircuitConfigurationValidation.safeParse(valid).success,
+    true,
+  );
+  assert.equal(
+    heatingCircuitConfigurationValidation.safeParse({ ...valid, elements: [] })
+      .success,
     false,
   );
   assert.equal(
@@ -68,7 +77,9 @@ async function verifyInactiveAndAnonymizedUsers(adminId) {
     assert.equal(user.communeId, commune.communeId);
     assert.equal(user.addressLine, "Los Carrera 1234");
     await setUserActive(user.userId, false, adminId);
-    await assert.rejects(() => login(email, "Password123!"), { code: "ACCOUNT_INACTIVE" });
+    await assert.rejects(() => login(email, "Password123!"), {
+      code: "ACCOUNT_INACTIVE",
+    });
     await setUserActive(user.userId, true, adminId);
     const anonymized = await anonymizeUser(user.userId, adminId);
     assert.equal(anonymized.isActive, false);
@@ -132,9 +143,14 @@ async function verifyOwnAccountActions() {
 
 async function verifyPairing() {
   const controllerId = "55555555-5555-4555-8555-555555555555";
-  const kiln = await prisma.kiln.findFirstOrThrow({ where: { name: "Horno huérfano 1" } });
-  const client = await prisma.user.findUniqueOrThrow({ where: { email: "maria@argilla.test" } });
-  const seedSecret = process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
+  const kiln = await prisma.kiln.findFirstOrThrow({
+    where: { name: "Horno huérfano 1" },
+  });
+  const client = await prisma.user.findUniqueOrThrow({
+    where: { email: "maria@argilla.test" },
+  });
+  const seedSecret =
+    process.env.SEED_DEVICE_SECRET || "argilla-local-device-secret-change-me";
   const deviceSecret = `${seedSecret}:${controllerId}`;
 
   await unlinkUserFromKiln(kiln.kilnId);
@@ -143,31 +159,49 @@ async function verifyPairing() {
   try {
     await receivePairingPin(controllerId, "123456", deviceSecret);
     await assert.rejects(
-      () => claimControllerBundle(controllerId.slice(-6), client.userId, "000000"),
+      () =>
+        claimControllerBundle(controllerId.slice(-6), client.userId, "000000"),
       { code: "PAIRING_PIN_INVALID" },
     );
-    let controller = await prisma.controller.findUniqueOrThrow({ where: { controllerId } });
+    let controller = await prisma.controller.findUniqueOrThrow({
+      where: { controllerId },
+    });
     assert.equal(controller.pairingFailedAttempts, 1);
 
     await receivePairingPin(controllerId, "123456", deviceSecret);
-    controller = await prisma.controller.findUniqueOrThrow({ where: { controllerId } });
+    controller = await prisma.controller.findUniqueOrThrow({
+      where: { controllerId },
+    });
     assert.equal(controller.pairingFailedAttempts, 1);
 
-    const claimed = await claimControllerBundle(controllerId.slice(-6), client.userId, "123456");
+    const claimed = await claimControllerBundle(
+      controllerId.slice(-6),
+      client.userId,
+      "123456",
+    );
     assert.equal(claimed.userId, client.userId);
     assert.equal("deviceSecretHash" in claimed, false);
     assert.equal("pairingPinHash" in claimed, false);
-    const claimedKiln = await prisma.kiln.findUniqueOrThrow({ where: { kilnId: kiln.kilnId } });
+    const claimedKiln = await prisma.kiln.findUniqueOrThrow({
+      where: { kilnId: kiln.kilnId },
+    });
     assert.equal(claimedKiln.userId, client.userId);
 
     await receivePairingPin(controllerId, "654321", deviceSecret);
     for (let attempt = 1; attempt <= 10; attempt += 1) {
       await assert.rejects(
-        () => claimControllerBundle(controllerId.slice(-6), client.userId, "000000"),
+        () =>
+          claimControllerBundle(
+            controllerId.slice(-6),
+            client.userId,
+            "000000",
+          ),
         { code: attempt === 10 ? "PAIRING_BLOCKED" : "PAIRING_PIN_INVALID" },
       );
     }
-    controller = await prisma.controller.findUniqueOrThrow({ where: { controllerId } });
+    controller = await prisma.controller.findUniqueOrThrow({
+      where: { controllerId },
+    });
     assert.equal(controller.pairingFailedAttempts, 10);
     assert.ok(controller.pairingBlockedUntil > new Date());
     assert.equal(controller.pairingPinHash, null);
@@ -192,7 +226,9 @@ async function verifyPairing() {
 
 async function main() {
   await verifyCircuitValidation();
-  const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@argilla.test" } });
+  const admin = await prisma.user.findUniqueOrThrow({
+    where: { email: "admin@argilla.test" },
+  });
   await verifyInactiveAndAnonymizedUsers(admin.userId);
   await verifyOwnAccountActions();
   await verifyPairing();

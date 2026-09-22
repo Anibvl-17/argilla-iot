@@ -32,10 +32,12 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error("[BACKFILL] Error al normalizar teléfonos de usuarios", error);
+    console.error(
+      "[BACKFILL] Error al normalizar teléfonos de usuarios",
+      error,
+    );
     process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
   });
-

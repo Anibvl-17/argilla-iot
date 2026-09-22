@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  LuArrowRight,
-  LuCirclePause,
-  LuPlay,
-  LuSquare,
-} from "react-icons/lu";
+import { LuArrowRight, LuCirclePause, LuPlay, LuSquare } from "react-icons/lu";
 import AlertDialog from "./AlertDialog";
 import ProgramChart from "./ProgramChart";
 import {
@@ -35,9 +30,9 @@ export default function FiringControls({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const active = kiln.activeFiringCycle;
-  const selected = programs.find(
-    ({ programId }) => programId === kiln.selectedProgramId,
-  ) || kiln.selectedProgram;
+  const selected =
+    programs.find(({ programId }) => programId === kiln.selectedProgramId) ||
+    kiln.selectedProgram;
   const online = kiln.controller?.connectionStatus === "ONLINE";
   const reconciled = kiln.reconciliation?.ready !== false;
   const controlsAvailable = online && reconciled;
@@ -183,7 +178,11 @@ export default function FiringControls({
             ))}
           </select>
           {selected && (
-            <button type="button" onClick={() => setDetailsOpen(true)} className="shrink-0 rounded-lg border border-control-border px-3 py-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen(true)}
+              className="shrink-0 rounded-lg border border-control-border px-3 py-2 text-sm"
+            >
               Ver programa
             </button>
           )}
@@ -192,15 +191,27 @@ export default function FiringControls({
         {active ? (
           <div className="flex flex-wrap gap-2">
             {active.status === "RUNNING" ? (
-              <button disabled={busy || !controlsAvailable} onClick={() => send("PAUSE")} className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-sm">
+              <button
+                disabled={busy || !controlsAvailable}
+                onClick={() => send("PAUSE")}
+                className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-sm"
+              >
                 <LuCirclePause /> Pausar
               </button>
             ) : (
-              <button disabled={busy || !controlsAvailable} onClick={() => send("RESUME")} className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-sm">
+              <button
+                disabled={busy || !controlsAvailable}
+                onClick={() => send("RESUME")}
+                className="inline-flex items-center gap-2 rounded-lg border border-control-border px-3 py-2 text-sm"
+              >
                 <LuPlay /> Reanudar
               </button>
             )}
-            <button disabled={busy || !controlsAvailable} onClick={() => setConfirmCancel(true)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm text-on-action">
+            <button
+              disabled={busy || !controlsAvailable}
+              onClick={() => setConfirmCancel(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm text-on-action"
+            >
               <LuSquare /> Detener quema
             </button>
           </div>
@@ -217,13 +228,17 @@ export default function FiringControls({
 
       {active && (
         <div className="rounded-lg border border-border bg-surface-muted p-3">
-          <p className="text-sm font-semibold">{STATUS_LABELS[active.status] || active.status}</p>
+          <p className="text-sm font-semibold">
+            {STATUS_LABELS[active.status] || active.status}
+          </p>
           <p className="mt-1 text-xs text-muted">
             {active.program?.name || selected?.name || "Programa de quema"}
           </p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
             {Number.isFinite(kiln.controller?.setpointTemperature) && (
-              <span>Setpoint: {kiln.controller.setpointTemperature.toFixed(1)} °C</span>
+              <span>
+                Setpoint: {kiln.controller.setpointTemperature.toFixed(1)} °C
+              </span>
             )}
             {Number.isInteger(kiln.controller?.stageIndex) && (
               <span>Etapa: {kiln.controller.stageIndex + 1}</span>
@@ -234,18 +249,58 @@ export default function FiringControls({
           </div>
         </div>
       )}
-      {!online && <p className="text-sm text-muted">Controlador desconectado.</p>}
+      {!online && (
+        <p className="text-sm text-muted">Controlador desconectado.</p>
+      )}
       {online && !reconciled && (
-        <p className="text-sm text-muted">Reconciliando el estado del controlador…</p>
+        <p className="text-sm text-muted">
+          Reconciliando el estado del controlador…
+        </p>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {detailsOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4" onMouseDown={() => setDetailsOpen(false)}>
-          <section onMouseDown={(event) => event.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl border border-border bg-surface p-6">
-            <div className="flex justify-between gap-4"><div><h3 className="text-xl font-semibold">{selected.name}</h3><p className="mt-1 text-sm text-muted">{selected.description}</p></div><button onClick={() => setDetailsOpen(false)}>Cerrar</button></div>
-            <div className="mt-5 rounded-xl bg-surface-muted p-3"><ProgramChart program={selected} /></div>
-            <table className="mt-5 w-full text-sm"><thead><tr className="text-left text-muted"><th className="py-2">Etapa</th><th>Duración</th><th>Objetivo</th></tr></thead><tbody>{selected.configuration.stages.map((stage, index) => <tr key={`${stage.durationMinutes}-${index}`} className="border-t border-border"><td className="py-2">{index + 1}</td><td>{stage.durationMinutes} min</td><td>{stage.targetTemperature} °C</td></tr>)}</tbody></table>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4"
+          onMouseDown={() => setDetailsOpen(false)}
+        >
+          <section
+            onMouseDown={(event) => event.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl border border-border bg-surface p-6"
+          >
+            <div className="flex justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">{selected.name}</h3>
+                <p className="mt-1 text-sm text-muted">
+                  {selected.description}
+                </p>
+              </div>
+              <button onClick={() => setDetailsOpen(false)}>Cerrar</button>
+            </div>
+            <div className="mt-5 rounded-xl bg-surface-muted p-3">
+              <ProgramChart program={selected} />
+            </div>
+            <table className="mt-5 w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="py-2">Etapa</th>
+                  <th>Duración</th>
+                  <th>Objetivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selected.configuration.stages.map((stage, index) => (
+                  <tr
+                    key={`${stage.durationMinutes}-${index}`}
+                    className="border-t border-border"
+                  >
+                    <td className="py-2">{index + 1}</td>
+                    <td>{stage.durationMinutes} min</td>
+                    <td>{stage.targetTemperature} °C</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         </div>
       )}

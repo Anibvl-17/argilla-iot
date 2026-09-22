@@ -179,7 +179,12 @@ export async function getAdminKilnCycles(req, res) {
     if (!cycles) return handleErrorClient(res, 404, "Horno no encontrado");
     return handleSuccess(res, 200, "Ciclos obtenidos", cycles);
   } catch (error) {
-    return handleErrorServer(res, 500, "Error al obtener ciclos", error.message);
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener ciclos",
+      error.message,
+    );
   }
 }
 

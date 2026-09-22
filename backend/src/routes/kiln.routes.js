@@ -44,11 +44,7 @@ router.post(
   validateSchema(linkControllerValidation),
   linkController,
 );
-router.post(
-  "/:kilnId/unlink",
-  verifyRoles([ROLES.ADMIN]),
-  unlinkController,
-);
+router.post("/:kilnId/unlink", verifyRoles([ROLES.ADMIN]), unlinkController);
 router.patch("/:kilnId/release", verifyRoles([ROLES.ADMIN]), unlinkUser);
 
 // CRUD

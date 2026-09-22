@@ -520,15 +520,15 @@ describe("technician equipment management", () => {
     });
     const modal = heading.closest("div.fixed");
     expect(within(modal).getByText("ID")).toBeInTheDocument();
-    expect(
-      within(modal).getByText("654321"),
-    ).toBeInTheDocument();
+    expect(within(modal).getByText("654321")).toBeInTheDocument();
     expect(within(modal).getByText("SSR 40 A")).toBeInTheDocument();
     expect(within(modal).getByText("Conectado")).toBeInTheDocument();
     expect(within(modal).getByText("En mantención")).toBeInTheDocument();
     expect(within(modal).getByText("512.4 °C")).toBeInTheDocument();
     expect(within(modal).getByText("2.3.0")).toBeInTheDocument();
-    expect(within(modal).getByRole("button", { name: "Cerrar" })).toBeInTheDocument();
+    expect(
+      within(modal).getByRole("button", { name: "Cerrar" }),
+    ).toBeInTheDocument();
     expect(
       within(modal).queryByRole("button", { name: "Guardar" }),
     ).not.toBeInTheDocument();

@@ -117,7 +117,8 @@ function parseRelayStatePayload(controllerId, payload) {
 }
 
 function parsePairingPinPayload(payload) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
+    return null;
   const pin = String(payload.pin || "");
   const deviceSecret = String(payload.deviceSecret || "");
   if (!/^\d{6}$/.test(pin) || !deviceSecret) return null;
@@ -395,7 +396,11 @@ async function processCycleSnapshot(controllerId, snapshot) {
   ) {
     pendingTerminalSnapshots.delete(snapshot.controllerCycleId);
   }
-  if (terminal && snapshot.finalSampleExpected && !snapshot.finalSampleUnavailable) {
+  if (
+    terminal &&
+    snapshot.finalSampleExpected &&
+    !snapshot.finalSampleUnavailable
+  ) {
     const finalSample = await hasFinalSample(snapshot.controllerCycleId);
     if (!finalSample) {
       pendingTerminalSnapshots.set(snapshot.controllerCycleId, snapshot);
@@ -426,7 +431,10 @@ async function processCycleSnapshot(controllerId, snapshot) {
   try {
     const cycle = await upsertControllerCycle(controllerId, snapshot);
     await flushBufferedSamples(controllerId, snapshot.controllerCycleId);
-    const controller = await setActivityFromCycle(controllerId, snapshot.status);
+    const controller = await setActivityFromCycle(
+      controllerId,
+      snapshot.status,
+    );
     reconciledControllers.add(controllerId);
     unresolvedControllers.delete(controllerId);
     emitFiringCycle(
@@ -509,16 +517,19 @@ async function handleRecoveryResponse(controllerId, payload) {
   if (conflict.notFoundResponses < 3) {
     setTimeout(() => {
       if (!cycleConflicts.has(controllerId)) return;
-      requestCycleRecovery(controllerId, conflict.activeCycle.controllerCycleId);
+      requestCycleRecovery(
+        controllerId,
+        conflict.activeCycle.controllerCycleId,
+      );
     }, 15_000).unref();
     return;
   }
   const incoming = conflict.incomingSnapshot;
   const mustWaitForFinal = Boolean(
     incoming &&
-      TERMINAL_FIRING_STATUSES.includes(incoming.status) &&
-      incoming.finalSampleExpected &&
-      !incoming.finalSampleUnavailable,
+    TERMINAL_FIRING_STATUSES.includes(incoming.status) &&
+    incoming.finalSampleExpected &&
+    !incoming.finalSampleUnavailable,
   );
   if (mustWaitForFinal) {
     pendingTerminalSnapshots.set(incoming.controllerCycleId, incoming);
@@ -531,7 +542,10 @@ async function handleRecoveryResponse(controllerId, payload) {
   cycleConflicts.delete(controllerId);
   if (incoming) {
     await flushBufferedSamples(controllerId, incoming.controllerCycleId);
-    if (mustWaitForFinal && (await hasFinalSample(incoming.controllerCycleId))) {
+    if (
+      mustWaitForFinal &&
+      (await hasFinalSample(incoming.controllerCycleId))
+    ) {
       pendingTerminalSnapshots.delete(incoming.controllerCycleId);
       cycle = await processCycleSnapshot(controllerId, incoming);
     }
@@ -596,7 +610,9 @@ async function handleFiringResult(controllerId, payload) {
     }
     pending.resolve(result);
   } else {
-    const error = new Error(payload.reason || "El controlador rechazó el comando");
+    const error = new Error(
+      payload.reason || "El controlador rechazó el comando",
+    );
     error.code = "COMMAND_REJECTED";
     error.details = { reasonCode: payload.reasonCode || "REJECTED" };
     pending.reject(error);
@@ -605,10 +621,14 @@ async function handleFiringResult(controllerId, payload) {
 
 async function handleFiringState(controllerId, payload) {
   if (payload.selectedProgramId != null) {
-    await applyControllerSelection(controllerId, Number(payload.selectedProgramId));
+    await applyControllerSelection(
+      controllerId,
+      Number(payload.selectedProgramId),
+    );
   }
   let cycle = null;
-  if (payload.cycle) cycle = await processCycleSnapshot(controllerId, payload.cycle);
+  if (payload.cycle)
+    cycle = await processCycleSnapshot(controllerId, payload.cycle);
   else {
     const activeCycle = await getActiveCycleForController(controllerId);
     if (activeCycle) {
@@ -818,7 +838,10 @@ export function connectMqtt() {
       if (type === "pairing-pin") {
         const pairing = parsePairingPinPayload(payload);
         if (!pairing) {
-          publishPairingStatus(controllerId, { status: "REJECTED", reason: "INVALID_REQUEST" });
+          publishPairingStatus(controllerId, {
+            status: "REJECTED",
+            reason: "INVALID_REQUEST",
+          });
           return;
         }
         const result = await receivePairingPin(
@@ -936,7 +959,9 @@ export function publishFiringCommand(controllerId, data) {
   const cached = recentFiringResults.get(commandKey);
   if (cached && cached.expiresAt > Date.now()) {
     if (cached.signature !== signature) {
-      const error = new Error("El commandId ya fue utilizado por otra operación");
+      const error = new Error(
+        "El commandId ya fue utilizado por otra operación",
+      );
       error.code = "COMMAND_CONFLICT";
       return Promise.reject(error);
     }
@@ -965,7 +990,9 @@ export function publishFiringCommand(controllerId, data) {
   }
 
   if (pendingCommandByController.has(controllerId)) {
-    const error = new Error("Ya existe un comando pendiente para este controlador");
+    const error = new Error(
+      "Ya existe un comando pendiente para este controlador",
+    );
     error.code = "COMMAND_CONFLICT";
     return Promise.reject(error);
   }

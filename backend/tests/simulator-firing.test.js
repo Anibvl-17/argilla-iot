@@ -62,10 +62,15 @@ test("a stage requires both elapsed time and target temperature", () => {
 });
 
 test("the one-minute test program follows the standard accelerated curve logic", () => {
-  const program = GLOBAL_PROGRAMS.find(({ name }) => name === "Quema de Prueba");
+  const program = GLOBAL_PROGRAMS.find(
+    ({ name }) => name === "Quema de Prueba",
+  );
   const stage = program.configuration.stages[0];
   assert.equal(program.configuration.initialTemperature, 20);
-  assert.equal(calculateProgramSetpoint(20, stage.targetTemperature, 1, 1), 1240);
+  assert.equal(
+    calculateProgramSetpoint(20, stage.targetTemperature, 1, 1),
+    1240,
+  );
   assert.equal(isProgramStageComplete(stage, 1, 1240), true);
 });
 

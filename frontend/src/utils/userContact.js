@@ -1,7 +1,4 @@
-import {
-  AsYouType,
-  parsePhoneNumberWithError,
-} from "libphonenumber-js/max";
+import { AsYouType, parsePhoneNumberWithError } from "libphonenumber-js/max";
 
 class UserContactFormError extends Error {
   constructor(field, message) {
@@ -22,7 +19,9 @@ export function formatPhoneInput(value, countryCode = null) {
 export function formatPhoneDisplay(value) {
   if (!value) return "";
   try {
-    return parsePhoneNumberWithError(value, { extract: false }).formatInternational();
+    return parsePhoneNumberWithError(value, {
+      extract: false,
+    }).formatInternational();
   } catch {
     return value;
   }
@@ -102,17 +101,11 @@ export function prepareUserContactPayload(data, catalog) {
   }
 
   if (selectedCountry.isoCode === "CL" && !regionId) {
-    throw new UserContactFormError(
-      "regionId",
-      "Selecciona una región",
-    );
+    throw new UserContactFormError("regionId", "Selecciona una región");
   }
 
   if (selectedCountry.isoCode === "CL" && !communeId) {
-    throw new UserContactFormError(
-      "communeId",
-      "Selecciona una comuna",
-    );
+    throw new UserContactFormError("communeId", "Selecciona una comuna");
   }
 
   let phone = null;
@@ -154,7 +147,8 @@ export function prepareUserContactPayload(data, catalog) {
 
 export function getCountryName(catalog, countryId) {
   return (
-    catalog?.countries.find((country) => country.countryId === countryId)?.name ||
+    catalog?.countries.find((country) => country.countryId === countryId)
+      ?.name ||
     countryId ||
     "Sin país"
   );

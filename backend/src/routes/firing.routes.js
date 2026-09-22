@@ -39,9 +39,6 @@ router.post(
   commandCycle,
 );
 router.get("/kilns/:kilnId/cycles", getCycles);
-router.get(
-  "/kilns/:kilnId/cycles/:firingCycleId/telemetry",
-  getCycleTelemetry,
-);
+router.get("/kilns/:kilnId/cycles/:firingCycleId/telemetry", getCycleTelemetry);
 
 export default router;

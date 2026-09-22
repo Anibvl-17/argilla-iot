@@ -356,8 +356,15 @@ export default function Profile() {
           Estas acciones afectan tu acceso y requieren confirmación.
         </p>
 
-        <div className="mt-5 divide-y divide-danger-border/60" role="list" aria-label="Acciones peligrosas">
-          <div className="flex flex-col gap-4 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between" role="listitem">
+        <div
+          className="mt-5 divide-y divide-danger-border/60"
+          role="list"
+          aria-label="Acciones peligrosas"
+        >
+          <div
+            className="flex flex-col gap-4 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+            role="listitem"
+          >
             <div className="min-w-0">
               <h3 className="font-semibold text-content">Desactivar cuenta</h3>
               <p className="mt-1 text-sm text-secondary">
@@ -374,12 +381,15 @@ export default function Profile() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-4 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between" role="listitem">
+          <div
+            className="flex flex-col gap-4 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+            role="listitem"
+          >
             <div className="min-w-0">
               <h3 className="font-semibold text-content">Eliminar cuenta</h3>
               <p className="mt-1 text-sm text-secondary">
-                Tus datos personales serán anonimizados y esta acción no se puede
-                deshacer.
+                Tus datos personales serán anonimizados y esta acción no se
+                puede deshacer.
               </p>
             </div>
             <button

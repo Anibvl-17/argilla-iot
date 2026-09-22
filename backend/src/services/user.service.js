@@ -20,7 +20,10 @@ function serviceError(code, message) {
   return error;
 }
 
-export async function createUser(data, { allowIncompleteContact = false } = {}) {
+export async function createUser(
+  data,
+  { allowIncompleteContact = false } = {},
+) {
   const passwordHash = await bcrypt.hash(data.password, HASH_ROUNDS);
   const contactData = allowIncompleteContact
     ? {
@@ -50,14 +53,20 @@ export async function updateUser(userId, data) {
   });
   if (!current) throw serviceError("P2025", "Usuario no encontrado");
   if (current.anonymizedAt) {
-    throw serviceError("USER_ANONYMIZED", "Una cuenta anonimizada no puede modificarse");
+    throw serviceError(
+      "USER_ANONYMIZED",
+      "Una cuenta anonimizada no puede modificarse",
+    );
   }
   if (current.role === ROLES.ADMIN && data.role && data.role !== ROLES.ADMIN) {
     const activeAdmins = await prisma.user.count({
       where: { role: ROLES.ADMIN, isActive: true, anonymizedAt: null },
     });
     if (activeAdmins <= 1) {
-      throw serviceError("LAST_ACTIVE_ADMIN", "Debe permanecer al menos un administrador activo");
+      throw serviceError(
+        "LAST_ACTIVE_ADMIN",
+        "Debe permanecer al menos un administrador activo",
+      );
     }
   }
 
@@ -81,20 +90,29 @@ export async function updateUser(userId, data) {
 
 export async function setUserActive(userId, isActive, actingUserId) {
   if (userId === actingUserId && !isActive) {
-    throw serviceError("SELF_DEACTIVATION", "No puedes desactivar tu propia cuenta");
+    throw serviceError(
+      "SELF_DEACTIVATION",
+      "No puedes desactivar tu propia cuenta",
+    );
   }
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({ where: { userId } });
     if (!user) throw serviceError("P2025", "Usuario no encontrado");
     if (user.anonymizedAt && isActive) {
-      throw serviceError("USER_ANONYMIZED", "Una cuenta anonimizada no puede reactivarse");
+      throw serviceError(
+        "USER_ANONYMIZED",
+        "Una cuenta anonimizada no puede reactivarse",
+      );
     }
     if (user.role === ROLES.ADMIN && !isActive && user.isActive) {
       const activeAdmins = await tx.user.count({
         where: { role: ROLES.ADMIN, isActive: true, anonymizedAt: null },
       });
       if (activeAdmins <= 1) {
-        throw serviceError("LAST_ACTIVE_ADMIN", "Debe permanecer al menos un administrador activo");
+        throw serviceError(
+          "LAST_ACTIVE_ADMIN",
+          "Debe permanecer al menos un administrador activo",
+        );
       }
     }
     return presentUser(
@@ -136,7 +154,9 @@ export async function deactivateOwnUser(userId) {
 }
 
 async function redactRelatedText(tx, user, replacement) {
-  const tokens = [user.name, user.email, user.phone, user.addressLine].filter(Boolean);
+  const tokens = [user.name, user.email, user.phone, user.addressLine].filter(
+    Boolean,
+  );
   for (const token of tokens) {
     await tx.$executeRaw`UPDATE "Kiln" SET "name" = replace("name", ${token}, ${replacement}) WHERE "userId" = ${user.userId}`;
     await tx.$executeRaw`UPDATE "Program" SET "name" = replace("name", ${token}, ${replacement}), "description" = CASE WHEN "description" IS NULL THEN NULL ELSE replace("description", ${token}, ${replacement}) END WHERE "userId" = ${user.userId}`;
@@ -158,7 +178,10 @@ async function anonymizeUserRecord(userId) {
         where: { role: ROLES.ADMIN, isActive: true, anonymizedAt: null },
       });
       if (activeAdmins <= 1) {
-        throw serviceError("LAST_ACTIVE_ADMIN", "Debe permanecer al menos un administrador activo");
+        throw serviceError(
+          "LAST_ACTIVE_ADMIN",
+          "Debe permanecer al menos un administrador activo",
+        );
       }
     }
 
@@ -188,7 +211,10 @@ async function anonymizeUserRecord(userId) {
 
 export async function anonymizeUser(userId, actingUserId) {
   if (userId === actingUserId) {
-    throw serviceError("SELF_ANONYMIZATION", "No puedes anonimizar tu propia cuenta");
+    throw serviceError(
+      "SELF_ANONYMIZATION",
+      "No puedes anonimizar tu propia cuenta",
+    );
   }
   return anonymizeUserRecord(userId);
 }
@@ -224,9 +250,15 @@ export async function updateOwnProfile(userId, data) {
     ...(await normalizeUserContactData(data, user, prisma)),
   };
   if (data.newPassword) {
-    const matches = await bcrypt.compare(data.currentPassword, user.passwordHash);
+    const matches = await bcrypt.compare(
+      data.currentPassword,
+      user.passwordHash,
+    );
     if (!matches) {
-      throw serviceError("INVALID_CURRENT_PASSWORD", "La contraseña actual es incorrecta");
+      throw serviceError(
+        "INVALID_CURRENT_PASSWORD",
+        "La contraseña actual es incorrecta",
+      );
     }
     updateData.passwordHash = await bcrypt.hash(data.newPassword, HASH_ROUNDS);
   }
@@ -268,11 +300,14 @@ export async function getUsersPage({
     ...(normalizedSearch
       ? {
           OR: [
-            ...(Number.isInteger(numericSearch) ? [{ userId: numericSearch }] : []),
+            ...(Number.isInteger(numericSearch)
+              ? [{ userId: numericSearch }]
+              : []),
             { name: { contains: normalizedSearch, mode: "insensitive" } },
             { email: { contains: normalizedSearch, mode: "insensitive" } },
             { phone: { contains: normalizedSearch, mode: "insensitive" } },
-            ...(normalizedPhoneSearch && normalizedPhoneSearch !== normalizedSearch
+            ...(normalizedPhoneSearch &&
+            normalizedPhoneSearch !== normalizedSearch
               ? [{ phone: { contains: normalizedPhoneSearch } }]
               : []),
           ],

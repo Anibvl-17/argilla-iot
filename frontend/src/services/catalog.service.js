@@ -15,4 +15,3 @@ export function getUserContactCatalog() {
 
   return userContactCatalogPromise;
 }
-

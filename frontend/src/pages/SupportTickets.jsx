@@ -490,9 +490,7 @@ function TicketTable({ tickets, loading, error, mode }) {
                 {ticket.supportTicketId}
               </td>
               <td className="text-xs sm:text-sm max-w-72 px-3 py-4 md:px-5">
-                <p className="font-medium text-content">
-                  {ticket.title}
-                </p>
+                <p className="font-medium text-content">{ticket.title}</p>
                 <p className="mt-1 truncate text-xs text-muted">
                   {ticket.supportReason?.name}
                 </p>

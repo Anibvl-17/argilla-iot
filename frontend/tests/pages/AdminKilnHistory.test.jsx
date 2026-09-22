@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdminKilnHistory from "@pages/AdminKilnHistory";
@@ -18,7 +24,10 @@ vi.mock("@hooks/useFiringRealtime", () => ({
 }));
 vi.mock("@components/TelemetryChart", () => ({
   default: () => (
-    <div role="img" aria-label="Temperatura real y setpoint del ciclo a través del tiempo" />
+    <div
+      role="img"
+      aria-label="Temperatura real y setpoint del ciclo a través del tiempo"
+    />
   ),
 }));
 
@@ -96,7 +105,9 @@ describe("AdminKilnHistory", () => {
       await screen.findByRole("columnheader", { name: "Programa" }),
     ).toBeInTheDocument();
     expect(screen.getByText("1 h 30 min")).toBeInTheDocument();
-    expect(screen.queryByText("Historial de temperatura")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Historial de temperatura"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Ver detalle del ciclo 91" }),
@@ -119,9 +130,15 @@ describe("AdminKilnHistory", () => {
     const modal = screen.getByRole("dialog", { name: "Detalle del ciclo" });
     expect(within(modal).getByText("Bizcocho")).toBeInTheDocument();
     expect(within(modal).getByText("Completada")).toBeInTheDocument();
-    expect(within(modal).getByRole("columnheader", { name: "Etapa" })).toBeInTheDocument();
-    expect(within(modal).getByRole("columnheader", { name: "Hora" })).toBeInTheDocument();
-    expect(within(modal).getByRole("columnheader", { name: "Switch" })).toBeInTheDocument();
+    expect(
+      within(modal).getByRole("columnheader", { name: "Etapa" }),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByRole("columnheader", { name: "Hora" }),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByRole("columnheader", { name: "Switch" }),
+    ).toBeInTheDocument();
     expect(
       within(modal).getByRole("img", {
         name: "Temperatura real y setpoint del ciclo a través del tiempo",

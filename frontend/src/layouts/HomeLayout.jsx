@@ -88,8 +88,16 @@ export default function HomeLayout() {
                 icon={LuLifeBuoy}
                 matchDescendants
               />
-              <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
-              <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
+              <SidebarItem
+                path="/management/kilns"
+                title="Hornos"
+                icon={LuFlame}
+              />
+              <SidebarItem
+                path="/management/controllers"
+                title="Controladores"
+                icon={LuCircuitBoard}
+              />
             </>
           )}
         </nav>

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { LuArrowLeft, LuCircuitBoard, LuCopy, LuEye, LuX } from "react-icons/lu";
+import {
+  LuArrowLeft,
+  LuCircuitBoard,
+  LuCopy,
+  LuEye,
+  LuX,
+} from "react-icons/lu";
 import ControllerStatus from "@components/ControllerStatus";
 import FiringControls from "@components/FiringControls";
 import Pagination from "@components/Pagination";
@@ -69,7 +75,8 @@ function formatDateTime(value) {
 function formatDuration(startedAt, endedAt) {
   const start = new Date(startedAt).getTime();
   const end = endedAt ? new Date(endedAt).getTime() : Date.now();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return "-";
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
+    return "-";
   const totalMinutes = Math.floor((end - start) / 60_000);
   if (totalMinutes < 1) return "< 1 min";
   const days = Math.floor(totalMinutes / 1440);
@@ -118,10 +125,15 @@ function TelemetryModal({
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
           <div>
-            <h2 id="telemetry-modal-title" className="text-lg font-semibold sm:text-xl">
+            <h2
+              id="telemetry-modal-title"
+              className="text-lg font-semibold sm:text-xl"
+            >
               Detalle del ciclo
             </h2>
-            <p className="mt-1 text-sm text-muted">Ciclo #{cycle.firingCycleId}</p>
+            <p className="mt-1 text-sm text-muted">
+              Ciclo #{cycle.firingCycleId}
+            </p>
           </div>
           <button
             type="button"
@@ -135,11 +147,26 @@ function TelemetryModal({
 
         <div className="min-h-0 overflow-y-auto">
           <dl className="grid grid-cols-2 gap-x-5 gap-y-4 border-b border-border px-4 py-5 sm:grid-cols-3 sm:px-6 lg:grid-cols-5">
-            <CycleDetail label="Inicio" value={formatDateTime(cycle.startedAt)} />
-            <CycleDetail label="Término" value={formatDateTime(cycle.endedAt)} />
-            <CycleDetail label="Duración" value={formatDuration(cycle.startedAt, cycle.endedAt)} />
-            <CycleDetail label="Estado" value={FIRING_STATUS_LABELS[cycle.status] || cycle.status} />
-            <CycleDetail label="Programa" value={cycle.program?.name || "No disponible"} />
+            <CycleDetail
+              label="Inicio"
+              value={formatDateTime(cycle.startedAt)}
+            />
+            <CycleDetail
+              label="Término"
+              value={formatDateTime(cycle.endedAt)}
+            />
+            <CycleDetail
+              label="Duración"
+              value={formatDuration(cycle.startedAt, cycle.endedAt)}
+            />
+            <CycleDetail
+              label="Estado"
+              value={FIRING_STATUS_LABELS[cycle.status] || cycle.status}
+            />
+            <CycleDetail
+              label="Programa"
+              value={cycle.program?.name || "No disponible"}
+            />
           </dl>
 
           <section className="border-b border-border px-4 py-5 sm:px-6">
@@ -148,7 +175,9 @@ function TelemetryModal({
               <TelemetryChart telemetry={chartTelemetry} />
             ) : (
               <p className="py-8 text-center text-sm text-muted">
-                {chartLoading ? "Cargando gráfico…" : "Sin muestras para graficar."}
+                {chartLoading
+                  ? "Cargando gráfico…"
+                  : "Sin muestras para graficar."}
               </p>
             )}
           </section>
@@ -157,7 +186,9 @@ function TelemetryModal({
             <table className="w-full min-w-120 text-left text-xs sm:text-sm">
               <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
                 <tr>
-                  <th className="px-2 py-3 font-medium sm:px-4 text-center">Etapa</th>
+                  <th className="px-2 py-3 font-medium sm:px-4 text-center">
+                    Etapa
+                  </th>
                   <th className="px-2 py-3 font-medium sm:px-4">Hora</th>
                   <th className="px-2 py-3 font-medium sm:px-4">Temperatura</th>
                   <th className="px-2 py-3 font-medium sm:px-4">Setpoint</th>
@@ -185,15 +216,24 @@ function TelemetryModal({
                             {timestamp.toLocaleDateString("es-CL")}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">{item.temperature.toFixed(1)} °C</td>
-                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">{item.setpointTemperature.toFixed(1)} °C</td>
-                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">{item.switchState ? "Activo" : "Inactivo"}</td>
+                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">
+                          {item.temperature.toFixed(1)} °C
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">
+                          {item.setpointTemperature.toFixed(1)} °C
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2.5 sm:px-4 sm:py-3">
+                          {item.switchState ? "Activo" : "Inactivo"}
+                        </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-10 text-center text-muted">
+                    <td
+                      colSpan="5"
+                      className="px-6 py-10 text-center text-muted"
+                    >
                       {loading ? "Cargando…" : "Sin muestras históricas."}
                     </td>
                   </tr>
@@ -249,8 +289,7 @@ export default function KilnDetails() {
           ? { reconciliation: context.data.reconciliation }
           : {}),
       });
-    }
-    else setError(result.message);
+    } else setError(result.message);
     setLoading(false);
   }, [kilnId]);
 
@@ -367,7 +406,9 @@ export default function KilnDetails() {
               ...(event.reconciliation
                 ? { reconciliation: event.reconciliation }
                 : {}),
-              ...(!event.reconciliation || event.reconciliation.ready || event.cycle
+              ...(!event.reconciliation ||
+              event.reconciliation.ready ||
+              event.cycle
                 ? {
                     activeFiringCycle: ["RUNNING", "PAUSED"].includes(
                       event.cycle?.status,
@@ -441,7 +482,9 @@ export default function KilnDetails() {
 
       {controller && (
         <section className="mt-6 rounded-2xl border border-border bg-surface p-4 sm:p-6">
-          <h2 className="mb-3 text-lg font-semibold">Programa y control de quema</h2>
+          <h2 className="mb-3 text-lg font-semibold">
+            Programa y control de quema
+          </h2>
           <FiringControls
             kiln={kiln}
             programs={programs}
@@ -540,19 +583,31 @@ export default function KilnDetails() {
               <tr>
                 <th className="px-4 py-3 font-medium sm:px-6">Inicio</th>
                 <th className="px-4 py-3 font-medium sm:px-6">Programa</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">Duración</th>
+                <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">
+                  Duración
+                </th>
                 <th className="px-4 py-3 font-medium sm:px-6">Estado</th>
-                <th className="px-4 py-3 text-center font-medium sm:px-6">Acciones</th>
+                <th className="px-4 py-3 text-center font-medium sm:px-6">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {cycles.length > 0 ? (
                 cycles.map((cycle) => (
                   <tr key={cycle.firingCycleId}>
-                    <td className="whitespace-nowrap px-4 py-3 sm:px-6">{formatDate(cycle.startedAt)}</td>
-                    <td className="px-4 py-3 sm:px-6">{cycle.program?.name || "Programa no disponible"}</td>
-                    <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6">{formatDuration(cycle.startedAt, cycle.endedAt)}</td>
-                    <td className="px-4 py-3 sm:px-6">{FIRING_STATUS_LABELS[cycle.status] || cycle.status}</td>
+                    <td className="whitespace-nowrap px-4 py-3 sm:px-6">
+                      {formatDate(cycle.startedAt)}
+                    </td>
+                    <td className="px-4 py-3 sm:px-6">
+                      {cycle.program?.name || "Programa no disponible"}
+                    </td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6">
+                      {formatDuration(cycle.startedAt, cycle.endedAt)}
+                    </td>
+                    <td className="px-4 py-3 sm:px-6">
+                      {FIRING_STATUS_LABELS[cycle.status] || cycle.status}
+                    </td>
                     <td className="px-4 py-3 text-center sm:px-6">
                       <button
                         type="button"

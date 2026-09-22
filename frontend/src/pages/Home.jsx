@@ -45,10 +45,12 @@ function getRemainingMinutes(kiln, stages) {
     : 0;
   const elapsed = Number(kiln.controller?.stageElapsedMinutes);
   const currentElapsed = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
-  return Math.max(0, stages[stageIndex].durationMinutes - currentElapsed) +
+  return (
+    Math.max(0, stages[stageIndex].durationMinutes - currentElapsed) +
     stages
       .slice(stageIndex + 1)
-      .reduce((total, stage) => total + stage.durationMinutes, 0);
+      .reduce((total, stage) => total + stage.durationMinutes, 0)
+  );
 }
 
 function formatRemainingTime(minutes) {
@@ -132,7 +134,9 @@ export default function Home() {
               ...(event.reconciliation
                 ? { reconciliation: event.reconciliation }
                 : {}),
-              ...(!event.reconciliation || event.reconciliation.ready || event.cycle
+              ...(!event.reconciliation ||
+              event.reconciliation.ready ||
+              event.cycle
                 ? {
                     activeFiringCycle: ["RUNNING", "PAUSED"].includes(
                       event.cycle?.status,
@@ -260,87 +264,93 @@ export default function Home() {
                   key={kiln.kilnId}
                   className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel transition-colors hover:border-control-border sm:p-6"
                 >
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border pb-4 text-xs sm:text-sm">
-                  <span className="whitespace-nowrap text-muted">
-                    {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
-                  </span>
-                  <h2 className="max-w-48 truncate text-center font-semibold text-content">
-                    {kiln.name}
-                  </h2>
-                  <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
-                    <Badge
-                      style={
-                        kiln.controller?.connectionStatus === "ONLINE"
-                          ? "info"
-                          : "default"
-                      }
-                      text={
-                        kiln.controller
-                          ? getControllerConnectionLabel(
-                              kiln.controller.connectionStatus,
-                            )
-                          : "Sin controlador"
-                      }
-                    />
-                    {kiln.controller && (
-                      <ControllerStatus controller={kiln.controller} />
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border pb-4 text-xs sm:text-sm">
+                    <span className="whitespace-nowrap text-muted">
+                      {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
+                    </span>
+                    <h2 className="max-w-48 truncate text-center font-semibold text-content">
+                      {kiln.name}
+                    </h2>
+                    <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
+                      <Badge
+                        style={
+                          kiln.controller?.connectionStatus === "ONLINE"
+                            ? "info"
+                            : "default"
+                        }
+                        text={
+                          kiln.controller
+                            ? getControllerConnectionLabel(
+                                kiln.controller.connectionStatus,
+                              )
+                            : "Sin controlador"
+                        }
+                      />
+                      {kiln.controller && (
+                        <ControllerStatus controller={kiln.controller} />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 pb-7 text-center">
+                    <p className="pb-4 truncate text-sm text-secondary">
+                      Programa: {program?.name || "Sin seleccionar"}
+                    </p>
+                    {kiln.controller ? (
+                      <p className="mt-3 text-5xl font-semibold tracking-tight text-content">
+                        {kiln.controller.temperature == null
+                          ? "--"
+                          : kiln.controller.temperature.toFixed(1)}{" "}
+                        °C
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-2xl font-semibold text-muted">
+                        No disponible
+                      </p>
                     )}
-                  </div>
-                </div>
-
-                <div className="pt-3 pb-7 text-center">
-                  <p className="pb-4 truncate text-sm text-secondary">
-                    Programa: {program?.name || "Sin seleccionar"}
-                  </p>
-                  {kiln.controller ? (
-                    <p className="mt-3 text-5xl font-semibold tracking-tight text-content">
-                      {kiln.controller.temperature == null
-                        ? "--"
-                        : kiln.controller.temperature.toFixed(1)}{" "}
-                      °C
+                    <p className="mt-1 text-sm text-muted">
+                      Temperatura actual
                     </p>
-                  ) : (
-                    <p className="mt-3 text-2xl font-semibold text-muted">
-                      No disponible
-                    </p>
-                  )}
-                  <p className="mt-1 text-sm text-muted">Temperatura actual</p>
-                </div>
+                  </div>
 
-                <dl className="grid grid-cols-3 gap-2 border-b border-border pb-5 text-center">
-                  <div className="flex flex-col">
-                    <dt className="order-2 mt-1 text-xs text-muted">T° objetivo</dt>
-                    <dd className="order-1 font-semibold text-content">
-                      {Number.isFinite(targetTemperature)
-                        ? `${targetTemperature} °C`
-                        : "-"}
-                    </dd>
-                  </div>
-                  <div className="flex flex-col">
-                    <dt className="order-2 mt-1 text-xs text-muted">Tiempo restante</dt>
-                    <dd className="order-1 font-semibold text-content">
-                      {formatRemainingTime(getRemainingMinutes(kiln, stages))}
-                    </dd>
-                  </div>
-                  <div className="flex flex-col">
-                    <dt className="order-2 mt-1 text-xs text-muted">Etapa</dt>
-                    <dd className="order-1 truncate font-semibold text-content">
-                      {stageIndex == null || !stages.length
-                        ? `-`
-                        : `${stageIndex + 1} de ${stages.length}`}
-                    </dd>
-                  </div>
-                </dl>
+                  <dl className="grid grid-cols-3 gap-2 border-b border-border pb-5 text-center">
+                    <div className="flex flex-col">
+                      <dt className="order-2 mt-1 text-xs text-muted">
+                        T° objetivo
+                      </dt>
+                      <dd className="order-1 font-semibold text-content">
+                        {Number.isFinite(targetTemperature)
+                          ? `${targetTemperature} °C`
+                          : "-"}
+                      </dd>
+                    </div>
+                    <div className="flex flex-col">
+                      <dt className="order-2 mt-1 text-xs text-muted">
+                        Tiempo restante
+                      </dt>
+                      <dd className="order-1 font-semibold text-content">
+                        {formatRemainingTime(getRemainingMinutes(kiln, stages))}
+                      </dd>
+                    </div>
+                    <div className="flex flex-col">
+                      <dt className="order-2 mt-1 text-xs text-muted">Etapa</dt>
+                      <dd className="order-1 truncate font-semibold text-content">
+                        {stageIndex == null || !stages.length
+                          ? `-`
+                          : `${stageIndex + 1} de ${stages.length}`}
+                      </dd>
+                    </div>
+                  </dl>
 
-                <div className="mt-5">
-                  <FiringControls
-                    compact
-                    kiln={kiln}
-                    programs={programs}
-                    detailsHref={`/kilns/${kiln.kilnId}`}
-                    onRefresh={() => setReloadKey((value) => value + 1)}
-                  />
-                </div>
+                  <div className="mt-5">
+                    <FiringControls
+                      compact
+                      kiln={kiln}
+                      programs={programs}
+                      detailsHref={`/kilns/${kiln.kilnId}`}
+                      onRefresh={() => setReloadKey((value) => value + 1)}
+                    />
+                  </div>
                 </article>
               );
             })}

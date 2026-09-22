@@ -1,4 +1,7 @@
-import { handleErrorServer, handleSuccess } from "../handlers/response.handler.js";
+import {
+  handleErrorServer,
+  handleSuccess,
+} from "../handlers/response.handler.js";
 import { getUserContactCatalogData } from "../services/catalog.service.js";
 
 export async function getUserContactCatalog(_req, res) {

@@ -114,7 +114,10 @@ export async function selectProgram(req, res) {
       req.body.programId,
     );
     void publishControllerCatalog(controllerId).catch((error) =>
-      console.error("[Firing] Programa guardado; sincronización pendiente:", error.message),
+      console.error(
+        "[Firing] Programa guardado; sincronización pendiente:",
+        error.message,
+      ),
     );
     return handleSuccess(res, 200, "Programa seleccionado", program);
   } catch (error) {
@@ -134,23 +137,27 @@ export async function startProgram(req, res) {
       context.controller.controllerId,
     );
     if (!availability.ready) {
-      const error = new Error("El controlador todavía está reconciliando su estado");
+      const error = new Error(
+        "El controlador todavía está reconciliando su estado",
+      );
       error.code = "CONTROLLER_NOT_RECONCILED";
       throw error;
     }
-    const result = await publishFiringCommand(
-      context.controller.controllerId,
-      {
-        commandId: req.body.commandId,
-        command: "START_PROGRAM",
-        programId: context.selectedProgram.programId,
-        programConfig: context.selectedProgram.configuration,
-      },
-    );
+    const result = await publishFiringCommand(context.controller.controllerId, {
+      commandId: req.body.commandId,
+      command: "START_PROGRAM",
+      programId: context.selectedProgram.programId,
+      programConfig: context.selectedProgram.configuration,
+    });
     const cycle = result.controllerCycleId
       ? await getCycleByControllerId(result.controllerCycleId)
       : null;
-    return handleSuccess(res, 201, "Ciclo iniciado exitosamente", cycle || result);
+    return handleSuccess(
+      res,
+      201,
+      "Ciclo iniciado exitosamente",
+      cycle || result,
+    );
   } catch (error) {
     return firingError(res, error);
   }
@@ -178,14 +185,11 @@ export async function commandCycle(req, res) {
       error.code = "INVALID_TRANSITION";
       throw error;
     }
-    const result = await publishFiringCommand(
-      context.controller.controllerId,
-      {
-        commandId: req.body.commandId,
-        command: req.body.command,
-        controllerCycleId: cycle.controllerCycleId,
-      },
-    );
+    const result = await publishFiringCommand(context.controller.controllerId, {
+      commandId: req.body.commandId,
+      command: req.body.command,
+      controllerCycleId: cycle.controllerCycleId,
+    });
     return handleSuccess(res, 200, "Comando confirmado", result);
   } catch (error) {
     return firingError(res, error);

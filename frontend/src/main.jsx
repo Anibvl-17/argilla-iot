@@ -12,8 +12,14 @@ import { ROLES } from "@constants/user.constants";
 import { lazyWithRefresh } from "./utils/lazyWithRefresh";
 import "./index.css";
 
-const AuthLayout = lazyWithRefresh(() => import("@layouts/AuthLayout"), "auth-layout");
-const HomeLayout = lazyWithRefresh(() => import("@layouts/HomeLayout"), "home-layout");
+const AuthLayout = lazyWithRefresh(
+  () => import("@layouts/AuthLayout"),
+  "auth-layout",
+);
+const HomeLayout = lazyWithRefresh(
+  () => import("@layouts/HomeLayout"),
+  "home-layout",
+);
 const Home = lazyWithRefresh(() => import("@pages/Home"), "home");
 const KilnDetails = lazyWithRefresh(
   () => import("@pages/KilnDetails"),
@@ -54,7 +60,10 @@ const AdminHome = lazyWithRefresh(
 
 function RouteLoading() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-app text-content" role="status">
+    <div
+      className="flex min-h-dvh items-center justify-center bg-app text-content"
+      role="status"
+    >
       Cargando…
     </div>
   );
@@ -120,9 +129,7 @@ const router = createBrowserRouter([
           {
             path: "management",
             element: (
-              <ProtectedRoute
-                allowedRoles={[ROLES.ADMIN, ROLES.TECHNICIAN]}
-              >
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.TECHNICIAN]}>
                 <Outlet />
               </ProtectedRoute>
             ),

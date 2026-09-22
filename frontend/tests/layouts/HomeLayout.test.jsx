@@ -66,7 +66,9 @@ describe("HomeLayout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: /Mis hornos/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Mis hornos/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Soporte/ })).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: /Simulador/ }),

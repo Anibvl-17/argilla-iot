@@ -38,9 +38,18 @@ test("the five canonical programs preserve their approved curves", () => {
     durationMinutes: 10,
     targetTemperature: 950,
   });
-  assert.equal(GLOBAL_PROGRAMS[1].configuration.stages[3].targetTemperature, 573);
-  assert.equal(GLOBAL_PROGRAMS[2].configuration.stages.at(-1).targetTemperature, 1212);
-  assert.equal(GLOBAL_PROGRAMS[3].configuration.stages.at(-1).targetTemperature, 1230);
+  assert.equal(
+    GLOBAL_PROGRAMS[1].configuration.stages[3].targetTemperature,
+    573,
+  );
+  assert.equal(
+    GLOBAL_PROGRAMS[2].configuration.stages.at(-1).targetTemperature,
+    1212,
+  );
+  assert.equal(
+    GLOBAL_PROGRAMS[3].configuration.stages.at(-1).targetTemperature,
+    1230,
+  );
   assert.deepEqual(GLOBAL_PROGRAMS[4], {
     name: "Quema de Prueba",
     description: "Programa de quema para probar el estado tu horno.",
@@ -78,7 +87,10 @@ test("the migration refuses DIRECT data before dropping its columns", async () =
   const guardPosition = migration.indexOf("direct_cycle_count > 0");
   const dropPosition = migration.indexOf('DROP COLUMN "executionType"');
   assert.ok(guardPosition >= 0 && guardPosition < dropPosition);
-  assert.match(migration, /RAISE EXCEPTION[\s\S]*no eliminará ni convertirá datos/);
+  assert.match(
+    migration,
+    /RAISE EXCEPTION[\s\S]*no eliminará ni convertirá datos/,
+  );
   assert.doesNotMatch(migration, /DELETE\s+FROM\s+"FiringCycle"/i);
 });
 
@@ -157,8 +169,14 @@ test("global program synchronization fails on duplicates and unexpected names", 
 });
 
 test("firing request validation only accepts a command id for program starts", () => {
-  assert.equal(selectProgramValidation.safeParse({ programId: 1 }).success, true);
-  assert.equal(selectProgramValidation.safeParse({ programId: -1 }).success, false);
+  assert.equal(
+    selectProgramValidation.safeParse({ programId: 1 }).success,
+    true,
+  );
+  assert.equal(
+    selectProgramValidation.safeParse({ programId: -1 }).success,
+    false,
+  );
   assert.equal(
     startProgramValidation.safeParse({
       commandId: "550e8400-e29b-41d4-a716-446655440000",
@@ -189,13 +207,11 @@ test("start preconditions reject hot kilns and require a selected program", asyn
   });
   await assert.rejects(
     () =>
-      assertCanStart(
-        {
-          ...base,
-          selectedProgram: null,
-          controller: { ...base.controller, temperature: 25 },
-        },
-      ),
+      assertCanStart({
+        ...base,
+        selectedProgram: null,
+        controller: { ...base.controller, temperature: 25 },
+      }),
     { code: "PROGRAM_REQUIRED" },
   );
 });

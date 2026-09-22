@@ -39,63 +39,64 @@ export default function ProgramChart({ program }) {
       const styles = getComputedStyle(document.documentElement);
       const color = (name) => styles.getPropertyValue(name).trim();
       chartRef.current = new Chart(context, {
-      type: "line",
-      data: {
-        datasets: [
-          {
-            label: "Temperatura objetivo",
-            data: points,
-            borderColor: color("--accent"),
-            backgroundColor: color("--danger-soft"),
-            pointBackgroundColor: color("--accent"),
-            pointBorderColor: color("--surface"),
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            borderWidth: 3,
-            fill: true,
-            tension: 0,
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: "Temperatura objetivo",
+              data: points,
+              borderColor: color("--accent"),
+              backgroundColor: color("--danger-soft"),
+              pointBackgroundColor: color("--accent"),
+              pointBorderColor: color("--surface"),
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              fill: true,
+              tension: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          interaction: { intersect: false, mode: "nearest" },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: ([item]) => item.raw.stage,
+                label: (item) =>
+                  `${item.parsed.y} °C a los ${item.parsed.x} min`,
+              },
+            },
           },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { intersect: false, mode: "nearest" },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: ([item]) => item.raw.stage,
-              label: (item) => `${item.parsed.y} °C a los ${item.parsed.x} min`,
+          scales: {
+            x: {
+              type: "linear",
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Tiempo acumulado (min)",
+                color: color("--secondary"),
+              },
+              ticks: { color: color("--muted") },
+              grid: { color: color("--border") },
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Temperatura (°C)",
+                color: color("--secondary"),
+              },
+              ticks: { color: color("--muted") },
+              grid: { color: color("--border") },
             },
           },
         },
-        scales: {
-          x: {
-            type: "linear",
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: "Tiempo acumulado (min)",
-              color: color("--secondary"),
-            },
-            ticks: { color: color("--muted") },
-            grid: { color: color("--border") },
-          },
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: "Temperatura (°C)",
-              color: color("--secondary"),
-            },
-            ticks: { color: color("--muted") },
-            grid: { color: color("--border") },
-          },
-        },
-      },
       });
     }
     void renderChart();

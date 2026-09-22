@@ -117,17 +117,17 @@ export async function normalizeUserContactData(data, current = {}, client) {
   }
 
   if (!next.countryId) {
-    throw new UserContactError(
-      "countryId",
-      "Debe seleccionar un país",
-    );
+    throw new UserContactError("countryId", "Debe seleccionar un país");
   }
 
   const country = await client.country.findUnique({
     where: { countryId: next.countryId },
   });
   if (!country) {
-    throw new UserContactError("countryId", "El país seleccionado no es válido");
+    throw new UserContactError(
+      "countryId",
+      "El país seleccionado no es válido",
+    );
   }
 
   if (country.isoCode !== "CL") {
@@ -149,7 +149,10 @@ export async function normalizeUserContactData(data, current = {}, client) {
       include: { region: true },
     });
     if (!commune) {
-      throw new UserContactError("communeId", "La comuna seleccionada no es válida");
+      throw new UserContactError(
+        "communeId",
+        "La comuna seleccionada no es válida",
+      );
     }
     if (commune.regionId !== next.regionId) {
       throw new UserContactError(

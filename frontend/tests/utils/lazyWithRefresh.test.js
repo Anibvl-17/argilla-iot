@@ -21,7 +21,11 @@ describe("loadModuleWithRefresh", () => {
     const module = { default: () => null };
 
     await expect(
-      loadModuleWithRefresh(() => Promise.resolve(module), "history", environment),
+      loadModuleWithRefresh(
+        () => Promise.resolve(module),
+        "history",
+        environment,
+      ),
     ).resolves.toBe(module);
     expect(environment.storage.removeItem).toHaveBeenCalledWith(
       "argilla:chunk-refresh:history",
@@ -33,7 +37,10 @@ describe("loadModuleWithRefresh", () => {
     const environment = createEnvironment();
 
     loadModuleWithRefresh(
-      () => Promise.reject(new TypeError("Failed to fetch dynamically imported module")),
+      () =>
+        Promise.reject(
+          new TypeError("Failed to fetch dynamically imported module"),
+        ),
       "history",
       environment,
     );
@@ -53,7 +60,11 @@ describe("loadModuleWithRefresh", () => {
     const error = new TypeError("Chunk unavailable");
 
     await expect(
-      loadModuleWithRefresh(() => Promise.reject(error), "history", environment),
+      loadModuleWithRefresh(
+        () => Promise.reject(error),
+        "history",
+        environment,
+      ),
     ).rejects.toBe(error);
     expect(environment.reload).not.toHaveBeenCalled();
     expect(environment.storage.removeItem).toHaveBeenCalledWith(

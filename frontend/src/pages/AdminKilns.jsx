@@ -315,7 +315,8 @@ export default function AdminKilns() {
             {editingId ? "Editar horno" : "Crear horno"}
           </h1>
           <p className="mt-1 text-sm text-secondary">
-            Completa la información técnica y configura el circuito de resistencias.
+            Completa la información técnica y configura el circuito de
+            resistencias.
           </p>
         </div>
 
@@ -425,7 +426,9 @@ export default function AdminKilns() {
           </section>
 
           <section className="border-t border-border pt-6">
-            <h2 className="mb-4 text-lg font-semibold">Circuito de resistencias</h2>
+            <h2 className="mb-4 text-lg font-semibold">
+              Circuito de resistencias
+            </h2>
             <HeatingCircuitEditor
               value={form.heatingCircuitConfiguration}
               onChange={(heatingCircuitConfiguration) =>
@@ -558,7 +561,11 @@ export default function AdminKilns() {
               <tr>
                 <th className="px-4 py-4 sm:px-6">ID</th>
                 <th className="px-3 py-4 sm:px-6">
-                  <span className="lg:hidden">Propietario<br />Controlador</span>
+                  <span className="lg:hidden">
+                    Propietario
+                    <br />
+                    Controlador
+                  </span>
                   <span className="hidden lg:inline">Propietario</span>
                 </th>
                 <th className="hidden px-6 py-4 text-center lg:table-cell">
@@ -573,9 +580,7 @@ export default function AdminKilns() {
                 <th className="hidden px-6 py-4 text-center lg:table-cell">
                   Estado
                 </th>
-                <th className="py-4 pl-3 pr-5 text-center sm:px-6">
-                  Acciones
-                </th>
+                <th className="py-4 pl-3 pr-5 text-center sm:px-6">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -615,7 +620,9 @@ export default function AdminKilns() {
                                 type="button"
                                 className="text-accent hover:cursor-pointer hover:underline"
                                 title="Ver información del controlador"
-                                onClick={() => setControllerInfo(kiln.controller)}
+                                onClick={() =>
+                                  setControllerInfo(kiln.controller)
+                                }
                               >
                                 ...{kiln.controller.controllerCode}
                               </button>
@@ -850,19 +857,18 @@ export default function AdminKilns() {
                             </dl>
                             {(isAdmin || !kiln.controller) && (
                               <div className="mt-5 grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-2 lg:grid-cols-3">
-                              {kiln.controller ? (
-                                isAdmin && (
-                                  <button
-                                    type="button"
-                                    onClick={() => detach(kiln)}
-                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
-                                  >
-                                    <LuUnlink className="text-base" /> Desvincular
-                                    controlador
-                                  </button>
-                                )
-                              ) : (
-                                isAdmin ? (
+                                {kiln.controller ? (
+                                  isAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={() => detach(kiln)}
+                                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                    >
+                                      <LuUnlink className="text-base" />{" "}
+                                      Desvincular controlador
+                                    </button>
+                                  )
+                                ) : isAdmin ? (
                                   <SearchableCatalogField
                                     label="Asociar controlador"
                                     value=""
@@ -875,7 +881,9 @@ export default function AdminKilns() {
                                     searchPrompt="Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible."
                                     noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
                                     listboxLabel="Controladores disponibles"
-                                    getSearchText={(option) => option.searchText}
+                                    getSearchText={(option) =>
+                                      option.searchText
+                                    }
                                   />
                                 ) : (
                                   <button
@@ -888,52 +896,51 @@ export default function AdminKilns() {
                                   >
                                     Asociar controlador
                                   </button>
-                                )
-                              )}
-                              {isAdmin &&
-                                (kiln.user ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => release(kiln)}
+                                )}
+                                {isAdmin &&
+                                  (kiln.user ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => release(kiln)}
+                                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                    >
+                                      <LuUserRoundMinus className="text-base" />{" "}
+                                      Liberar propiedad
+                                    </button>
+                                  ) : (
+                                    <label className="w-full text-sm font-medium text-muted">
+                                      Asignación excepcional
+                                      <select
+                                        disabled={!kiln.controller}
+                                        defaultValue=""
+                                        onChange={(event) =>
+                                          assign(kiln, event.target.value)
+                                        }
+                                        className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-content disabled:opacity-40"
+                                      >
+                                        <option value="">
+                                          Selecciona un cliente
+                                        </option>
+                                        {clients.map((client) => (
+                                          <option
+                                            key={client.userId}
+                                            value={client.userId}
+                                          >
+                                            {client.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  ))}
+                                {isAdmin && (
+                                  <Link
+                                    to={`/management/kilns/${kiln.kilnId}/history`}
                                     className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
                                   >
-                                    <LuUserRoundMinus className="text-base" />{" "}
-                                    Liberar propiedad
-                                  </button>
-                                ) : (
-                                  <label className="w-full text-sm font-medium text-muted">
-                                    Asignación excepcional
-                                    <select
-                                      disabled={!kiln.controller}
-                                      defaultValue=""
-                                      onChange={(event) =>
-                                        assign(kiln, event.target.value)
-                                      }
-                                      className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-content disabled:opacity-40"
-                                    >
-                                      <option value="">
-                                        Selecciona un cliente
-                                      </option>
-                                      {clients.map((client) => (
-                                        <option
-                                          key={client.userId}
-                                          value={client.userId}
-                                        >
-                                          {client.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                ))}
-                              {isAdmin && (
-                                <Link
-                                  to={`/management/kilns/${kiln.kilnId}/history`}
-                                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
-                                >
-                                  <LuHistory className="text-base" /> Ver
-                                  historial
-                                </Link>
-                              )}
+                                    <LuHistory className="text-base" /> Ver
+                                    historial
+                                  </Link>
+                                )}
                               </div>
                             )}
                           </td>
@@ -1032,7 +1039,7 @@ export default function AdminKilns() {
                     {label}
                   </dt>
                   <dd
-                    className={`mt-1 break-words ${mono ? "break-all font-mono text-xs" : ""}`}
+                    className={`mt-1 wrap-break-word ${mono ? "break-all font-mono text-xs" : ""}`}
                   >
                     {value}
                   </dd>
@@ -1048,9 +1055,7 @@ export default function AdminKilns() {
         onClose={closeAssociationModal}
         title="Asociar controlador"
         fields={[]}
-        onSubmit={() =>
-          attach(associationKiln, associationControllerId)
-        }
+        onSubmit={() => attach(associationKiln, associationControllerId)}
         submitLabel="Confirmar vinculación"
         submitDisabled={!associationControllerId}
         loading={associationLoading}
@@ -1093,12 +1098,8 @@ export default function AdminKilns() {
                     </span>
                   </span>
                   <Badge
-                    style={
-                      OPERATIONAL_STATUS_STYLES[option.operationalStatus]
-                    }
-                    text={getOperationalStatusLabel(
-                      option.operationalStatus,
-                    )}
+                    style={OPERATIONAL_STATUS_STYLES[option.operationalStatus]}
+                    text={getOperationalStatusLabel(option.operationalStatus)}
                   />
                 </span>
               )}

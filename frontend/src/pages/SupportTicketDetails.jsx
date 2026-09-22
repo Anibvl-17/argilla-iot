@@ -100,9 +100,7 @@ function AssigneeSearch({ assignees, value, onSelect }) {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span
-          className={selected ? "truncate" : "truncate italic text-muted"}
-        >
+        <span className={selected ? "truncate" : "truncate italic text-muted"}>
           {selected?.name || "Sin asignar"}
         </span>
         <LuChevronDown className="shrink-0 text-muted" />
@@ -261,9 +259,7 @@ function Diagnostics({ data, onCycleOpen }) {
             </table>
           </div>
         ) : (
-          <p className="py-8 text-center text-muted">
-            Sin ciclos registrados.
-          </p>
+          <p className="py-8 text-center text-muted">Sin ciclos registrados.</p>
         )}
       </div>
     </section>
@@ -536,9 +532,7 @@ function MaintenanceModal({
                 />
                 <span className="ml-2">Horno</span>
               </label>
-              <label
-                className={!diagnostics.controller ? "text-disabled" : ""}
-              >
+              <label className={!diagnostics.controller ? "text-disabled" : ""}>
                 <input
                   type="checkbox"
                   disabled={!diagnostics.controller}
@@ -661,7 +655,7 @@ function MaintenanceRecords({ records, currentUserId, onRegister, onEdit }) {
                       >
                         Editar
                       </button>
-                      )}
+                    )}
                   </div>
                   {expandedIds.has(record.maintenanceId) && (
                     <p
@@ -884,17 +878,15 @@ export default function SupportTicketDetails() {
                 Tomar ticket
               </button>
             )}
-            {hasAssignee &&
-              canWork &&
-              ticket.status === "IN_PROGRESS" && (
-                <button
-                  type="button"
-                  onClick={resolveTicket}
-                  className="shrink-0 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
-                >
-                  Marcar como resuelto
-                </button>
-              )}
+            {hasAssignee && canWork && ticket.status === "IN_PROGRESS" && (
+              <button
+                type="button"
+                onClick={resolveTicket}
+                className="shrink-0 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-action"
+              >
+                Marcar como resuelto
+              </button>
+            )}
           </div>
 
           {(isAdmin || hasAssignee) && (
@@ -921,25 +913,23 @@ export default function SupportTicketDetails() {
             </div>
           )}
 
-          {hasAssignee &&
-            canWork &&
-            ticket.status === "IN_PROGRESS" && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-secondary">
-                  Diagnóstico y solución
-                  <textarea
-                    value={resolution}
-                    onChange={(event) => setResolution(event.target.value)}
-                    rows="3"
-                    required
-                    minLength="3"
-                    maxLength="5000"
-                    className={`${inputClass} mt-2`}
-                    placeholder="Describe el diagnóstico y la solución aplicada"
-                  />
-                </label>
-              </div>
-            )}
+          {hasAssignee && canWork && ticket.status === "IN_PROGRESS" && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-secondary">
+                Diagnóstico y solución
+                <textarea
+                  value={resolution}
+                  onChange={(event) => setResolution(event.target.value)}
+                  rows="3"
+                  required
+                  minLength="3"
+                  maxLength="5000"
+                  className={`${inputClass} mt-2`}
+                  placeholder="Describe el diagnóstico y la solución aplicada"
+                />
+              </label>
+            </div>
+          )}
           {canWork && ticket.status === "RESOLVED" && (
             <div className="flex flex-col justify-center gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
               <button
