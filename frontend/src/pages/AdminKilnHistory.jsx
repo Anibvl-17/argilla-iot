@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import Pagination from "@components/Pagination";
+import { LuArrowLeft } from "react-icons/lu";
 import { Badge } from "@components/Badge";
 import ControllerStatus from "@components/ControllerStatus";
+import FiringCycleHistory from "@components/FiringCycleHistory";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
-import { getAdminKiln, getAdminKilnTelemetry } from "@services/kiln.service";
+import {
+  getAdminKiln,
+  getAdminKilnCycles,
+  getAdminKilnCycleTelemetry,
+} from "@services/kiln.service";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
-import { LuArrowLeft, LuCopy, LuHistory } from "react-icons/lu";
-import { toast } from "sonner";
 
 export default function AdminKilnHistory() {
   const { kilnId } = useParams();
   const [kiln, setKiln] = useState(null);
-  const [telemetry, setTelemetry] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [telemetryLoading, setTelemetryLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -31,47 +31,18 @@ export default function AdminKilnHistory() {
     };
   }, [kilnId]);
 
-  const fetchTelemetry = useCallback(
-    async (page = 1) => {
-      setTelemetryLoading(true);
-      const result = await getAdminKilnTelemetry(kilnId, page, 10);
-      if (result.success) {
-        setTelemetry(result.data.items || []);
-        setPagination(result.data.pagination || { page: 1, totalPages: 1 });
-      } else {
-        setError(result.message);
-      }
-      setTelemetryLoading(false);
-    },
-    [kilnId],
-  );
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTelemetry(1);
-  }, [fetchTelemetry]);
-
-  const handleTelemetry = useCallback(
-    (event) => {
+  useControllerRealtime(
+    useCallback((event) => {
       setKiln((current) =>
         current?.controller?.controllerId === event.controllerId
           ? { ...current, controller: { ...current.controller, ...event } }
           : current,
       );
-
-      if (event.kilnId === Number(kilnId) && event.telemetrySaved) {
-        fetchTelemetry(1);
-      }
-    },
-    [fetchTelemetry, kilnId],
+    }, []),
   );
 
-  useControllerRealtime(handleTelemetry);
-
   if (loading) {
-    return (
-      <div className="py-20 text-center text-muted">Cargando horno...</div>
-    );
+    return <div className="py-20 text-center text-muted">Cargando horno...</div>;
   }
 
   if (error || !kiln) {
@@ -114,9 +85,7 @@ export default function AdminKilnHistory() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge
-            style={
-              controller?.connectionStatus === "ONLINE" ? "info" : "default"
-            }
+            style={controller?.connectionStatus === "ONLINE" ? "info" : "default"}
             text={
               controller
                 ? getControllerConnectionLabel(controller.connectionStatus)
@@ -129,108 +98,36 @@ export default function AdminKilnHistory() {
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
         <Metric label="Capacidad" value={`${kiln.liters} L`} />
         <Metric label="Amperaje" value={`${kiln.nominalCurrent} A`} />
         <Metric label="Voltaje" value={`${kiln.nominalVoltage} V`} />
-        <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
-            Controlador
-          </p>
-          <p
-            className="mt-1 truncate font-mono text-base font-semibold text-content sm:text-xl"
-            title={controller.controllerCode || "Sin vincular"}
-          >
-            {controller ? (
-              <>
-                ...{controller.controllerCode}{" "}
-                <button
-                  className="text-sm hover:cursor-pointer hover:text-accent"
-                  title="Copiar ID"
-                  onClick={() => {
-                    navigator.clipboard.writeText(controller.controllerCode);
-                    toast.success("¡ID copiada!");
-                  }}
-                >
-                  <LuCopy />
-                </button>
-              </>
-            ) : (
-              "Sin vincular"
-            )}
-          </p>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
-        <div className="flex items-start gap-3 border-b border-border p-4 sm:p-6">
-          <LuHistory className="mt-0.5 shrink-0 text-xl text-accent" />
-          <div>
-            <h2 className="font-semibold">Historial de temperatura</h2>
-            <p className="mt-1 text-sm text-muted">
-              Registros paginados de temperatura y estado del relé.
-            </p>
-          </div>
-        </div>
-        <div className="max-h-[60dvh] overflow-auto">
-          <table className="w-full min-w-120 text-left text-xs sm:text-sm">
-            <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
-              <tr>
-                <th className="px-3 py-3 font-medium sm:px-6">Fecha</th>
-                <th className="px-3 py-3 text-center font-medium sm:px-6">
-                  Temperatura
-                </th>
-                <th className="px-3 py-3 text-center font-medium sm:px-6">
-                  Relé
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {telemetry.length > 0 ? (
-                telemetry.map((item) => (
-                  <tr key={item.telemetryId}>
-                    <td className="px-3 py-3 text-secondary sm:px-6">
-                      {new Date(item.timestamp).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-3 text-center font-mono text-content sm:px-6">
-                      {item.temperature.toFixed(1)} °C
-                    </td>
-                    <td className="px-3 py-3 text-center text-secondary sm:px-6">
-                      {item.switchState ? "Activo" : "Inactivo"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" className="px-6 py-12 text-center text-muted">
-                    {telemetryLoading
-                      ? "Cargando historial..."
-                      : "Sin registros de telemetría."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <Pagination
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          onPageChange={fetchTelemetry}
+        <Metric label="Quemas realizadas" value={kiln.firingCycleCount ?? 0} />
+        <Metric
+          label="Controlador"
+          value={controller ? `...${controller.controllerCode}` : "Sin vincular"}
+          mono
         />
       </section>
+
+      <FiringCycleHistory
+        kilnId={kilnId}
+        getCycles={getAdminKilnCycles}
+        getTelemetry={getAdminKilnCycleTelemetry}
+      />
     </div>
   );
 }
 
-function Metric({ label, value }) {
+function Metric({ label, value, mono = false }) {
   return (
     <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
       <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
         {label}
       </p>
       <p
-        className="mt-1 truncate font-mono text-base font-semibold text-content sm:text-xl"
-        title={value}
+        className={`mt-1 truncate text-base font-semibold text-content sm:text-xl ${mono ? "font-mono" : ""}`}
+        title={String(value)}
       >
         {value}
       </p>
