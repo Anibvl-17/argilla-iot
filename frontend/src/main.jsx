@@ -4,29 +4,52 @@ import {
   Outlet,
   RouterProvider,
 } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import ProtectedRoute from "@components/ProtectedRoute";
 import ReactDOM from "react-dom/client";
 import Root from "@pages/Root";
 import { ROLES } from "@constants/user.constants";
+import { lazyWithRefresh } from "./utils/lazyWithRefresh";
 import "./index.css";
 
-const AuthLayout = lazy(() => import("@layouts/AuthLayout"));
-const HomeLayout = lazy(() => import("@layouts/HomeLayout"));
-const Home = lazy(() => import("@pages/Home"));
-const KilnDetails = lazy(() => import("@pages/KilnDetails"));
-const SimulatorPanel = lazy(() => import("@pages/SimulatorPanel"));
-const Profile = lazy(() => import("@pages/Profile"));
-const SupportTickets = lazy(() => import("@pages/SupportTickets"));
-const SupportTicketDetails = lazy(() => import("@pages/SupportTicketDetails"));
-const AdminKilns = lazy(() => import("@pages/AdminKilns"));
-const AdminControllers = lazy(() => import("@pages/AdminControllers"));
-const AdminUsers = lazy(() => import("@pages/AdminUsers"));
-const AdminKilnHistory = lazy(() => import("@pages/AdminKilnHistory"));
-const AdminHome = lazy(() =>
-  import("@pages/AdminHome").then((module) => ({
-    default: module.AdminHome,
-  })),
+const AuthLayout = lazyWithRefresh(() => import("@layouts/AuthLayout"), "auth-layout");
+const HomeLayout = lazyWithRefresh(() => import("@layouts/HomeLayout"), "home-layout");
+const Home = lazyWithRefresh(() => import("@pages/Home"), "home");
+const KilnDetails = lazyWithRefresh(
+  () => import("@pages/KilnDetails"),
+  "kiln-details",
+);
+const Profile = lazyWithRefresh(() => import("@pages/Profile"), "profile");
+const SupportTickets = lazyWithRefresh(
+  () => import("@pages/SupportTickets"),
+  "support-tickets",
+);
+const SupportTicketDetails = lazyWithRefresh(
+  () => import("@pages/SupportTicketDetails"),
+  "support-ticket-details",
+);
+const AdminKilns = lazyWithRefresh(
+  () => import("@pages/AdminKilns"),
+  "admin-kilns",
+);
+const AdminControllers = lazyWithRefresh(
+  () => import("@pages/AdminControllers"),
+  "admin-controllers",
+);
+const AdminUsers = lazyWithRefresh(
+  () => import("@pages/AdminUsers"),
+  "admin-users",
+);
+const AdminKilnHistory = lazyWithRefresh(
+  () => import("@pages/AdminKilnHistory"),
+  "admin-kiln-history",
+);
+const AdminHome = lazyWithRefresh(
+  () =>
+    import("@pages/AdminHome").then((module) => ({
+      default: module.AdminHome,
+    })),
+  "admin-home",
 );
 
 function RouteLoading() {
@@ -65,14 +88,6 @@ const router = createBrowserRouter([
           {
             path: "kilns/:kilnId",
             element: <KilnDetails />,
-          },
-          {
-            path: "simulator",
-            element: (
-              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.CLIENT]}>
-                <SimulatorPanel />
-              </ProtectedRoute>
-            ),
           },
           {
             path: "support",

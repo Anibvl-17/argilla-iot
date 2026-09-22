@@ -7,7 +7,6 @@ import {
   LuChartNoAxesCombined,
   LuCircuitBoard,
   LuFlame,
-  LuMicrochip,
   LuLifeBuoy,
   LuUser,
   LuUsers,
@@ -35,7 +34,7 @@ export default function HomeLayout() {
 
         {/* Navegación Principal */}
         <nav
-          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${isAdmin ? "grid-cols-6" : isClient || isTechnician ? "grid-cols-3" : "grid-cols-1"}`}
+          className={`grid min-w-0 gap-1 px-2 py-1.5 xl:flex xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2 xl:px-4 xl:py-6 ${isAdmin ? "grid-cols-5" : isClient ? "grid-cols-2" : isTechnician ? "grid-cols-3" : "grid-cols-1"}`}
         >
           {/* Opciones usuario */}
           {isClient && (
@@ -92,9 +91,6 @@ export default function HomeLayout() {
               <SidebarItem path="/management/kilns" title="Hornos" icon={LuFlame} />
               <SidebarItem path="/management/controllers" title="Controladores" icon={LuCircuitBoard} />
             </>
-          )}
-          {(isAdmin || isClient) && (
-            <SidebarItem path="/simulator" title="Simulador" icon={LuMicrochip} />
           )}
         </nav>
       </aside>

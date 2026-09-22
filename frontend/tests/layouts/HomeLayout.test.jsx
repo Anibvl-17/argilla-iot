@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import HomeLayout from "@layouts/HomeLayout";
 
 const { authState } = vi.hoisted(() => ({
@@ -10,6 +10,10 @@ const { authState } = vi.hoisted(() => ({
 vi.mock("@context/AuthContext", () => ({ useAuth: () => authState }));
 
 describe("HomeLayout", () => {
+  beforeEach(() => {
+    authState.user = { id: 1, name: "Administradora", role: "ADMIN" };
+  });
+
   it("shows every management navigation item for administrators", () => {
     render(
       <MemoryRouter>
@@ -23,7 +27,9 @@ describe("HomeLayout", () => {
     expect(
       screen.getByRole("link", { name: /Controladores/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Simulador/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Simulador/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Soporte/ })).toBeInTheDocument();
   });
 
@@ -47,6 +53,21 @@ describe("HomeLayout", () => {
       "href",
       "/management/controllers",
     );
+    expect(
+      screen.queryByRole("link", { name: /Simulador/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not expose the simulator navigation to clients", () => {
+    authState.user = { id: 3, name: "Cliente", role: "CLIENT" };
+    render(
+      <MemoryRouter>
+        <HomeLayout />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /Mis hornos/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Soporte/ })).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: /Simulador/ }),
     ).not.toBeInTheDocument();
