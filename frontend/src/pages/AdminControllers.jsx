@@ -6,7 +6,6 @@ import {
   LuLink,
   LuPencil,
   LuPlus,
-  LuPower,
   LuTrash2,
 } from "react-icons/lu";
 import { toast } from "sonner";
@@ -23,7 +22,6 @@ import {
   CONTROLLER_CONNECTION_STYLES,
   getControllerActivityLabel,
   getControllerConnectionLabel,
-  getFiringCommandLabel,
   getOperationalStatusLabel,
   getPhaseCountLabel,
   getSwitchLabel,
@@ -35,11 +33,11 @@ import {
   createController,
   deleteController,
   getAllControllers,
-  sendAdminControllerCommand,
   updateController,
 } from "@services/controller.service";
 import { getAllKilns, linkController } from "@services/kiln.service";
 import { normalizeFormError } from "../utils/formError";
+import { summarizeHeatingCircuit } from "../utils/heatingCircuit";
 import { getPageAfterDeletion } from "../utils/pagination";
 
 const PAGE_SIZE = 10;
@@ -176,7 +174,7 @@ export default function AdminControllers() {
   const [expandedControllerId, setExpandedControllerId] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [credential, setCredential] = useState(null);
-  const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [kilnInfoController, setKilnInfoController] = useState(null);
   const modalFields =
     modalMode === "create" || isAdmin
       ? controllerFields
@@ -280,18 +278,6 @@ export default function AdminControllers() {
     await fetchControllers();
   }
 
-  async function handleCommand(controller) {
-    const command = controller.switchState ? "OFF" : "ON";
-    setCommandLoadingId(controller.controllerId);
-    const result = await sendAdminControllerCommand(
-      controller.controllerId,
-      command,
-    );
-    setCommandLoadingId("");
-    if (!result.success) return toast.error(result.message);
-    toast.success(command === "ON" ? "Quema iniciada." : "Quema detenida.");
-  }
-
   async function attachKiln(controller, kilnId) {
     if (!kilnId) return;
     setAssociationLoading(true);
@@ -313,6 +299,11 @@ export default function AdminControllers() {
     setAssociationController(null);
     setAssociationKilnId("");
     setAssociationLoading(false);
+  }
+
+  function openAssociationModal(controller) {
+    setAssociationController(controller);
+    setAssociationKilnId("");
   }
 
   function getAvailableKilnOptions(controller) {
@@ -371,23 +362,6 @@ export default function AdminControllers() {
         )}
         {isAdmin && (
           <>
-            <button
-              type="button"
-              disabled={
-                !controller.kiln ||
-                controller.connectionStatus !== "ONLINE" ||
-                commandLoadingId === controller.controllerId
-              }
-              onClick={() => handleCommand(controller)}
-              className={`${buttonClass} disabled:opacity-40`}
-              title={getFiringCommandLabel(
-                controller.switchState ? "OFF" : "ON",
-              )}
-            >
-              <LuPower className="text-base" />{" "}
-              {withLabels &&
-                getFiringCommandLabel(controller.switchState ? "OFF" : "ON")}
-            </button>
             <button
               type="button"
               onClick={() => {
@@ -529,7 +503,7 @@ export default function AdminControllers() {
                 {isAdmin && (
                   <>
                     <th className="hidden px-6 py-4 text-center sm:table-cell">
-                      Temperatura
+                      Switch
                     </th>
                     <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
                     <th className="hidden px-6 py-4 text-center lg:table-cell">
@@ -540,7 +514,7 @@ export default function AdminControllers() {
                 <th
                   className={
                     isAdmin
-                      ? "hidden px-6 py-4 text-center xl:table-cell"
+                      ? "hidden px-6 py-4 text-center lg:table-cell"
                       : "hidden px-3 py-4 text-center lg:table-cell lg:px-6"
                   }
                 >
@@ -587,9 +561,14 @@ export default function AdminControllers() {
                           <p className="italic text-muted">Sin propietario</p>
                         )}
                         {controller.kiln ? (
-                          <p className="mt-1 text-xs text-secondary sm:text-sm">
+                          <button
+                            type="button"
+                            onClick={() => setKilnInfoController(controller)}
+                            className="mt-1 block text-left text-xs text-accent hover:underline sm:text-sm"
+                            title="Ver información del horno"
+                          >
                             Horno #{controller.kiln.kilnId}
-                          </p>
+                          </button>
                         ) : (
                           <p className="mt-1 text-xs italic text-muted sm:text-sm">
                             Sin horno asociado
@@ -604,14 +583,9 @@ export default function AdminControllers() {
                       )}
                       {isAdmin && (
                         <>
-                          <td className="hidden px-6 py-5 text-center font-mono font-medium sm:table-cell">
-                            {controller.temperature == null ? (
-                              <span className="italic text-muted font-sans font-normal">
-                                No disponible
-                              </span>
-                            ) : (
-                              `${controller.temperature.toFixed(1)} °C`
-                            )}
+                          <td className="hidden px-6 py-5 text-center sm:table-cell">
+                            {getSwitchLabel(controller.switchType)}{" "}
+                            {controller.switchCurrentCapacity} A
                           </td>
                           <td className="px-3 py-5 sm:px-6">
                             <span className="flex justify-center">
@@ -646,7 +620,7 @@ export default function AdminControllers() {
                       <td
                         className={
                           isAdmin
-                            ? "hidden px-6 py-5 xl:table-cell"
+                            ? "hidden px-6 py-5 lg:table-cell"
                             : "hidden px-3 py-5 lg:table-cell lg:px-6"
                         }
                       >
@@ -691,20 +665,8 @@ export default function AdminControllers() {
                           {!controller.kiln && (
                             <button
                               type="button"
-                              onClick={() => {
-                                if (isAdmin) {
-                                  setExpandedControllerId(
-                                    expandedControllerId ===
-                                      controller.controllerId
-                                      ? null
-                                      : controller.controllerId,
-                                  );
-                                } else {
-                                  setAssociationController(controller);
-                                  setAssociationKilnId("");
-                                }
-                              }}
-                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                              onClick={() => openAssociationModal(controller)}
+                              className={`${isAdmin ? "hidden lg:block" : ""} rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content`}
                               title="Asociar horno"
                             >
                               <LuLink className="text-base" />
@@ -779,14 +741,26 @@ export default function AdminControllers() {
                                 Horno
                               </dt>
                               <dd className="mt-1">
-                                {controller.kiln?.name || (
+                                {controller.kiln ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setKilnInfoController(controller)
+                                    }
+                                    className="text-left text-accent hover:underline"
+                                    title="Ver información del horno"
+                                  >
+                                    {controller.kiln.name ||
+                                      `Horno #${controller.kiln.kilnId}`}
+                                  </button>
+                                ) : (
                                   <span className="italic text-muted">
                                     Sin horno asociado
                                   </span>
                                 )}
                               </dd>
                             </div>
-                            <div className="sm:hidden">
+                            <div>
                               <dt className="text-xs font-bold uppercase text-muted">
                                 Temperatura
                               </dt>
@@ -800,7 +774,7 @@ export default function AdminControllers() {
                                 )}
                               </dd>
                             </div>
-                            <div className="xl:hidden">
+                            <div className="lg:hidden">
                               <dt className="text-xs font-bold uppercase text-muted">
                                 Estado operacional
                               </dt>
@@ -810,16 +784,7 @@ export default function AdminControllers() {
                                 )}
                               </dd>
                             </div>
-                            <div>
-                              <dt className="text-xs font-bold uppercase text-muted">
-                                Switch
-                              </dt>
-                              <dd className="mt-1">
-                                {getSwitchLabel(controller.switchType)}{" "}
-                                {controller.switchCurrentCapacity} A
-                              </dd>
-                            </div>
-                            <div>
+                            <div className="lg:hidden">
                               <dt className="text-xs font-bold uppercase text-muted">
                                 Actividad
                               </dt>
@@ -882,7 +847,7 @@ export default function AdminControllers() {
                             </dl>
                           )}
                           {isAdmin && !controller.kiln && (
-                            <div className="mt-5 max-w-2xl border-t border-border pt-4">
+                            <div className="mt-5 max-w-2xl border-t border-border pt-4 lg:hidden">
                               <SearchableCatalogField
                                 label="Asociar horno"
                                 value=""
@@ -900,22 +865,7 @@ export default function AdminControllers() {
                             </div>
                           )}
                           {isAdmin && (
-                            <div className="mt-5 grid gap-2 border-t border-border pt-4 min-[480px]:grid-cols-2 lg:hidden">
-                              <button
-                                type="button"
-                                disabled={
-                                  !controller.kiln ||
-                                  controller.connectionStatus !== "ONLINE" ||
-                                  commandLoadingId === controller.controllerId
-                                }
-                                onClick={() => handleCommand(controller)}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-3 py-2.5 text-sm text-secondary hover:bg-surface-hover disabled:opacity-40"
-                              >
-                                <LuPower className="text-base" />
-                                {getFiringCommandLabel(
-                                  controller.switchState ? "OFF" : "ON",
-                                )}
-                              </button>
+                            <div className="mt-5 border-t border-border pt-4 lg:hidden">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -964,7 +914,79 @@ export default function AdminControllers() {
       </div>
 
       <Modal
-        isOpen={!isAdmin && Boolean(associationController)}
+        isOpen={Boolean(kilnInfoController)}
+        onClose={() => setKilnInfoController(null)}
+        title="Información del horno"
+        fields={[]}
+        onSubmit={() => {}}
+        showSubmit={false}
+        cancelLabel="Cerrar"
+        renderContent={() => {
+          const kiln = kilnInfoController?.kiln;
+          const circuit = summarizeHeatingCircuit(
+            kiln?.heatingCircuitConfiguration,
+          );
+          const items = [
+            ["Capacidad", kiln ? `${kiln.liters} litros` : "No disponible"],
+            [
+              "Datos eléctricos",
+              kiln
+                ? `${kiln.nominalVoltage} V - ${kiln.nominalCurrent} A - ${getPhaseCountLabel(kiln.phaseCount)}`
+                : "No disponible",
+            ],
+            ["Estado", getOperationalStatusLabel(kiln?.operationalStatus)],
+            [
+              "Circuito",
+              kiln
+                ? `${circuit.groups} ${circuit.groups === 1 ? "grupo" : "grupos"} - ${circuit.channels} ${circuit.channels === 1 ? "canal" : "canales"}`
+                : "No disponible",
+            ],
+            ["Fabricante", kiln?.manufacturer || "Sin registro"],
+            ["Quemas realizadas", kiln?.firingCycleCount ?? 0],
+            [
+              "Fabricación",
+              kiln?.manufacturedAt
+                ? new Date(kiln.manufacturedAt).toLocaleDateString("es-CL")
+                : "Sin registro",
+            ],
+            [
+              "Entrega",
+              kiln?.deliveredAt
+                ? new Date(kiln.deliveredAt).toLocaleDateString("es-CL")
+                : "Pendiente",
+            ],
+            [
+              "Actividad",
+              getControllerActivityLabel(kilnInfoController?.activityStatus),
+            ],
+            [
+              "Switch",
+              kilnInfoController
+                ? `${getSwitchLabel(kilnInfoController.switchType)} ${kilnInfoController.switchCurrentCapacity} A`
+                : "No disponible",
+            ],
+          ];
+
+          return (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
+              {items.map(([label, value]) => (
+                <div
+                  key={label}
+                  className={label === "Datos eléctricos" ? "col-span-1" : ""}
+                >
+                  <dt className="text-xs font-bold uppercase text-muted">
+                    {label}
+                  </dt>
+                  <dd className="mt-1 wrap-break-word">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          );
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(associationController)}
         onClose={closeAssociationModal}
         title="Asociar horno"
         fields={[]}

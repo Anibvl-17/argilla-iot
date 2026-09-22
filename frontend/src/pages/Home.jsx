@@ -1,28 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  LuBox,
-  LuFlame,
-  LuMoveRight,
-  LuPlus,
-  LuPower,
-  LuRadio,
-} from "react-icons/lu";
+import { LuFlame, LuPlus, LuRadio } from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
-import {
-  getMyKilns,
-  sendMyKilnControllerCommand,
-} from "@services/kiln.service";
+import { getMyKilns } from "@services/kiln.service";
+import { getFiringContext, getPrograms } from "@services/firing.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
+import { useFiringRealtime } from "@hooks/useFiringRealtime";
 import ControllerStatus from "@components/ControllerStatus";
+import FiringControls from "@components/FiringControls";
 import { Badge } from "@components/Badge";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
-import {
-  getFiringCommandLabel,
-  SWITCH_LABELS,
-} from "../constants/controller.constants";
+import { SWITCH_LABELS } from "../constants/controller.constants";
 import { pairController } from "@services/controller.service";
 
 function applyTelemetry(controller, telemetry) {
@@ -31,12 +21,53 @@ function applyTelemetry(controller, telemetry) {
     : controller;
 }
 
+function getDisplayedProgram(kiln, programs) {
+  if (kiln.activeFiringCycle?.programConfig) {
+    return {
+      name: kiln.activeFiringCycle.program?.name || "Programa de quema",
+      configuration: kiln.activeFiringCycle.programConfig,
+    };
+  }
+  return (
+    kiln.selectedProgram ||
+    programs.find(({ programId }) => programId === kiln.selectedProgramId) ||
+    null
+  );
+}
+
+function getRemainingMinutes(kiln, stages) {
+  if (!stages.length) return null;
+  if (!kiln.activeFiringCycle) {
+    return stages.reduce((total, stage) => total + stage.durationMinutes, 0);
+  }
+  const stageIndex = Number.isInteger(kiln.controller?.stageIndex)
+    ? Math.min(kiln.controller.stageIndex, stages.length - 1)
+    : 0;
+  const elapsed = Number(kiln.controller?.stageElapsedMinutes);
+  const currentElapsed = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+  return Math.max(0, stages[stageIndex].durationMinutes - currentElapsed) +
+    stages
+      .slice(stageIndex + 1)
+      .reduce((total, stage) => total + stage.durationMinutes, 0);
+}
+
+function formatRemainingTime(minutes) {
+  if (!Number.isFinite(minutes)) return "-";
+  const roundedMinutes = Math.ceil(minutes);
+  if (roundedMinutes < 1) return "< 1 min";
+  const hours = Math.floor(roundedMinutes / 60);
+  const remainder = roundedMinutes % 60;
+  return [hours ? `${hours} h` : null, remainder ? `${remainder} min` : null]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export default function Home() {
   const { user } = useAuth();
   const [data, setData] = useState({ kilns: [], unlinkedControllers: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [programs, setPrograms] = useState([]);
   const [pairing, setPairing] = useState({ partialControllerId: "", pin: "" });
   const [pairingLoading, setPairingLoading] = useState(false);
   const [pairingError, setPairingError] = useState("");
@@ -46,10 +77,20 @@ export default function Home() {
   useEffect(() => {
     if (user.role !== ROLES.CLIENT) return undefined;
     let active = true;
-    getMyKilns().then((result) => {
+    getMyKilns().then(async (result) => {
       if (!active) return;
-      if (result.success) setData(result.data);
-      else setError(result.message);
+      if (result.success) {
+        const kilns = await Promise.all(
+          result.data.kilns.map(async (kiln) => {
+            const context = await getFiringContext(kiln.kilnId);
+            return context.success
+              ? { ...kiln, reconciliation: context.data.reconciliation }
+              : kiln;
+          }),
+        );
+        if (!active) return;
+        setData({ ...result.data, kilns });
+      } else setError(result.message);
       setLoading(false);
     });
     return () => {
@@ -57,11 +98,22 @@ export default function Home() {
     };
   }, [reloadKey, user.role]);
 
+  useEffect(() => {
+    if (user.role !== ROLES.CLIENT) return;
+    getPrograms().then((result) => {
+      if (result.success) setPrograms(result.data || []);
+    });
+  }, [user.role]);
+
   const handleTelemetry = useCallback((telemetry) => {
     setData((current) => ({
       kilns: current.kilns.map((kiln) => ({
         ...kiln,
         controller: applyTelemetry(kiln.controller, telemetry),
+        ...(kiln.controller?.controllerCode === telemetry.controllerCode &&
+        telemetry.firingStateConfirmed
+          ? { reconciliation: { ready: true, reason: null } }
+          : {}),
       })),
       unlinkedControllers: current.unlinkedControllers.map((controller) =>
         applyTelemetry(controller, telemetry),
@@ -70,19 +122,31 @@ export default function Home() {
   }, []);
 
   useControllerRealtime(handleTelemetry);
-
-  async function handleKilnCommand(kiln) {
-    if (!kiln.controller) return;
-
-    const command = kiln.controller.switchState ? "OFF" : "ON";
-    setCommandLoadingId(String(kiln.kilnId));
-    const result = await sendMyKilnControllerCommand(kiln.kilnId, command);
-    setCommandLoadingId("");
-
-    if (!result.success) {
-      setError(result.message);
-    }
-  }
+  const handleFiringUpdate = useCallback((event) => {
+    setData((current) => ({
+      ...current,
+      kilns: current.kilns.map((kiln) =>
+        kiln.kilnId === event.kilnId
+          ? {
+              ...kiln,
+              ...(event.reconciliation
+                ? { reconciliation: event.reconciliation }
+                : {}),
+              ...(!event.reconciliation || event.reconciliation.ready || event.cycle
+                ? {
+                    activeFiringCycle: ["RUNNING", "PAUSED"].includes(
+                      event.cycle?.status,
+                    )
+                      ? event.cycle
+                      : null,
+                  }
+                : {}),
+            }
+          : kiln,
+      ),
+    }));
+  }, []);
+  useFiringRealtime(handleFiringUpdate);
 
   if (user.role === ROLES.TECHNICIAN) {
     return <Navigate to="/support" replace />;
@@ -183,101 +247,103 @@ export default function Home() {
             No tienes hornos vinculados actualmente.
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {data.kilns.map((kiln) => (
-              <article
-                key={kiln.kilnId}
-                className="flex justify-between gap-8 min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel  transition-colors hover:border-control-border sm:p-6"
-              >
-                <div className="flex items-start justify-between gap-4 pb-2 border-b border-b-border">
-                  <span className="rounded-xl text-muted">{kiln.name}</span>
-
-                  <span className="flex items-center justify-center gap-1 text-muted">
-                    <LuBox />
-                    {kiln.liters} litros
+          <div className="grid gap-5 lg:grid-cols-2">
+            {data.kilns.map((kiln) => {
+              const program = getDisplayedProgram(kiln, programs);
+              const stages = program?.configuration?.stages || [];
+              const targetTemperature = stages.at(-1)?.targetTemperature;
+              const stageIndex = Number.isInteger(kiln.controller?.stageIndex)
+                ? Math.min(kiln.controller.stageIndex, stages.length - 1)
+                : null;
+              return (
+                <article
+                  key={kiln.kilnId}
+                  className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-panel transition-colors hover:border-control-border sm:p-6"
+                >
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border pb-4 text-xs sm:text-sm">
+                  <span className="whitespace-nowrap text-muted">
+                    {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
                   </span>
+                  <h2 className="max-w-48 truncate text-center font-semibold text-content">
+                    {kiln.name}
+                  </h2>
+                  <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
+                    <Badge
+                      style={
+                        kiln.controller?.connectionStatus === "ONLINE"
+                          ? "info"
+                          : "default"
+                      }
+                      text={
+                        kiln.controller
+                          ? getControllerConnectionLabel(
+                              kiln.controller.connectionStatus,
+                            )
+                          : "Sin controlador"
+                      }
+                    />
+                    {kiln.controller && (
+                      <ControllerStatus controller={kiln.controller} />
+                    )}
+                  </div>
                 </div>
 
-                <h2 className="truncate text-center">
+                <div className="pt-3 pb-7 text-center">
+                  <p className="pb-4 truncate text-sm text-secondary">
+                    Programa: {program?.name || "Sin seleccionar"}
+                  </p>
                   {kiln.controller ? (
-                    <span className="text-4xl/relaxed tracking-wide font-bold text-content">
+                    <p className="mt-3 text-5xl font-semibold tracking-tight text-content">
                       {kiln.controller.temperature == null
                         ? "--"
                         : kiln.controller.temperature.toFixed(1)}{" "}
                       °C
-                    </span>
+                    </p>
                   ) : (
-                    <p className="text-secondary">Sin controlador asociado</p>
+                    <p className="mt-3 text-2xl font-semibold text-muted">
+                      No disponible
+                    </p>
                   )}
-                </h2>
-
-                {kiln.controller && (
-                  <div className="text-secondary pb-2 border-b border-b-border">
-                    <div
-                      className={
-                        "flex flex-row items-center " +
-                        (kiln.controller?.connectionStatus === "ONLINE"
-                          ? "justify-between"
-                          : "justify-center")
-                      }
-                    >
-                      <Badge
-                        style={
-                          kiln.controller.connectionStatus === "ONLINE"
-                            ? "info"
-                            : "default"
-                        }
-                        text={getControllerConnectionLabel(
-                          kiln.controller.connectionStatus,
-                        )}
-                      />
-                      {kiln.controller?.connectionStatus === "ONLINE" && (
-                        <ControllerStatus controller={kiln.controller} />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-3 min-[380px]:flex-row">
-                  <button
-                    disabled={
-                      !kiln.controller ||
-                      kiln.controller.connectionStatus !== "ONLINE" ||
-                      commandLoadingId === String(kiln.kilnId)
-                    }
-                    onClick={() => handleKilnCommand(kiln)}
-                    title={
-                      kiln.controller?.connectionStatus === "OFFLINE"
-                        ? "Controlador desconectado"
-                        : kiln.controller
-                          ? kiln.controller.switchState
-                            ? "Detener quema del horno"
-                            : "Iniciar quema del horno"
-                          : "Requiere controlador"
-                    }
-                    className={
-                      "flex flex-1 items-center justify-center gap-2 rounded-lg border border-control-border px-3 py-2.5 text-sm text-content transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-disabled hover:cursor-pointer " +
-                      (kiln.controller?.switchState
-                        ? "enabled:hover:bg-danger-soft enabled:hover:text-accent enabled:hover:border-danger-border"
-                        : "enabled:hover:bg-success-soft enabled:hover:text-success enabled:hover:border-success-border")
-                    }
-                  >
-                    <LuPower />
-                    {commandLoadingId === String(kiln.kilnId)
-                      ? "Enviando..."
-                      : getFiringCommandLabel(
-                          kiln.controller?.switchState ? "OFF" : "ON",
-                        )}
-                  </button>
-                  <Link
-                    to={`/kilns/${kiln.kilnId}`}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary-hover text-on-action"
-                  >
-                    Ver detalles <LuMoveRight />
-                  </Link>
+                  <p className="mt-1 text-sm text-muted">Temperatura actual</p>
                 </div>
-              </article>
-            ))}
+
+                <dl className="grid grid-cols-3 gap-2 border-b border-border pb-5 text-center">
+                  <div className="flex flex-col">
+                    <dt className="order-2 mt-1 text-xs text-muted">T° objetivo</dt>
+                    <dd className="order-1 font-semibold text-content">
+                      {Number.isFinite(targetTemperature)
+                        ? `${targetTemperature} °C`
+                        : "-"}
+                    </dd>
+                  </div>
+                  <div className="flex flex-col">
+                    <dt className="order-2 mt-1 text-xs text-muted">Tiempo restante</dt>
+                    <dd className="order-1 font-semibold text-content">
+                      {formatRemainingTime(getRemainingMinutes(kiln, stages))}
+                    </dd>
+                  </div>
+                  <div className="flex flex-col">
+                    <dt className="order-2 mt-1 text-xs text-muted">Etapa</dt>
+                    <dd className="order-1 truncate font-semibold text-content">
+                      {stageIndex == null || !stages.length
+                        ? `-`
+                        : `${stageIndex + 1} de ${stages.length}`}
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="mt-5">
+                  <FiringControls
+                    compact
+                    kiln={kiln}
+                    programs={programs}
+                    detailsHref={`/kilns/${kiln.kilnId}`}
+                    onRefresh={() => setReloadKey((value) => value + 1)}
+                  />
+                </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

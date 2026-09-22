@@ -6,6 +6,7 @@ import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
 import catalogRoutes from "./catalog.routes.js";
 import supportRoutes from "./support.routes.js";
+import firingRoutes from "./firing.routes.js";
 
 export function routerApi(app) {
   const router = Router();
@@ -18,4 +19,5 @@ export function routerApi(app) {
   router.use("/user", userRoutes);
   router.use("/admin", adminRoutes);
   router.use("/support", supportRoutes);
+  router.use("/firing", firingRoutes);
 }

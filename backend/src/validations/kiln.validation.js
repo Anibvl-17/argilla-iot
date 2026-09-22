@@ -69,7 +69,3 @@ export const linkUserValidation = z
 export const linkControllerValidation = z
   .object({ controllerId: z.uuid() })
   .strict();
-
-export const kilnControllerCommandValidation = z
-  .object({ command: z.enum(["ON", "OFF"]) })
-  .strict();

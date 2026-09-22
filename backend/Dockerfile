@@ -32,6 +32,8 @@ COPY --from=dependencies --chown=node:node /app/node_modules/.prisma ./node_modu
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node prisma ./prisma
 COPY --chown=node:node src ./src
+RUN mkdir -p /app/.simulator-state \
+  && chown node:node /app/.simulator-state
 USER node
 EXPOSE 3000
 CMD ["node", "src/index.js"]

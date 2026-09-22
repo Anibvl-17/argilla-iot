@@ -8,7 +8,6 @@ import {
   edit,
   getKilnsByUserId,
   getUserKilnById,
-  getOwnedKilnController,
   getOwnedKilnTelemetry,
   getAdminKilnById,
   getAdminKilnTelemetry,
@@ -19,8 +18,11 @@ import {
   unlinkUserFromKiln,
   getKilnsPage,
 } from "../services/kiln.service.js";
+import {
+  getAdminCycleTelemetry,
+  listAdminCycles,
+} from "../services/firing.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
-import { publishControllerCommand } from "../config/mqttClient.js";
 import { ROLES } from "../constants/user.constants.js";
 
 export async function addKiln(req, res) {
@@ -68,50 +70,6 @@ export async function getUserKiln(req, res) {
     return handleSuccess(res, 200, "Horno obtenido exitosamente", kiln);
   } catch (error) {
     return handleErrorServer(res, 500, "Error al obtener horno", error.message);
-  }
-}
-
-export async function sendOwnedKilnControllerCommand(req, res) {
-  try {
-    const kilnId = Number(req.params.kilnId);
-    if (!Number.isInteger(kilnId) || kilnId < 1) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    const controller = await getOwnedKilnController(req.user.id, kilnId);
-
-    if (!controller) {
-      return handleErrorClient(res, 404, "Horno sin controlador disponible");
-    }
-
-    if (controller.connectionStatus !== "ONLINE") {
-      return handleErrorClient(
-        res,
-        409,
-        "No se puede operar un controlador desconectado",
-      );
-    }
-
-    await publishControllerCommand(controller.controllerId, req.body.command);
-
-    return handleSuccess(res, 200, "Comando enviado exitosamente", {
-      controllerCode: controller.controllerId.slice(-6),
-      command: req.body.command,
-    });
-  } catch (error) {
-    if (error.code === "MQTT_COMMAND_PENDING") {
-      return handleErrorClient(res, 409, error.message);
-    }
-    if (error.code === "MQTT_COMMAND_TIMEOUT") {
-      return handleErrorServer(res, 504, error.message);
-    }
-
-    return handleErrorServer(
-      res,
-      500,
-      "Error al enviar comando",
-      error.message,
-    );
   }
 }
 
@@ -202,6 +160,54 @@ export async function getAdminKilnTelemetryHistory(req, res) {
       res,
       500,
       "Error al obtener telemetría",
+      error.message,
+    );
+  }
+}
+
+export async function getAdminKilnCycles(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    if (!Number.isInteger(kilnId) || kilnId < 1) {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+    const cycles = await listAdminCycles(
+      kilnId,
+      req.query.page,
+      req.query.pageSize,
+    );
+    if (!cycles) return handleErrorClient(res, 404, "Horno no encontrado");
+    return handleSuccess(res, 200, "Ciclos obtenidos", cycles);
+  } catch (error) {
+    return handleErrorServer(res, 500, "Error al obtener ciclos", error.message);
+  }
+}
+
+export async function getAdminKilnCycleTelemetry(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    const firingCycleId = Number(req.params.firingCycleId);
+    if (
+      !Number.isInteger(kilnId) ||
+      kilnId < 1 ||
+      !Number.isInteger(firingCycleId) ||
+      firingCycleId < 1
+    ) {
+      return handleErrorClient(res, 404, "Ciclo no encontrado");
+    }
+    const telemetry = await getAdminCycleTelemetry(
+      kilnId,
+      firingCycleId,
+      req.query.page,
+      req.query.pageSize,
+    );
+    if (!telemetry) return handleErrorClient(res, 404, "Ciclo no encontrado");
+    return handleSuccess(res, 200, "Telemetría obtenida", telemetry);
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener telemetría del ciclo",
       error.message,
     );
   }

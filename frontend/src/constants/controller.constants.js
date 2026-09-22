@@ -43,11 +43,6 @@ export const ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES = [
   "MAINTENANCE",
 ];
 
-export const FIRING_COMMAND_LABELS = {
-  ON: "Iniciar quema",
-  OFF: "Detener Quema",
-};
-
 export const CONTROLLER_CONNECTION_LABELS = {
   ONLINE: "Conectado",
   OFFLINE: "Desconectado",
@@ -64,10 +59,6 @@ export function formatEnumLabel(value, labels = {}) {
 
   const normalized = String(value).toLowerCase().replaceAll("_", " ");
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
-export function getFiringCommandLabel(command) {
-  return FIRING_COMMAND_LABELS[command] || "Controlar quema";
 }
 
 export function getControllerConnectionLabel(status) {

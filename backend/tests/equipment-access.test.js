@@ -13,6 +13,7 @@ import {
   edit as editController,
   getControllersPage,
 } from "../src/services/controller.service.js";
+import { presentKiln } from "../src/utils/entityPresentation.js";
 
 function mockMethod(t, target, name, implementation) {
   const original = target[name];
@@ -72,6 +73,24 @@ test("technicians can list, create, and edit eligible equipment but cannot acces
     ).statusCode,
     403,
   );
+  for (const path of [
+    "/admin/:kilnId/cycles",
+    "/admin/:kilnId/cycles/:firingCycleId/telemetry",
+  ]) {
+    const middleware = roleMiddleware(kilnRouter, "get", path);
+    assert.equal(authorize(middleware, "TECHNICIAN").statusCode, 403);
+    assert.equal(authorize(middleware, "ADMIN").nextCalled, true);
+  }
+});
+
+test("kiln presentation exposes the firing cycle relation count without leaking Prisma metadata", () => {
+  const kiln = presentKiln({
+    kilnId: 7,
+    name: "Horno",
+    _count: { firingCycles: 12 },
+  });
+  assert.equal(kiln.firingCycleCount, 12);
+  assert.equal("_count" in kiln, false);
 });
 
 test("technician kiln edits reject owned kilns", async (t) => {

@@ -390,4 +390,226 @@ describe("technician equipment management", () => {
       ),
     );
   });
+
+  it("uses the responsive admin controller detail and association modal", async () => {
+    authState.user = { id: 1, name: "Administradora", role: "ADMIN" };
+    mocks.getAllControllers.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            controllerId: "33333333-3333-4333-8333-333333333333",
+            controllerCode: "333333",
+            user: { userId: 10, name: "Cliente" },
+            kiln: null,
+            operationalStatus: "OPERATIONAL",
+            connectionStatus: "ONLINE",
+            activityStatus: "IDLE",
+            temperature: 581.1,
+            switchType: "SSR",
+            switchCurrentCapacity: 30,
+            firmwareVersion: "DEMO-1.0.0",
+            manufacturedAt: "2025-01-15T00:00:00.000Z",
+            deliveredAt: null,
+            firmwareUpdatedAt: null,
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        summary: { total: 1, linkedToKiln: 0, linkedToUser: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminControllers />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("columnheader", { name: "Switch" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Temperatura" }),
+    ).not.toBeInTheDocument();
+
+    const controllerRow = (
+      await screen.findByRole("button", { name: "...333333" })
+    ).closest("tr");
+    expect(within(controllerRow).getByText("SSR 30 A")).toBeInTheDocument();
+
+    const associationButton = within(controllerRow).getByTitle("Asociar horno");
+    expect(associationButton).toHaveClass("hidden", "lg:block");
+    fireEvent.click(associationButton);
+    expect(
+      await screen.findByRole("heading", { name: "Asociar horno" }),
+    ).toBeInTheDocument();
+    expect(controllerRow.nextElementSibling).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    fireEvent.click(within(controllerRow).getByTitle("Ver detalles"));
+    const detailRow = controllerRow.nextElementSibling;
+    expect(within(detailRow).getByText("Temperatura")).toBeInTheDocument();
+    expect(within(detailRow).getByText("581.1 °C")).toBeInTheDocument();
+    expect(within(detailRow).queryByText("Switch")).not.toBeInTheDocument();
+    expect(within(detailRow).getByText("Actividad").parentElement).toHaveClass(
+      "lg:hidden",
+    );
+    expect(
+      within(detailRow).getByText("Asociar horno").closest("div.mt-5"),
+    ).toHaveClass("lg:hidden");
+  });
+
+  it("shows controller information from the kiln list", async () => {
+    authState.user = { id: 1, name: "Administradora", role: "ADMIN" };
+    mocks.getAllKilns.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            kilnId: 8,
+            name: "Horno modal",
+            user: { userId: 10, name: "Cliente" },
+            liters: 100,
+            phaseCount: 1,
+            nominalVoltage: 220,
+            nominalCurrent: 30,
+            operationalStatus: "OPERATIONAL",
+            manufacturer: "Argillá",
+            manufacturedAt: "2025-01-15T00:00:00.000Z",
+            deliveredAt: null,
+            heatingCircuitConfiguration: circuit,
+            controller: {
+              controllerId: "44444444-4444-4444-8444-444444654321",
+              controllerCode: "654321",
+              switchType: "SSR",
+              switchCurrentCapacity: 40,
+              connectionStatus: "ONLINE",
+              operationalStatus: "MAINTENANCE",
+              activityStatus: "IDLE",
+              temperature: 512.4,
+              firmwareVersion: "2.3.0",
+              manufacturedAt: "2025-02-03T00:00:00.000Z",
+              deliveredAt: "2025-02-10T00:00:00.000Z",
+              firmwareUpdatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        summary: { total: 1, withoutController: 0, withoutOwner: 0 },
+      },
+    });
+    mocks.getAllControllers.mockResolvedValue({
+      success: true,
+      data: { items: [], pagination: { totalPages: 1 }, summary: {} },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminKilns />
+      </MemoryRouter>,
+    );
+
+    const controllerLink = (
+      await screen.findAllByTitle("Ver información del controlador")
+    )[0];
+    expect(controllerLink).toHaveClass("text-accent");
+    fireEvent.click(controllerLink);
+
+    const heading = await screen.findByRole("heading", {
+      name: "Información del controlador",
+    });
+    const modal = heading.closest("div.fixed");
+    expect(within(modal).getByText("ID")).toBeInTheDocument();
+    expect(
+      within(modal).getByText("654321"),
+    ).toBeInTheDocument();
+    expect(within(modal).getByText("SSR 40 A")).toBeInTheDocument();
+    expect(within(modal).getByText("Conectado")).toBeInTheDocument();
+    expect(within(modal).getByText("En mantención")).toBeInTheDocument();
+    expect(within(modal).getByText("512.4 °C")).toBeInTheDocument();
+    expect(within(modal).getByText("2.3.0")).toBeInTheDocument();
+    expect(within(modal).getByRole("button", { name: "Cerrar" })).toBeInTheDocument();
+    expect(
+      within(modal).queryByRole("button", { name: "Guardar" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows kiln information from the controller list without duplicating status on desktop", async () => {
+    authState.user = { id: 1, name: "Administradora", role: "ADMIN" };
+    mocks.getAllControllers.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            controllerId: "55555555-5555-4555-8555-555555555555",
+            controllerCode: "555555",
+            user: { userId: 10, name: "Cliente" },
+            kiln: {
+              kilnId: 9,
+              name: "Horno nueve",
+              liters: 120,
+              phaseCount: 3,
+              nominalVoltage: 380,
+              nominalCurrent: 30,
+              operationalStatus: "OPERATIONAL",
+              manufacturer: "Argillá",
+              manufacturedAt: "2025-03-01T00:00:00.000Z",
+              deliveredAt: null,
+              heatingCircuitConfiguration: circuit,
+              firingCycleCount: 6,
+            },
+            operationalStatus: "OPERATIONAL",
+            connectionStatus: "ONLINE",
+            activityStatus: "FIRING",
+            temperature: 700,
+            switchType: "CONTACTOR",
+            switchCurrentCapacity: 40,
+            firmwareVersion: "2.0.0",
+            manufacturedAt: "2025-01-01T00:00:00.000Z",
+            deliveredAt: null,
+            firmwareUpdatedAt: null,
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        summary: { total: 1, linkedToKiln: 1, linkedToUser: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminControllers />
+      </MemoryRouter>,
+    );
+
+    const kilnLink = await screen.findByTitle("Ver información del horno");
+    expect(kilnLink).toHaveClass("text-accent");
+    fireEvent.click(kilnLink);
+
+    const heading = await screen.findByRole("heading", {
+      name: "Información del horno",
+    });
+    const modal = heading.closest("div.fixed");
+    expect(within(modal).getByText("120 litros")).toBeInTheDocument();
+    expect(
+      within(modal).getByText("380 V - 30 A - Trifásico"),
+    ).toBeInTheDocument();
+    expect(within(modal).getByText("1 grupo - 1 canal")).toBeInTheDocument();
+    expect(within(modal).getByText("Quemando")).toBeInTheDocument();
+    expect(within(modal).getByText("Contactor 40 A")).toBeInTheDocument();
+    expect(within(modal).getByText("Quemas realizadas")).toBeInTheDocument();
+    expect(within(modal).getByText("6")).toBeInTheDocument();
+    fireEvent.click(within(modal).getByRole("button", { name: "Cerrar" }));
+
+    const controllerRow = screen
+      .getByRole("button", { name: "...555555" })
+      .closest("tr");
+    expect(screen.getByRole("columnheader", { name: "Estado" })).toHaveClass(
+      "lg:table-cell",
+    );
+    fireEvent.click(within(controllerRow).getByTitle("Ver detalles"));
+    const detailRow = controllerRow.nextElementSibling;
+    expect(
+      within(detailRow).getByText("Estado operacional").parentElement,
+    ).toHaveClass("lg:hidden");
+  });
 });

@@ -273,9 +273,6 @@ export async function updateControllerTelemetry(controllerId, data) {
     where: { controllerId },
     data: {
       temperature: data.temperature,
-      ...(data.relayState
-        ? { activityStatus: data.relayState === "ON" ? "FIRING" : "IDLE" }
-        : {}),
     },
     select: {
       controllerId: true,
@@ -309,9 +306,8 @@ export async function updateControllerConnectionStatus(controllerId, connectionS
 }
 
 export async function updateControllerSwitchState(controllerId, switchState) {
-  const controller = await prisma.controller.update({
+  const controller = await prisma.controller.findUnique({
     where: { controllerId },
-    data: { activityStatus: switchState === "ON" ? "FIRING" : "IDLE" },
     select: {
       controllerId: true,
       userId: true,
@@ -322,15 +318,13 @@ export async function updateControllerSwitchState(controllerId, switchState) {
       kiln: { select: { kilnId: true } },
     },
   });
+  if (!controller) {
+    const error = new Error("Controlador no encontrado");
+    error.code = "P2025";
+    throw error;
+  }
   setSwitchState(controllerId, switchState);
   return presentController(controller);
-}
-
-export function getControllerCommandTarget(controllerId) {
-  return prisma.controller.findUnique({
-    where: { controllerId },
-    select: { controllerId: true, userId: true, connectionStatus: true, kiln: { select: { kilnId: true } } },
-  });
 }
 
 export async function getControllersPage({
@@ -422,7 +416,7 @@ export async function getControllersPage({
     ...(kilnStatus === "unlinked" ? { kiln: { is: null } } : {}),
   };
   const [items, total, scopeTotal, linkedToKiln, linkedToUser, fullyLinked] = await prisma.$transaction([
-    prisma.controller.findMany({ where, include: { kiln: true, user: true }, orderBy: { controllerId: "asc" }, skip: (safePage - 1) * safePageSize, take: safePageSize }),
+    prisma.controller.findMany({ where, include: { kiln: { include: { _count: { select: { firingCycles: true } } } }, user: true }, orderBy: { controllerId: "asc" }, skip: (safePage - 1) * safePageSize, take: safePageSize }),
     prisma.controller.count({ where }),
     prisma.controller.count({ where: scopeWhere }),
     prisma.controller.count({ where: { ...scopeWhere, kiln: { isNot: null } } }),

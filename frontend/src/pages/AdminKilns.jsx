@@ -23,6 +23,7 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
   ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
   getControllerActivityLabel,
+  getControllerConnectionLabel,
   getOperationalStatusLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
@@ -100,6 +101,7 @@ export default function AdminKilns() {
   const [associationKiln, setAssociationKiln] = useState(null);
   const [associationControllerId, setAssociationControllerId] = useState("");
   const [associationLoading, setAssociationLoading] = useState(false);
+  const [controllerInfo, setControllerInfo] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const fetchKilns = useCallback(async () => {
@@ -610,14 +612,10 @@ export default function AdminKilns() {
                           <div className="mt-1 font-mono text-accent lg:hidden">
                             {kiln.controller ? (
                               <button
-                                className="hover:cursor-pointer hover:text-accent"
-                                title="Copiar ID"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    kiln.controller.controllerCode,
-                                  );
-                                  toast.success("¡ID copiada!");
-                                }}
+                                type="button"
+                                className="text-accent hover:cursor-pointer hover:underline"
+                                title="Ver información del controlador"
+                                onClick={() => setControllerInfo(kiln.controller)}
                               >
                                 ...{kiln.controller.controllerCode}
                               </button>
@@ -642,14 +640,10 @@ export default function AdminKilns() {
                         <td className="hidden px-6 py-5 lg:table-cell text-center">
                           {kiln.controller ? (
                             <button
+                              type="button"
                               className="font-mono text-accent hover:cursor-pointer hover:underline"
-                              title="Copiar ID"
-                              onClick={() => {
-                                navigator.clipboard.writeText(
-                                  kiln.controller.controllerCode,
-                                );
-                                toast.success("¡ID copiada!");
-                              }}
+                              title="Ver información del controlador"
+                              onClick={() => setControllerInfo(kiln.controller)}
                             >
                               ...{kiln.controller.controllerCode}
                             </button>
@@ -790,6 +784,14 @@ export default function AdminKilns() {
                                   {getOperationalStatusLabel(
                                     kiln.operationalStatus,
                                   )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Quemas realizadas
+                                </dt>
+                                <dd className="mt-1">
+                                  {kiln.firingCycleCount ?? 0}
                                 </dd>
                               </div>
                               <div>
@@ -963,6 +965,83 @@ export default function AdminKilns() {
           onPageChange={setPage}
         />
       </div>
+
+      <Modal
+        isOpen={Boolean(controllerInfo)}
+        onClose={() => setControllerInfo(null)}
+        title="Información del controlador"
+        fields={[]}
+        onSubmit={() => {}}
+        showSubmit={false}
+        cancelLabel="Cerrar"
+        renderContent={() => {
+          const items = [
+            ["ID", controllerInfo?.controllerCode || "No disponible", true],
+            [
+              "Switch",
+              controllerInfo
+                ? `${getSwitchLabel(controllerInfo.switchType)} ${controllerInfo.switchCurrentCapacity} A`
+                : "No disponible",
+            ],
+            [
+              "Conexión",
+              getControllerConnectionLabel(controllerInfo?.connectionStatus),
+            ],
+            [
+              "Estado",
+              getOperationalStatusLabel(controllerInfo?.operationalStatus),
+            ],
+            [
+              "Temperatura",
+              controllerInfo?.temperature == null
+                ? "No disponible"
+                : `${controllerInfo.temperature.toFixed(1)} °C`,
+            ],
+            ["Firmware", controllerInfo?.firmwareVersion || "Sin registro"],
+            [
+              "Fabricación",
+              controllerInfo?.manufacturedAt
+                ? new Date(controllerInfo.manufacturedAt).toLocaleDateString(
+                    "es-CL",
+                  )
+                : "Sin registro",
+            ],
+            [
+              "Entrega",
+              controllerInfo?.deliveredAt
+                ? new Date(controllerInfo.deliveredAt).toLocaleDateString(
+                    "es-CL",
+                  )
+                : "Pendiente",
+            ],
+            [
+              "Actualización de firmware",
+              controllerInfo?.firmwareUpdatedAt
+                ? new Date(controllerInfo.firmwareUpdatedAt).toLocaleDateString(
+                    "es-CL",
+                  )
+                : "Sin registro",
+            ],
+          ];
+
+          return (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
+              {items.map(([label, value, mono]) => (
+                <div key={label} className={label === "ID" ? "col-span-2" : ""}>
+                  <dt className="text-xs font-bold uppercase text-muted">
+                    {label}
+                  </dt>
+                  <dd
+                    className={`mt-1 break-words ${mono ? "break-all font-mono text-xs" : ""}`}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          );
+        }}
+      />
 
       <Modal
         isOpen={!isAdmin && Boolean(associationKiln)}

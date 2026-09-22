@@ -79,26 +79,6 @@ export async function getAccessibleControllers(params = {}) {
   }
 }
 
-export async function sendAdminControllerCommand(controllerId, command) {
-  try {
-    const response = await axios.post(`/controller/${controllerId}/command`, {
-      command,
-    });
-    return { success: true, data: response.data.data };
-  } catch (error) {
-    console.error(
-      "Error en el servicio controller -> sendAdminControllerCommand()",
-      error.response?.data,
-    );
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || "Error al conectar con el servidor",
-      data: error.response?.data,
-    };
-  }
-}
-
 export async function deleteController(controllerId) {
   try {
     await axios.delete(`/controller/${controllerId}/delete`);

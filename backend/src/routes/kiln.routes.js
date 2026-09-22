@@ -7,8 +7,9 @@ import {
   getUserKiln,
   getOwnedKilnTelemetryHistory,
   getAdminKiln,
+  getAdminKilnCycles,
+  getAdminKilnCycleTelemetry,
   getAdminKilnTelemetryHistory,
-  sendOwnedKilnControllerCommand,
   linkController,
   linkUser,
   removeKiln,
@@ -24,7 +25,6 @@ import {
   editKilnValidation,
   linkUserValidation,
   linkControllerValidation,
-  kilnControllerCommandValidation,
 } from "../validations/kiln.validation.js";
 
 const router = Router();
@@ -38,13 +38,6 @@ router.get(
   verifyRoles([ROLES.CLIENT]),
   getOwnedKilnTelemetryHistory,
 );
-router.post(
-  "/my-kilns/:kilnId/controller/command",
-  verifyRoles([ROLES.CLIENT]),
-  validateSchema(kilnControllerCommandValidation),
-  sendOwnedKilnControllerCommand,
-);
-
 router.post(
   "/:kilnId/link",
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
@@ -69,6 +62,16 @@ router.get(
   "/admin/:kilnId/telemetry",
   verifyRoles([ROLES.ADMIN]),
   getAdminKilnTelemetryHistory,
+);
+router.get(
+  "/admin/:kilnId/cycles",
+  verifyRoles([ROLES.ADMIN]),
+  getAdminKilnCycles,
+);
+router.get(
+  "/admin/:kilnId/cycles/:firingCycleId/telemetry",
+  verifyRoles([ROLES.ADMIN]),
+  getAdminKilnCycleTelemetry,
 );
 router.post(
   "/create",

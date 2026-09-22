@@ -28,7 +28,3 @@ export const pairControllerValidation = z
     pin: z.string().regex(/^\d{6}$/, "El PIN debe contener seis dígitos"),
   })
   .strict();
-
-export const controllerCommandValidation = z
-  .object({ command: z.enum(["ON", "OFF"]) })
-  .strict();

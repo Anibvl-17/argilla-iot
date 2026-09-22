@@ -63,6 +63,12 @@ export function emitControllerTelemetry(userId, telemetry) {
   io.to("admins").emit("controller:telemetry", telemetry);
 }
 
+export function emitFiringCycle(userId, event) {
+  if (!io) return;
+  if (userId) io.to(`user:${userId}`).emit("firing-cycle:update", event);
+  io.to("admins").emit("firing-cycle:update", event);
+}
+
 export async function emitAdminSummary() {
   if (!io) return;
 

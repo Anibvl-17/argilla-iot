@@ -5,7 +5,6 @@ import {
   getAccessibleControllers,
   getAllControllers,
   removeController,
-  sendControllerCommand,
   linkUserToController,
 } from "../controllers/controller.controller.js";
 import { authenticateJWT } from "../middlewares/authentication.middleware.js";
@@ -15,7 +14,6 @@ import { validateSchema } from "../middlewares/validator.middleware.js";
 import {
   createControllerValidation,
   editControllerValidation,
-  controllerCommandValidation,
   pairControllerValidation,
 } from "../validations/controller.validation.js";
 
@@ -27,13 +25,6 @@ router.get(
   "/accessible",
   verifyRoles([ROLES.ADMIN, ROLES.CLIENT]),
   getAccessibleControllers,
-);
-
-router.post(
-  "/:controllerId/command",
-  verifyRoles([ROLES.ADMIN, ROLES.CLIENT]),
-  validateSchema(controllerCommandValidation),
-  sendControllerCommand,
 );
 
 router.patch(

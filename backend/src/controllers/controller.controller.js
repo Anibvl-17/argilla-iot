@@ -6,15 +6,14 @@ import {
 import {
   create,
   edit,
-  getControllerCommandTarget,
   remove,
   getControllersPage,
   claimControllerBundle,
 } from "../services/controller.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
 import {
-  publishControllerCommand,
   publishPairingBlockStatus,
+  requestControllerSynchronization,
 } from "../config/mqttClient.js";
 import { ROLES } from "../constants/user.constants.js";
 
@@ -153,6 +152,7 @@ export async function linkUserToController(req, res) {
       req.user.id,
       pin,
     );
+    requestControllerSynchronization(claimedController.controllerId);
     void emitAdminSummary();
 
     return handleSuccess(
@@ -197,64 +197,6 @@ export async function getAccessibleControllers(req, res) {
       res,
       500,
       "Error al obtener controladores",
-      error.message,
-    );
-  }
-}
-
-export async function sendControllerCommand(req, res) {
-  try {
-    const { controllerId } = req.params;
-    const { command } = req.body;
-
-    const controller = await getControllerCommandTarget(controllerId);
-
-    if (!controller) {
-      return handleErrorClient(res, 404, "Controlador no encontrado");
-    }
-
-    if (req.user.role !== ROLES.ADMIN && controller.userId !== req.user.id) {
-      return handleErrorClient(
-        res,
-        403,
-        "No puedes operar un controlador que no te pertenece",
-      );
-    }
-
-    if (!controller.kiln) {
-      return handleErrorClient(
-        res,
-        400,
-        "No se puede operar un controlador sin horno vinculado",
-      );
-    }
-
-    if (controller.connectionStatus !== "ONLINE") {
-      return handleErrorClient(
-        res,
-        409,
-        "No se puede operar un controlador desconectado",
-      );
-    }
-
-    await publishControllerCommand(controllerId, command);
-
-    return handleSuccess(res, 200, "Comando enviado exitosamente", {
-      controllerId,
-      command,
-    });
-  } catch (error) {
-    if (error.code === "MQTT_COMMAND_PENDING") {
-      return handleErrorClient(res, 409, error.message);
-    }
-    if (error.code === "MQTT_COMMAND_TIMEOUT") {
-      return handleErrorServer(res, 504, error.message);
-    }
-
-    return handleErrorServer(
-      res,
-      500,
-      "Error al enviar comando",
       error.message,
     );
   }

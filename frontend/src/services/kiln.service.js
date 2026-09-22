@@ -57,15 +57,31 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   }
 }
 
-export async function sendMyKilnControllerCommand(kilnId, command) {
+export async function getAdminKilnCycles(kilnId, page = 1, pageSize = 10) {
   try {
-    const response = await axios.post(
-      `/kiln/my-kilns/${kilnId}/controller/command`,
-      { command },
+    const response = await axios.get(`/kiln/admin/${kilnId}/cycles`, {
+      params: { page, pageSize },
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible cargar los ciclos");
+  }
+}
+
+export async function getAdminKilnCycleTelemetry(
+  kilnId,
+  firingCycleId,
+  page = 1,
+  pageSize = 20,
+) {
+  try {
+    const response = await axios.get(
+      `/kiln/admin/${kilnId}/cycles/${firingCycleId}/telemetry`,
+      { params: { page, pageSize } },
     );
     return { success: true, data: response.data.data };
   } catch (error) {
-    return serviceError(error, "No fue posible enviar el comando");
+    return serviceError(error, "No fue posible cargar la telemetría del ciclo");
   }
 }
 

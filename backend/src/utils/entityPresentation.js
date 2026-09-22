@@ -56,9 +56,12 @@ export function presentController(
 
 export function presentKiln(kiln) {
   if (!kiln) return kiln;
-  const { controller, user, ...safeKiln } = kiln;
+  const { controller, user, _count, ...safeKiln } = kiln;
   return {
     ...safeKiln,
+    ...(_count?.firingCycles === undefined
+      ? {}
+      : { firingCycleCount: _count.firingCycles }),
     ...(controller === undefined
       ? {}
       : { controller: presentController(controller) }),

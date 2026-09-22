@@ -40,6 +40,7 @@ function presentTechnicianKiln(kiln) {
     manufacturedAt: kiln.manufacturedAt,
     deliveredAt: kiln.deliveredAt,
     heatingCircuitConfiguration: kiln.heatingCircuitConfiguration,
+    firingCycleCount: kiln._count?.firingCycles ?? 0,
     user: kiln.user ? { userId: kiln.user.userId, name: kiln.user.name } : null,
     controller: kiln.controller
       ? {
@@ -206,7 +207,11 @@ export async function getKilnsPage({
     await prisma.$transaction([
       prisma.kiln.findMany({
         where,
-        include: { user: true, controller: true },
+        include: {
+          user: true,
+          controller: true,
+          _count: { select: { firingCycles: true } },
+        },
         orderBy: { kilnId: "asc" },
         skip: (safePage - 1) * safePageSize,
         take: safePageSize,
@@ -260,12 +265,40 @@ function presentController(controller) {
 }
 
 function presentKiln(kiln) {
-  const { controller, ...kilnWithoutController } = kiln;
+  const { controller, firingCycles, ...kilnWithoutController } = kiln;
   return {
     ...presentKilnEntity(kilnWithoutController),
     controller: presentController(controller),
+    ...(firingCycles === undefined
+      ? {}
+      : { activeFiringCycle: firingCycles[0] || null }),
   };
 }
+
+const firingSelection = {
+  selectedProgramId: true,
+  selectedProgram: {
+    select: {
+      programId: true,
+      name: true,
+      description: true,
+      configuration: true,
+    },
+  },
+  firingCycles: {
+    where: { status: { in: ["RUNNING", "PAUSED"] } },
+    select: {
+      firingCycleId: true,
+      controllerCycleId: true,
+      startedAt: true,
+      status: true,
+      programConfig: true,
+      program: { select: { programId: true, name: true } },
+    },
+    orderBy: { startedAt: "desc" },
+    take: 1,
+  },
+};
 
 export async function getKilnsByUserId(userId) {
   const [kilns, unlinkedControllers] = await prisma.$transaction([
@@ -283,7 +316,9 @@ export async function getKilnsByUserId(userId) {
         operationalStatus: true,
         manufacturer: true,
         heatingCircuitConfiguration: true,
+        _count: { select: { firingCycles: true } },
         controller: { select: controllerSelection },
+        ...firingSelection,
       },
       orderBy: { kilnId: "asc" },
     }),
@@ -315,32 +350,13 @@ export async function getUserKilnById(userId, kilnId) {
       operationalStatus: true,
       manufacturer: true,
       heatingCircuitConfiguration: true,
+      _count: { select: { firingCycles: true } },
       controller: { select: controllerSelection },
+      ...firingSelection,
     },
   });
 
   return kiln ? presentKiln(kiln) : null;
-}
-
-export async function getOwnedKilnController(userId, kilnId) {
-  const kiln = await prisma.kiln.findFirst({
-    where: { kilnId, userId },
-    select: {
-      kilnId: true,
-      controller: {
-        select: {
-          controllerId: true,
-          temperature: true,
-          connectionStatus: true,
-          switchCurrentCapacity: true,
-        },
-      },
-    },
-  });
-
-  if (!kiln || !kiln.controller) return null;
-
-  return presentControllerEntity(kiln.controller);
 }
 
 export async function getOwnedKilnTelemetry(
@@ -384,7 +400,11 @@ export async function getOwnedKilnTelemetry(
 export async function getAdminKilnById(kilnId, restrictUserDetails = false) {
   const kiln = await prisma.kiln.findUnique({
     where: { kilnId },
-    include: { user: true, controller: true },
+    include: {
+      user: true,
+      controller: true,
+      _count: { select: { firingCycles: true } },
+    },
   });
 
   return restrictUserDetails
@@ -558,7 +578,7 @@ export async function unlinkUserFromKiln(kilnId) {
   return prisma.$transaction(async (tx) => {
     const kiln = await tx.kiln.findUnique({
       where: { kilnId },
-      include: { controller: true },
+      include: { controller: true, selectedProgram: true },
     });
     if (!kiln) throw new Error("Horno no encontrado");
     if (kiln.controller) {
@@ -569,7 +589,12 @@ export async function unlinkUserFromKiln(kilnId) {
     }
     const updatedKiln = await tx.kiln.update({
       where: { kilnId },
-      data: { userId: null },
+      data: {
+        userId: null,
+        ...(kiln.selectedProgram?.userId != null
+          ? { selectedProgramId: null }
+          : {}),
+      },
       include: { controller: true },
     });
     return presentKilnEntity(updatedKiln);
