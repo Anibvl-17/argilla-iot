@@ -5,6 +5,7 @@ import {
   CHILE_REGIONS,
   COUNTRIES,
 } from "../src/constants/userContact.constants.js";
+import { syncGlobalPrograms } from "./syncGlobalPrograms.js";
 
 const prisma = new PrismaClient();
 const PASSWORD_ROUNDS = 10;
@@ -553,6 +554,8 @@ async function createKilnIfMissing(name, data, aliases = []) {
 
 async function main() {
   const { chile, defaultCommune } = await seedGeographicCatalog();
+
+  await syncGlobalPrograms(prisma);
 
   for (const reason of supportReasons) {
     await prisma.supportReason.upsert({

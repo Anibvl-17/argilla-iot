@@ -82,9 +82,8 @@ function buildDiagnostics(overrides = {}) {
         firingCycleId: 44,
         startedAt: "2026-09-14T11:00:00.000Z",
         endedAt: "2026-09-14T12:00:00.000Z",
-        executionType: "DIRECT",
         status: "COMPLETED",
-        targetTemperature: 950,
+        program: { programId: 1, name: "Bizcocho" },
       },
     ],
     ...overrides,
@@ -338,7 +337,7 @@ describe("SupportTicketDetails", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Operativo")).toBeInTheDocument();
     expect(screen.getByText("Conectado")).toBeInTheDocument();
-    expect(screen.getByText("Control directo")).toBeInTheDocument();
+    expect(screen.getByText("Bizcocho")).toBeInTheDocument();
     expect(screen.getByText("Completado")).toBeInTheDocument();
 
     const ticketHeading = screen.getByRole("heading", {

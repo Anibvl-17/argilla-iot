@@ -18,14 +18,11 @@ export const MAINTENANCE_TYPE_LABELS = {
   INSPECTION: "Inspección",
 };
 
-export const FIRING_CYCLE_EXECUTION_TYPE_LABELS = {
-  PROGRAM: "Programa",
-  DIRECT: "Control directo",
-};
-
 export const FIRING_CYCLE_STATUS_LABELS = {
   RUNNING: "En curso",
+  PAUSED: "Pausado",
   COMPLETED: "Completado",
   CANCELLED: "Cancelado",
   ERROR: "Error",
+  UNKNOWN: "Resultado desconocido",
 };

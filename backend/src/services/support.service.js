@@ -404,11 +404,10 @@ export async function getSupportDiagnostics(actor, supportTicketId) {
       firingCycles: {
         select: {
           firingCycleId: true,
-          executionType: true,
-          targetTemperature: true,
           startedAt: true,
           endedAt: true,
           status: true,
+          program: { select: { programId: true, name: true } },
         },
         orderBy: { startedAt: "desc" },
         take: 20,

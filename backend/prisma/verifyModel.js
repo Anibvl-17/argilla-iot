@@ -92,11 +92,26 @@ async function verifyFiringCycleCheck() {
         const kiln = await tx.kiln.create({
           data: { userId: user.userId, liters: 1, nominalCurrent: 1, heatingCircuitConfiguration: validCircuit },
         });
+        const program = await tx.program.create({
+          data: {
+            userId: user.userId,
+            name: "Invalid verification program",
+            configuration: {
+              schemaVersion: 1,
+              initialTemperature: 20,
+              stages: [{ durationMinutes: 1, targetTemperature: 100 }],
+            },
+          },
+        });
         await tx.firingCycle.create({
-          data: { kilnId: kiln.kilnId, executionType: "DIRECT" },
+          data: {
+            controllerCycleId: "verify-program-without-snapshot",
+            kilnId: kiln.kilnId,
+            programId: program.programId,
+          },
         });
       }),
-    "DIRECT cycles without targetTemperature must be rejected",
+    "Program cycles without programConfig must be rejected",
   );
 
   try {
@@ -112,13 +127,9 @@ async function verifyFiringCycleCheck() {
         data: { userId: user.userId, liters: 1, nominalCurrent: 1, heatingCircuitConfiguration: validCircuit },
       });
       const configuration = {
-        stages: [
-          {
-            targetTemperature: 600,
-            rampDurationMinutes: 120,
-            holdDurationMinutes: 0,
-          },
-        ],
+        schemaVersion: 1,
+        initialTemperature: 20,
+        stages: [{ durationMinutes: 120, targetTemperature: 600 }],
       };
       const program = await tx.program.create({
         data: {
@@ -130,16 +141,9 @@ async function verifyFiringCycleCheck() {
 
       await tx.firingCycle.create({
         data: {
-          kilnId: kiln.kilnId,
-          executionType: "DIRECT",
-          targetTemperature: 600,
-        },
-      });
-      await tx.firingCycle.create({
-        data: {
+          controllerCycleId: "verify-valid-program",
           kilnId: kiln.kilnId,
           programId: program.programId,
-          executionType: "PROGRAM",
           programConfig: configuration,
         },
       });
@@ -156,6 +160,8 @@ async function verifyRelationsAndChecks() {
       prisma.telemetry.create({
         data: {
           firingCycleId: 2147483647,
+          sampleSequence: 0,
+          sampleType: "INITIAL",
           temperature: 20,
           setpointTemperature: 20,
           switchState: false,

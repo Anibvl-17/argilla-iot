@@ -25,7 +25,6 @@ import {
   updateSupportTicketStatus,
 } from "@services/support.service";
 import {
-  FIRING_CYCLE_EXECUTION_TYPE_LABELS,
   FIRING_CYCLE_STATUS_LABELS,
   MAINTENANCE_TYPE_LABELS,
 } from "@constants/support.constants";
@@ -226,9 +225,8 @@ function Diagnostics({ data, onCycleOpen }) {
                 <tr>
                   <th className="py-2">Inicio</th>
                   <th>Fin</th>
-                  <th>Tipo</th>
+                  <th>Programa</th>
                   <th>Estado</th>
-                  <th>Objetivo</th>
                   <th className="text-right">Acciones</th>
                 </tr>
               </thead>
@@ -241,21 +239,12 @@ function Diagnostics({ data, onCycleOpen }) {
                     <td>
                       {cycle.endedAt
                         ? new Date(cycle.endedAt).toLocaleString("es-CL")
-                        : "—"}
+                        : "-"}
                     </td>
-                    <td>
-                      {FIRING_CYCLE_EXECUTION_TYPE_LABELS[
-                        cycle.executionType
-                      ] || "No disponible"}
-                    </td>
+                    <td>{cycle.program?.name || "No disponible"}</td>
                     <td>
                       {FIRING_CYCLE_STATUS_LABELS[cycle.status] ||
                         "No disponible"}
-                    </td>
-                    <td>
-                      {cycle.targetTemperature == null
-                        ? "—"
-                        : `${cycle.targetTemperature} °C`}
                     </td>
                     <td className="text-right">
                       <button

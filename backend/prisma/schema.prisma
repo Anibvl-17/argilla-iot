@@ -13,16 +13,19 @@ enum UserRole {
   CLIENT
 }
 
-enum FiringCycleExecutionType {
-  PROGRAM
-  DIRECT
-}
-
 enum FiringCycleStatus {
   RUNNING
+  PAUSED
   COMPLETED
   CANCELLED
   ERROR
+  UNKNOWN
+}
+
+enum TelemetrySampleType {
+  INITIAL
+  PERIODIC
+  FINAL
 }
 
 enum ControllerActivityStatus {
@@ -124,15 +127,16 @@ model Commune {
 
 model Program {
   programId     Int      @id @default(autoincrement())
-  userId        Int
+  userId        Int?
   name          String
   description   String?
   configuration Json     @db.JsonB
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [userId], onDelete: Restrict)
-  firingCycles FiringCycle[]
+  user            User?         @relation(fields: [userId], references: [userId], onDelete: Restrict)
+  firingCycles    FiringCycle[]
+  selectedByKilns Kiln[]        @relation("SelectedProgram")
 
   @@index([userId])
 }
@@ -167,6 +171,7 @@ model Kiln {
   kilnId                      Int               @id @default(autoincrement())
   userId                      Int?
   controllerId                String?           @unique
+  selectedProgramId           Int?
   name                        String            @default("Mi Horno Argillá")
   liters                      Int
   phaseCount                  Int               @default(1)
@@ -180,26 +185,29 @@ model Kiln {
 
   user               User?               @relation(fields: [userId], references: [userId], onDelete: SetNull)
   controller         Controller?         @relation(fields: [controllerId], references: [controllerId], onDelete: SetNull)
+  selectedProgram    Program?            @relation("SelectedProgram", fields: [selectedProgramId], references: [programId], onDelete: Restrict)
   firingCycles       FiringCycle[]
   supportTickets     SupportTicket[]
   maintenanceRecords MaintenanceRecord[]
 
   @@index([userId])
+  @@index([selectedProgramId])
 }
 
 model FiringCycle {
-  firingCycleId     Int                      @id @default(autoincrement())
+  firingCycleId     Int               @id @default(autoincrement())
+  controllerCycleId String            @unique
   kilnId            Int
-  programId         Int?
-  executionType     FiringCycleExecutionType
-  targetTemperature Float?
-  startedAt         DateTime                 @default(now())
+  programId         Int
+  startedAt         DateTime          @default(now())
   endedAt           DateTime?
-  status            FiringCycleStatus        @default(RUNNING)
-  programConfig     Json?                    @db.JsonB
+  status            FiringCycleStatus @default(RUNNING)
+  programConfig     Json              @db.JsonB
+  statusReasonCode  String?
+  statusReason      String?
 
   kiln      Kiln        @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
-  program   Program?    @relation(fields: [programId], references: [programId], onDelete: Restrict)
+  program   Program     @relation(fields: [programId], references: [programId], onDelete: Restrict)
   telemetry Telemetry[]
 
   @@index([kilnId, startedAt])
@@ -209,6 +217,8 @@ model FiringCycle {
 model Telemetry {
   telemetryId         Int      @id @default(autoincrement())
   firingCycleId       Int
+  sampleSequence      Int
+  sampleType          TelemetrySampleType
   temperature         Float
   setpointTemperature Float
   switchState         Boolean
@@ -220,6 +230,7 @@ model Telemetry {
   firingCycle FiringCycle @relation(fields: [firingCycleId], references: [firingCycleId], onDelete: Restrict)
 
   @@index([firingCycleId, timestamp])
+  @@unique([firingCycleId, sampleSequence])
 }
 
 model SupportReason {
