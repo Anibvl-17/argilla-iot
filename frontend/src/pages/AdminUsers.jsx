@@ -87,7 +87,7 @@ const statusStyles = {
 export default function AdminUsers() {
   const { user: sessionUser } = useAuth();
   const isAdmin = sessionUser.role === ROLES.ADMIN;
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -305,7 +305,12 @@ export default function AdminUsers() {
               Busca por nombre, correo electrónico, teléfono o ID.
             </p>
             <span className="hidden sm:block">
-              <Badge style="default" text={`${totalUsers} usuarios`} />
+              <Badge
+                style="default"
+                text={
+                  loading ? "Cargando usuarios..." : `${totalUsers} usuarios`
+                }
+              />
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_12rem]">

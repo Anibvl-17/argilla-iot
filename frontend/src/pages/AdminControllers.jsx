@@ -151,7 +151,7 @@ function CredentialDialog({ credential, onClose }) {
 export default function AdminControllers() {
   const { user } = useAuth();
   const isAdmin = user.role === ROLES.ADMIN;
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [controllers, setControllers] = useState([]);
   const [kilns, setKilns] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -415,8 +415,11 @@ export default function AdminControllers() {
             <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs">
               {label}
             </p>
-            <p className={`text-xl font-bold sm:text-3xl text-content`}>
-              {value}
+            <p
+              aria-live="polite"
+              className={`${loading ? "text-sm sm:text-base" : "text-xl sm:text-3xl"} font-bold text-content`}
+            >
+              {loading ? "Cargando..." : value}
             </p>
           </div>
         ))}

@@ -79,7 +79,7 @@ const fieldClass =
 export default function AdminKilns() {
   const { user } = useAuth();
   const isAdmin = user.role === ROLES.ADMIN;
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [kilns, setKilns] = useState([]);
   const [controllers, setControllers] = useState([]);
   const [clients, setClients] = useState([]);
@@ -499,8 +499,11 @@ export default function AdminKilns() {
             <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
               {label}
             </p>
-            <p className="text-xl font-bold text-content sm:text-3xl">
-              {value}
+            <p
+              aria-live="polite"
+              className={`${loading ? "text-sm sm:text-base" : "text-xl sm:text-3xl"} font-bold text-content`}
+            >
+              {loading ? "Cargando..." : value}
             </p>
           </div>
         ))}
