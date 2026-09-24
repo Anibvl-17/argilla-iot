@@ -39,7 +39,12 @@ export default function HomeLayout() {
           {/* Opciones usuario */}
           {isClient && (
             <>
-              <SidebarItem path="/kilns" title="Mis hornos" icon={LuFlame} />
+              <SidebarItem
+                path="/kilns"
+                title="Mis hornos"
+                icon={LuFlame}
+                matchDescendants
+              />
               <SidebarItem
                 path="/support"
                 title="Soporte"
@@ -66,6 +71,7 @@ export default function HomeLayout() {
                 path="/management/kilns"
                 title="Hornos"
                 icon={LuFlame}
+                matchDescendants
               />
               <SidebarItem
                 path="/management/controllers"
