@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 import { login } from "@services/auth.service";
 import useAuthForm from "@hooks/useAuthForm";
@@ -8,6 +8,7 @@ import PasswordInput from "@components/PasswordInput";
 import { hasFormError } from "../utils/formError";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,8 @@ const Login = () => {
 
       if (result.success) {
         setUser(result.user);
+        navigate("/", { replace: true });
+        return;
       } else {
         errorData(result || "Credenciales incorrectas", "password");
       }
@@ -106,7 +109,7 @@ const Login = () => {
           disabled={loading}
           className="w-full bg-primary text-on-action py-3 rounded-lg mt-4 font-medium transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed "
         >
-          {loading ? "Cargando..." : "Iniciar sesión"}
+          {loading ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>
       </form>
     </>
