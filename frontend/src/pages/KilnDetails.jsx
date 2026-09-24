@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  LuArrowLeft,
-  LuCircuitBoard,
-  LuCopy,
-  LuEye,
-  LuX,
-} from "react-icons/lu";
+import { LuArrowLeft, LuEye, LuX } from "react-icons/lu";
 import ControllerStatus from "@components/ControllerStatus";
+import {
+  ControllerEquipmentDetails,
+  KilnEquipmentDetails,
+} from "@components/EquipmentInformation";
 import FiringControls from "@components/FiringControls";
 import Pagination from "@components/Pagination";
 import TelemetryChart from "@components/TelemetryChart";
@@ -20,12 +18,6 @@ import {
 } from "@services/firing.service";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import { useFiringRealtime } from "@hooks/useFiringRealtime";
-import {
-  getControllerActivityLabel,
-  getControllerConnectionLabel,
-} from "@constants/controller.constants";
-import { SWITCH_LABELS } from "../constants/controller.constants";
-import { toast } from "sonner";
 
 const FIRING_STATUS_LABELS = {
   RUNNING: "En ejecución",
@@ -36,25 +28,81 @@ const FIRING_STATUS_LABELS = {
   UNKNOWN: "Resultado desconocido",
 };
 
-function Detail({ label, value, canCopy }) {
+function connectionLabel(value) {
+  return value === "SERIES" ? "Serie" : "Paralelo";
+}
+
+function CircuitNode({ node, root = false }) {
+  if (!node || typeof node !== "object") return null;
+  if (node.type === "CHANNEL") {
+    return (
+      <li className="border-l-2 border-border py-2 pl-4">
+        <p className="font-medium text-content">{node.name || "Canal"}</p>
+        <p className="mt-1 text-sm text-muted">
+          {node.resistanceOhms ?? "-"} Ω · {node.lengthMeters ?? "-"} m
+        </p>
+      </li>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-border bg-surface-muted p-4">
-      <dt className="text-sm font-medium text-muted">{label}</dt>
-      <dd className="flex items-center gap-2 mt-1 font-medium text-content">
-        {value}
-        {canCopy && (
+    <li className={root ? "list-none" : "border-l-2 border-border pl-4"}>
+      <div className="py-2">
+        <p className="font-semibold text-content">
+          {root ? "Circuito raíz" : node.name || "Grupo"}
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Conexión {connectionLabel(node.connectionType).toLowerCase()}
+        </p>
+      </div>
+      <ul className="space-y-1 pl-2">
+        {(node.elements || []).map((child, index) => (
+          <CircuitNode
+            key={`${child.type || "element"}-${child.name || index}-${index}`}
+            node={child}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
+function CircuitModal({ configuration, onClose }) {
+  if (!configuration) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm sm:p-4"
+      onMouseDown={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="circuit-modal-title"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-dialog sm:max-h-[calc(100dvh-2rem)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+          <div>
+            <h2 id="circuit-modal-title" className="text-lg font-semibold">
+              Circuito del horno
+            </h2>
+            <p className="mt-1 text-sm text-muted">Vista de solo lectura</p>
+          </div>
           <button
-            className="text-sm hover:cursor-pointer hover:text-accent"
-            title="Copiar ID"
-            onClick={() => {
-              navigator.clipboard.writeText(value.slice(3));
-              toast.success("¡ID copiada!");
-            }}
+            type="button"
+            aria-label="Cerrar circuito"
+            onClick={onClose}
+            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
           >
-            <LuCopy />
+            <LuX />
           </button>
-        )}
-      </dd>
+        </header>
+        <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-6">
+          <ul>
+            <CircuitNode node={configuration} root />
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }
@@ -276,6 +324,7 @@ export default function KilnDetails() {
   });
   const [telemetryLoading, setTelemetryLoading] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
+  const [circuitOpen, setCircuitOpen] = useState(false);
 
   const fetchKiln = useCallback(async () => {
     const [result, context] = await Promise.all([
@@ -497,77 +546,48 @@ export default function KilnDetails() {
       )}
 
       <section className="mt-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
-        <h2 className="text-lg font-semibold">Información del horno</h2>
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Detail label="Capacidad" value={`${kiln.liters} litros`} />
-          <Detail label="Amperaje" value={`${kiln.nominalCurrent} A`} />
-          <Detail label="Voltaje" value={`${kiln.nominalVoltage} V`} />
-          <Detail
-            label="Fases"
-            value={kiln.phaseCount === 1 ? "Monofásico" : "Trifásico"}
-          />
-          <Detail
-            label="Quemas realizadas"
-            value={kiln.firingCycleCount ?? cyclePagination.total ?? 0}
-          />
-        </dl>
-      </section>
-
-      <section className="mt-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-soft text-accent">
-            <LuCircuitBoard />
+        <div className="grid gap-7 lg:grid-cols-2 lg:gap-0">
+          <div className="min-w-0 lg:border-r lg:border-border lg:pr-8">
+            <h2 className="text-lg font-semibold">Información del horno</h2>
+            <KilnEquipmentDetails
+              kiln={{
+                ...kiln,
+                firingCycleCount:
+                  kiln.firingCycleCount ?? cyclePagination.total ?? 0,
+              }}
+              controller={controller}
+              showFiringCount
+              showSwitch={false}
+              className="mt-5"
+              circuitAction={
+                <button
+                  type="button"
+                  onClick={() => setCircuitOpen(true)}
+                  className="text-secondary underline hover:text-accent"
+                >
+                  Ver circuito
+                </button>
+              }
+            />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">Controlador</h2>
-            <p className="text-sm font-medium text-muted">
-              Información técnica y estado actual
-            </p>
+
+          <div className="min-w-0 border-t border-border pt-7 lg:border-l-0 lg:border-t-0 lg:pl-8 lg:pt-0">
+            <h2 className="text-lg font-semibold">
+              Información del controlador
+            </h2>
+            {controller ? (
+              <ControllerEquipmentDetails
+                controller={controller}
+                showLiveDetails
+                className="mt-5"
+              />
+            ) : (
+              <p className="mt-5 text-sm text-muted">
+                Este horno no tiene un controlador vinculado.
+              </p>
+            )}
           </div>
         </div>
-        {controller ? (
-          <>
-            <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Detail
-                label="Temperatura"
-                value={
-                  controller.temperature == null
-                    ? "No disponible"
-                    : `${controller.temperature.toFixed(1)} °C`
-                }
-              />
-              <Detail
-                label="Actividad"
-                value={getControllerActivityLabel(controller.activityStatus)}
-              />
-              <Detail
-                label="Conexión"
-                value={getControllerConnectionLabel(
-                  controller.connectionStatus,
-                )}
-              />
-              <span className="font-mono">
-                <Detail
-                  label="Identificador"
-                  canCopy
-                  value={`...${controller.controllerCode}`}
-                />
-              </span>
-              <Detail
-                label="Tipo de switch"
-                value={SWITCH_LABELS[controller.switchType]}
-              />
-              <Detail
-                label="Amperaje soportado"
-                value={`${controller.switchCurrentCapacity} A`}
-              />
-            </dl>
-          </>
-        ) : (
-          <div className="mt-5 rounded-xl border border-dashed border-control-border p-8 text-center font-medium text-muted">
-            Este horno no tiene un controlador vinculado.
-          </div>
-        )}
       </section>
 
       <section className="mt-5 rounded-2xl border border-border bg-surface">
@@ -578,10 +598,10 @@ export default function KilnDetails() {
           </p>
         </div>
         <div className="overflow-auto">
-          <table className="w-full table-fixed text-left text-sm sm:table-auto">
+          <table className="w-full table-fixed text-left text-xs sm:text-sm sm:table-auto">
             <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium sm:px-6">Inicio</th>
+                <th className="px-4 py-3 font-medium sm:px-6">Fecha</th>
                 <th className="px-4 py-3 font-medium sm:px-6">Programa</th>
                 <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">
                   Duración
@@ -595,11 +615,11 @@ export default function KilnDetails() {
             <tbody className="divide-y divide-border">
               {cycles.length > 0 ? (
                 cycles.map((cycle) => (
-                  <tr key={cycle.firingCycleId}>
+                  <tr className="text-xs sm:text-sm" key={cycle.firingCycleId}>
                     <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                       {formatDate(cycle.startedAt)}
                     </td>
-                    <td className="px-4 py-3 sm:px-6">
+                    <td className="px-4 py-3 sm:px-6 truncate">
                       {cycle.program?.name || "Programa no disponible"}
                     </td>
                     <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6">
@@ -650,6 +670,13 @@ export default function KilnDetails() {
         }
         onClose={closeCycleDetails}
       />
+
+      {circuitOpen && (
+        <CircuitModal
+          configuration={kiln.heatingCircuitConfiguration}
+          onClose={() => setCircuitOpen(false)}
+        />
+      )}
     </div>
   );
 }

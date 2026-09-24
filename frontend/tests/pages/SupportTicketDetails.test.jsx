@@ -38,6 +38,14 @@ vi.mock("@services/support.service", () => ({
   updateTicketMaintenance: mocks.updateTicketMaintenance,
   updateSupportTicketStatus: mocks.updateSupportTicketStatus,
 }));
+vi.mock("@components/TelemetryChart", () => ({
+  default: () => (
+    <div
+      role="img"
+      aria-label="Temperatura real y setpoint del ciclo a través del tiempo"
+    />
+  ),
+}));
 
 function buildTicket(overrides = {}) {
   return {
@@ -70,12 +78,35 @@ function buildDiagnostics(overrides = {}) {
     nominalCurrent: 20,
     phaseCount: 1,
     operationalStatus: "OPERATIONAL",
+    manufacturer: "Argillá",
+    manufacturedAt: "2025-01-10T00:00:00.000Z",
+    deliveredAt: "2025-01-20T00:00:00.000Z",
+    heatingCircuitConfiguration: {
+      type: "ROOT",
+      connectionType: "SERIES",
+      elements: [
+        {
+          type: "CHANNEL",
+          name: "Canal principal",
+          resistanceOhms: 10,
+          lengthMeters: 2,
+        },
+      ],
+    },
+    firingCycleCount: 8,
     controller: {
       controllerId: "11111111-1111-4111-8111-111111abcdef",
       controllerCode: "abcdef",
       connectionStatus: "ONLINE",
+      activityStatus: "FIRING",
+      operationalStatus: "OPERATIONAL",
       temperature: 700,
+      switchType: "SSR",
+      switchCurrentCapacity: 30,
       firmwareVersion: "1.0.0",
+      manufacturedAt: "2025-01-01T00:00:00.000Z",
+      deliveredAt: null,
+      firmwareUpdatedAt: "2026-08-01T00:00:00.000Z",
     },
     firingCycles: [
       {
@@ -128,6 +159,44 @@ describe("SupportTicketDetails", () => {
       success: true,
       data: {},
     });
+  });
+
+  it("uses the current equipment information layout for support diagnostics", async () => {
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const equipmentHeading = await screen.findByRole("heading", {
+      name: "Información del equipo",
+    });
+    const equipmentSection = equipmentHeading.closest("div.rounded-2xl");
+    expect(
+      within(equipmentSection).getByRole("heading", {
+        name: "Información del horno",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(equipmentSection).getByRole("heading", {
+        name: "Información del controlador",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(equipmentSection).getByText("220 V - 20 A"),
+    ).toBeInTheDocument();
+    expect(
+      within(equipmentSection).getByText("Monofásico"),
+    ).toBeInTheDocument();
+    expect(
+      within(equipmentSection).getByText("1 grupo, 1 canal"),
+    ).toBeInTheDocument();
+    expect(within(equipmentSection).getByText("8")).toBeInTheDocument();
+    expect(within(equipmentSection).getByText("abcdef")).toBeInTheDocument();
+    expect(within(equipmentSection).getByText("SSR 30 A")).toBeInTheDocument();
+    expect(equipmentSection).not.toHaveTextContent("undefined");
   });
 
   it("tells an administrator that an assigned ticket can be reassigned", async () => {
@@ -287,18 +356,30 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Ver detalle" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Ver detalle del ciclo 44",
+      }),
+    );
 
     const dialog = await screen.findByRole("dialog", {
-      name: "Telemetría del ciclo #44",
+      name: "Detalle del ciclo",
     });
     await waitFor(() => {
       expect(mocks.getSupportTelemetry).toHaveBeenCalledWith("9", 44, 1, 10);
     });
-    expect(within(dialog).getByText("700.0 °C")).toBeInTheDocument();
+    expect(await within(dialog).findByText("700.0 °C")).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("img", {
+        name: "Temperatura real y setpoint del ciclo a través del tiempo",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("columnheader", { name: "Etapa" }),
+    ).toBeInTheDocument();
   });
 
-  it("hides the cycle table headers when there are no recent cycles", async () => {
+  it("keeps the shared cycle table structure when there are no cycles", async () => {
     mocks.getSupportDiagnostics.mockResolvedValue({
       success: true,
       data: buildDiagnostics({ firingCycles: [] }),
@@ -316,11 +397,11 @@ describe("SupportTicketDetails", () => {
       await screen.findByText("Sin ciclos registrados."),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("columnheader", { name: "Inicio" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("columnheader", { name: "Fecha" }),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByRole("columnheader", { name: "Acciones" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("columnheader", { name: "Acciones" }),
+    ).toBeInTheDocument();
   });
 
   it("uses friendly equipment labels and copies the controller identifier", async () => {
@@ -332,13 +413,17 @@ describe("SupportTicketDetails", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByText("220 V - 20 A - Monofásico"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Operativo")).toBeInTheDocument();
+    expect(await screen.findByText("220 V - 20 A")).toBeInTheDocument();
+    expect(screen.getByText("Monofásico")).toBeInTheDocument();
+    expect(screen.getAllByText("Operativo")).toHaveLength(2);
     expect(screen.getByText("Conectado")).toBeInTheDocument();
     expect(screen.getByText("Bizcocho")).toBeInTheDocument();
-    expect(screen.getByText("Completado")).toBeInTheDocument();
+    expect(screen.getByText("Bizcocho").closest("td")).toHaveClass("truncate");
+    expect(screen.getByText("Bizcocho").closest("tr")).toHaveClass(
+      "text-xs",
+      "sm:text-sm",
+    );
+    expect(screen.getByText("Completada")).toBeInTheDocument();
 
     const ticketHeading = screen.getByRole("heading", {
       name: "Temperatura irregular",

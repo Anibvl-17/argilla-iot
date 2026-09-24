@@ -3,6 +3,10 @@ import { Link, useParams } from "react-router-dom";
 import { LuArrowLeft } from "react-icons/lu";
 import { Badge } from "@components/Badge";
 import ControllerStatus from "@components/ControllerStatus";
+import {
+  ControllerEquipmentDetails,
+  KilnEquipmentDetails,
+} from "@components/EquipmentInformation";
 import FiringCycleHistory from "@components/FiringCycleHistory";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
@@ -102,18 +106,34 @@ export default function AdminKilnHistory() {
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-        <Metric label="Capacidad" value={`${kiln.liters} L`} />
-        <Metric label="Amperaje" value={`${kiln.nominalCurrent} A`} />
-        <Metric label="Voltaje" value={`${kiln.nominalVoltage} V`} />
-        <Metric label="Quemas realizadas" value={kiln.firingCycleCount ?? 0} />
-        <Metric
-          label="Controlador"
-          value={
-            controller ? `...${controller.controllerCode}` : "Sin vincular"
-          }
-          mono
-        />
+      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
+        <h2 className="text-lg font-semibold">Información del equipo</h2>
+        <div className="mt-5 grid gap-7 lg:grid-cols-2 lg:gap-0">
+          <div className="min-w-0 lg:border-r lg:border-border lg:pr-8">
+            <h3 className="font-semibold">Información del horno</h3>
+            <KilnEquipmentDetails
+              kiln={kiln}
+              controller={controller}
+              showFiringCount
+              showSwitch={false}
+              className="mt-5"
+            />
+          </div>
+          <div className="min-w-0 border-t border-border pt-7 lg:border-t-0 lg:pl-8 lg:pt-0">
+            <h3 className="font-semibold">Información del controlador</h3>
+            {controller ? (
+              <ControllerEquipmentDetails
+                controller={controller}
+                showLiveDetails
+                className="mt-5"
+              />
+            ) : (
+              <p className="mt-5 text-sm text-muted">
+                El horno no tiene un controlador vinculado actualmente.
+              </p>
+            )}
+          </div>
+        </div>
       </section>
 
       <FiringCycleHistory
@@ -121,22 +141,6 @@ export default function AdminKilnHistory() {
         getCycles={getAdminKilnCycles}
         getTelemetry={getAdminKilnCycleTelemetry}
       />
-    </div>
-  );
-}
-
-function Metric({ label, value, mono = false }) {
-  return (
-    <div className="min-w-0 rounded-xl border border-border bg-surface p-3 sm:p-5">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-muted sm:text-xs">
-        {label}
-      </p>
-      <p
-        className={`mt-1 truncate text-base font-semibold text-content sm:text-xl ${mono ? "font-mono" : ""}`}
-        title={String(value)}
-      >
-        {value}
-      </p>
     </div>
   );
 }

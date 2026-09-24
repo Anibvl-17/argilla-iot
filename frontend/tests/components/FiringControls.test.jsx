@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@services/firing.service", () => mocks);
+vi.mock("@components/ProgramChart", () => ({
+  default: () => <div data-testid="program-chart" />,
+}));
 
 const programs = [
   {
@@ -43,6 +46,18 @@ describe("FiringControls", () => {
     render(<FiringControls kiln={kiln} programs={programs} />);
     fireEvent.click(screen.getByRole("button", { name: "Iniciar quema" }));
     await waitFor(() => expect(mocks.startProgram).toHaveBeenCalledWith(7));
+  });
+
+  it("renders program details outside the controls layout", () => {
+    const { container } = render(
+      <FiringControls kiln={kiln} programs={programs} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver programa" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Bizcocho" });
+    expect(dialog).toBeInTheDocument();
+    expect(container).not.toContainElement(dialog);
   });
 
   it("offers resume and cancellation for a paused cycle", () => {

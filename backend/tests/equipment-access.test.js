@@ -273,6 +273,80 @@ test("technician equipment listings expose only the approved fields", async (t) 
   );
 });
 
+test("technician equipment relations include safe information-modal fields", async (t) => {
+  const controllerId = "11111111-1111-4111-8111-111111abcdef";
+  const circuit = {
+    type: "ROOT",
+    connectionType: "SERIES",
+    elements: [],
+  };
+  const kiln = {
+    kilnId: 7,
+    liters: 100,
+    phaseCount: 1,
+    nominalVoltage: 220,
+    nominalCurrent: 20,
+    operationalStatus: "OPERATIONAL",
+    manufacturer: "Argillá",
+    manufacturedAt: new Date("2025-01-10T00:00:00.000Z"),
+    deliveredAt: null,
+    heatingCircuitConfiguration: circuit,
+    _count: { firingCycles: 4 },
+  };
+  const controller = {
+    controllerId,
+    operationalStatus: "MAINTENANCE",
+    switchType: "SSR",
+    switchCurrentCapacity: 30,
+    firmwareVersion: "2.0.0",
+    manufacturedAt: new Date("2025-01-01T00:00:00.000Z"),
+    deliveredAt: null,
+    firmwareUpdatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  };
+
+  mockMethod(t, prisma.kiln, "findMany", async () => [
+    { ...kiln, controller, user: null },
+  ]);
+  mockMethod(t, prisma.kiln, "count", async () => 1);
+  mockMethod(t, prisma.controller, "findMany", async () => [
+    { ...controller, kiln, user: null },
+  ]);
+  mockMethod(t, prisma.controller, "count", async () => 1);
+  mockMethod(t, prisma, "$transaction", async (operations) =>
+    Promise.all(operations),
+  );
+
+  const kilns = await getKilnsPage({ restrictUserDetails: true });
+  const controllers = await getControllersPage({ restrictUserDetails: true });
+
+  assert.deepEqual(kilns.items[0].controller, {
+    controllerId,
+    controllerCode: "abcdef",
+    switchType: "SSR",
+    switchCurrentCapacity: 30,
+    operationalStatus: "MAINTENANCE",
+    firmwareVersion: "2.0.0",
+    manufacturedAt: controller.manufacturedAt,
+    deliveredAt: null,
+    firmwareUpdatedAt: controller.firmwareUpdatedAt,
+  });
+  assert.deepEqual(controllers.items[0].kiln, {
+    kilnId: 7,
+    liters: 100,
+    phaseCount: 1,
+    nominalVoltage: 220,
+    nominalCurrent: 20,
+    operationalStatus: "OPERATIONAL",
+    manufacturer: "Argillá",
+    manufacturedAt: kiln.manufacturedAt,
+    deliveredAt: null,
+    heatingCircuitConfiguration: circuit,
+    firingCycleCount: 4,
+  });
+  assert.equal("name" in controllers.items[0].kiln, false);
+  assert.equal("temperature" in kilns.items[0].controller, false);
+});
+
 test("linking inherits an existing owner when only one equipment item has one", async (t) => {
   let controllerUpdate;
   let kilnUpdate;

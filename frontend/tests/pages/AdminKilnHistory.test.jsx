@@ -51,6 +51,11 @@ describe("AdminKilnHistory", () => {
         liters: 100,
         nominalCurrent: 20,
         nominalVoltage: 220,
+        phaseCount: 1,
+        operationalStatus: "OPERATIONAL",
+        manufacturer: "Argillá",
+        manufacturedAt: "2025-01-10T00:00:00.000Z",
+        deliveredAt: "2025-01-20T00:00:00.000Z",
         firingCycleCount: 3,
         user: { name: "Cliente" },
         controller: {
@@ -59,6 +64,12 @@ describe("AdminKilnHistory", () => {
           connectionStatus: "ONLINE",
           activityStatus: "IDLE",
           operationalStatus: "OPERATIONAL",
+          switchType: "SSR",
+          switchCurrentCapacity: 30,
+          firmwareVersion: "2.0.0",
+          manufacturedAt: "2025-01-01T00:00:00.000Z",
+          deliveredAt: "2025-01-20T00:00:00.000Z",
+          firmwareUpdatedAt: "2026-09-01T00:00:00.000Z",
         },
       },
     });
@@ -102,8 +113,27 @@ describe("AdminKilnHistory", () => {
     expect(await screen.findByText("Quemas realizadas")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: "Información del horno" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Información del controlador" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("220 V - 20 A")).toBeInTheDocument();
+    expect(screen.getByText("SSR 30 A")).toBeInTheDocument();
+    expect(
+      screen.getByText("Quemas realizadas").closest("div"),
+    ).not.toHaveClass("rounded-xl");
+    expect(
       await screen.findByRole("columnheader", { name: "Programa" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Fecha" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Bizcocho").closest("td")).toHaveClass("truncate");
+    expect(screen.getByText("Bizcocho").closest("tr")).toHaveClass(
+      "text-xs",
+      "sm:text-sm",
+    );
     expect(screen.getByText("1 h 30 min")).toBeInTheDocument();
     expect(
       screen.queryByText("Historial de temperatura"),

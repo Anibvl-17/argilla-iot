@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
+import { KilnEquipmentDetails } from "@components/EquipmentInformation";
 import Modal from "@components/Modal";
 import Pagination from "@components/Pagination";
 import { SearchableCatalogField } from "@components/UserContactFields";
@@ -37,7 +38,6 @@ import {
 } from "@services/controller.service";
 import { getAllKilns, linkController } from "@services/kiln.service";
 import { normalizeFormError } from "../utils/formError";
-import { summarizeHeatingCircuit } from "../utils/heatingCircuit";
 import { getPageAfterDeletion } from "../utils/pagination";
 
 const PAGE_SIZE = 10;
@@ -490,11 +490,7 @@ export default function AdminControllers() {
                 </th>
                 <th
                   aria-label="Propietario / Horno"
-                  className={
-                    isAdmin
-                      ? "hidden px-6 py-4 md:table-cell"
-                      : "px-3 py-4 sm:px-6"
-                  }
+                  className="px-3 py-4 sm:px-6"
                 >
                   Propietario
                   <br />
@@ -510,7 +506,9 @@ export default function AdminControllers() {
                     <th className="hidden px-6 py-4 text-center sm:table-cell">
                       Switch
                     </th>
-                    <th className="px-3 py-4 text-center sm:px-6">Conexión</th>
+                    <th className="hidden px-6 py-4 text-center md:table-cell">
+                      Conexión
+                    </th>
                     <th className="hidden px-6 py-4 text-center lg:table-cell">
                       Actividad
                     </th>
@@ -553,13 +551,7 @@ export default function AdminControllers() {
                           ...{controller.controllerCode}
                         </button>
                       </td>
-                      <td
-                        className={
-                          isAdmin
-                            ? "hidden px-6 py-5 md:table-cell"
-                            : "px-3 py-5 sm:px-6"
-                        }
-                      >
+                      <td className="px-3 py-5 sm:px-6">
                         {controller.user ? (
                           <p>{controller.user.name}</p>
                         ) : (
@@ -592,7 +584,7 @@ export default function AdminControllers() {
                             {getSwitchLabel(controller.switchType)}{" "}
                             {controller.switchCurrentCapacity} A
                           </td>
-                          <td className="px-3 py-5 sm:px-6">
+                          <td className="hidden px-6 py-5 md:table-cell">
                             <span className="flex justify-center">
                               <Badge
                                 style={
@@ -926,68 +918,13 @@ export default function AdminControllers() {
         onSubmit={() => {}}
         showSubmit={false}
         cancelLabel="Cerrar"
-        renderContent={() => {
-          const kiln = kilnInfoController?.kiln;
-          const circuit = summarizeHeatingCircuit(
-            kiln?.heatingCircuitConfiguration,
-          );
-          const items = [
-            ["Capacidad", kiln ? `${kiln.liters} litros` : "No disponible"],
-            [
-              "Datos eléctricos",
-              kiln
-                ? `${kiln.nominalVoltage} V - ${kiln.nominalCurrent} A - ${getPhaseCountLabel(kiln.phaseCount)}`
-                : "No disponible",
-            ],
-            ["Estado", getOperationalStatusLabel(kiln?.operationalStatus)],
-            [
-              "Circuito",
-              kiln
-                ? `${circuit.groups} ${circuit.groups === 1 ? "grupo" : "grupos"} - ${circuit.channels} ${circuit.channels === 1 ? "canal" : "canales"}`
-                : "No disponible",
-            ],
-            ["Fabricante", kiln?.manufacturer || "Sin registro"],
-            ["Quemas realizadas", kiln?.firingCycleCount ?? 0],
-            [
-              "Fabricación",
-              kiln?.manufacturedAt
-                ? new Date(kiln.manufacturedAt).toLocaleDateString("es-CL")
-                : "Sin registro",
-            ],
-            [
-              "Entrega",
-              kiln?.deliveredAt
-                ? new Date(kiln.deliveredAt).toLocaleDateString("es-CL")
-                : "Pendiente",
-            ],
-            [
-              "Actividad",
-              getControllerActivityLabel(kilnInfoController?.activityStatus),
-            ],
-            [
-              "Switch",
-              kilnInfoController
-                ? `${getSwitchLabel(kilnInfoController.switchType)} ${kilnInfoController.switchCurrentCapacity} A`
-                : "No disponible",
-            ],
-          ];
-
-          return (
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
-              {items.map(([label, value]) => (
-                <div
-                  key={label}
-                  className={label === "Datos eléctricos" ? "col-span-1" : ""}
-                >
-                  <dt className="text-xs font-bold uppercase text-muted">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 wrap-break-word">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          );
-        }}
+        renderContent={() => (
+          <KilnEquipmentDetails
+            kiln={kilnInfoController?.kiln}
+            controller={kilnInfoController}
+            showFiringCount
+          />
+        )}
       />
 
       <Modal

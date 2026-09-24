@@ -235,6 +235,76 @@ describe("technician equipment management", () => {
     expect(screen.queryByText("Actividad")).not.toBeInTheDocument();
   });
 
+  it("shows the safe controller information available to technicians from the kiln list", async () => {
+    mocks.getAllKilns.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            kilnId: 8,
+            user: { userId: 10, name: "Cliente" },
+            liters: 100,
+            phaseCount: 1,
+            nominalVoltage: 220,
+            nominalCurrent: 30,
+            operationalStatus: "OPERATIONAL",
+            manufacturer: "Argillá",
+            manufacturedAt: "2025-01-15T00:00:00.000Z",
+            deliveredAt: null,
+            heatingCircuitConfiguration: circuit,
+            controller: {
+              controllerId: "44444444-4444-4444-8444-444444654321",
+              controllerCode: "654321",
+              switchType: "SSR",
+              switchCurrentCapacity: 40,
+              operationalStatus: "MAINTENANCE",
+              firmwareVersion: "2.3.0",
+              manufacturedAt: "2025-02-03T00:00:00.000Z",
+              deliveredAt: "2025-02-10T00:00:00.000Z",
+              firmwareUpdatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+        summary: { total: 1, withoutController: 0, withoutOwner: 0 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminKilns />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      (await screen.findAllByTitle("Ver información del controlador"))[0],
+    );
+    const heading = await screen.findByRole("heading", {
+      name: "Información del controlador",
+    });
+    const modal = heading.closest("div.fixed");
+    expect(within(modal).getByText("654321")).toBeInTheDocument();
+    expect(within(modal).getByText("SSR 40 A")).toBeInTheDocument();
+    expect(within(modal).getByText("En mantención")).toBeInTheDocument();
+    expect(within(modal).getByText("2.3.0")).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2025-02-03T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2025-02-10T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2026-08-01T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(modal).not.toHaveTextContent("undefined");
+  });
+
   it("lets technicians manage eligible controllers with limited columns and a link modal", async () => {
     mocks.getAllControllers.mockResolvedValue({
       success: true,
@@ -253,7 +323,19 @@ describe("technician equipment management", () => {
             controllerId: "22222222-2222-4222-8222-222222fedcba",
             controllerCode: "fedcba",
             user: { userId: 10, name: "Cliente" },
-            kiln: { kilnId: 1 },
+            kiln: {
+              kilnId: 1,
+              liters: 100,
+              phaseCount: 1,
+              nominalVoltage: 220,
+              nominalCurrent: 20,
+              operationalStatus: "OPERATIONAL",
+              manufacturer: "Argillá",
+              manufacturedAt: "2026-01-01T00:00:00.000Z",
+              deliveredAt: null,
+              heatingCircuitConfiguration: circuit,
+              firingCycleCount: 3,
+            },
             operationalStatus: "MAINTENANCE",
             switchType: "SSR",
             switchCurrentCapacity: 40,
@@ -309,6 +391,37 @@ describe("technician equipment management", () => {
     expect(within(ownedControllerRow).getByText("-")).toHaveClass(
       "italic",
       "text-muted",
+    );
+
+    fireEvent.click(within(ownedControllerRow).getByText("Horno #1"));
+    const kilnInformationHeading = await screen.findByRole("heading", {
+      name: "Información del horno",
+    });
+    const kilnInformationModal = kilnInformationHeading.closest("div.fixed");
+    expect(
+      within(kilnInformationModal).getByText("100 litros"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("220 V - 20 A"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("Monofásico"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("Operativo"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("1 grupo, 1 canal"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("Argillá"),
+    ).toBeInTheDocument();
+    expect(
+      within(kilnInformationModal).getByText("SSR 40 A"),
+    ).toBeInTheDocument();
+    expect(kilnInformationModal).not.toHaveTextContent("undefined");
+    fireEvent.click(
+      within(kilnInformationModal).getByRole("button", { name: "Cerrar" }),
     );
 
     const availableControllerRow = screen
@@ -429,6 +542,13 @@ describe("technician equipment management", () => {
       await screen.findByRole("columnheader", { name: "Switch" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("columnheader", { name: "Propietario / Horno" }),
+    ).not.toHaveClass("hidden");
+    expect(screen.getByRole("columnheader", { name: "Conexión" })).toHaveClass(
+      "hidden",
+      "md:table-cell",
+    );
+    expect(
       screen.queryByRole("columnheader", { name: "Temperatura" }),
     ).not.toBeInTheDocument();
 
@@ -522,10 +642,24 @@ describe("technician equipment management", () => {
     expect(within(modal).getByText("ID")).toBeInTheDocument();
     expect(within(modal).getByText("654321")).toBeInTheDocument();
     expect(within(modal).getByText("SSR 40 A")).toBeInTheDocument();
-    expect(within(modal).getByText("Conectado")).toBeInTheDocument();
     expect(within(modal).getByText("En mantención")).toBeInTheDocument();
-    expect(within(modal).getByText("512.4 °C")).toBeInTheDocument();
     expect(within(modal).getByText("2.3.0")).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2025-02-03T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2025-02-10T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByText(
+        new Date("2026-08-01T00:00:00.000Z").toLocaleDateString("es-CL"),
+      ),
+    ).toBeInTheDocument();
+    expect(modal).not.toHaveTextContent("undefined");
     expect(
       within(modal).getByRole("button", { name: "Cerrar" }),
     ).toBeInTheDocument();
@@ -590,11 +724,9 @@ describe("technician equipment management", () => {
     });
     const modal = heading.closest("div.fixed");
     expect(within(modal).getByText("120 litros")).toBeInTheDocument();
-    expect(
-      within(modal).getByText("380 V - 30 A - Trifásico"),
-    ).toBeInTheDocument();
-    expect(within(modal).getByText("1 grupo - 1 canal")).toBeInTheDocument();
-    expect(within(modal).getByText("Quemando")).toBeInTheDocument();
+    expect(within(modal).getByText("380 V - 30 A")).toBeInTheDocument();
+    expect(within(modal).getByText("Trifásico")).toBeInTheDocument();
+    expect(within(modal).getByText("1 grupo, 1 canal")).toBeInTheDocument();
     expect(within(modal).getByText("Contactor 40 A")).toBeInTheDocument();
     expect(within(modal).getByText("Quemas realizadas")).toBeInTheDocument();
     expect(within(modal).getByText("6")).toBeInTheDocument();

@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
+import { ControllerEquipmentDetails } from "@components/EquipmentInformation";
 import HeatingCircuitEditor from "@components/HeatingCircuitEditor";
 import Modal from "@components/Modal";
 import Pagination from "@components/Pagination";
@@ -23,7 +24,6 @@ import { useControllerRealtime } from "@hooks/useControllerRealtime";
 import {
   ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
   getControllerActivityLabel,
-  getControllerConnectionLabel,
   getOperationalStatusLabel,
   getSwitchLabel,
   OPERATIONAL_STATUS_OPTIONS,
@@ -984,73 +984,9 @@ export default function AdminKilns() {
         onSubmit={() => {}}
         showSubmit={false}
         cancelLabel="Cerrar"
-        renderContent={() => {
-          const items = [
-            ["ID", controllerInfo?.controllerCode || "No disponible", true],
-            [
-              "Switch",
-              controllerInfo
-                ? `${getSwitchLabel(controllerInfo.switchType)} ${controllerInfo.switchCurrentCapacity} A`
-                : "No disponible",
-            ],
-            [
-              "Conexión",
-              getControllerConnectionLabel(controllerInfo?.connectionStatus),
-            ],
-            [
-              "Estado",
-              getOperationalStatusLabel(controllerInfo?.operationalStatus),
-            ],
-            [
-              "Temperatura",
-              controllerInfo?.temperature == null
-                ? "No disponible"
-                : `${controllerInfo.temperature.toFixed(1)} °C`,
-            ],
-            ["Firmware", controllerInfo?.firmwareVersion || "Sin registro"],
-            [
-              "Fabricación",
-              controllerInfo?.manufacturedAt
-                ? new Date(controllerInfo.manufacturedAt).toLocaleDateString(
-                    "es-CL",
-                  )
-                : "Sin registro",
-            ],
-            [
-              "Entrega",
-              controllerInfo?.deliveredAt
-                ? new Date(controllerInfo.deliveredAt).toLocaleDateString(
-                    "es-CL",
-                  )
-                : "Pendiente",
-            ],
-            [
-              "Actualización de firmware",
-              controllerInfo?.firmwareUpdatedAt
-                ? new Date(controllerInfo.firmwareUpdatedAt).toLocaleDateString(
-                    "es-CL",
-                  )
-                : "Sin registro",
-            ],
-          ];
-
-          return (
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
-              {items.map(([label, value, mono]) => (
-                <div key={label} className={label === "ID" ? "col-span-2" : ""}>
-                  <dt className="text-xs font-bold uppercase text-muted">
-                    {label}
-                  </dt>
-                  <dd
-                    className={`mt-1 wrap-break-word ${mono ? "break-all font-mono text-xs" : ""}`}
-                  >
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          );
-        }}
+        renderContent={() => (
+          <ControllerEquipmentDetails controller={controllerInfo} />
+        )}
       />
 
       <Modal

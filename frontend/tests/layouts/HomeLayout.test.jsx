@@ -75,6 +75,36 @@ describe("HomeLayout", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps My kilns active while a client views a kiln detail", () => {
+    authState.user = { id: 3, name: "Cliente", role: "CLIENT" };
+    render(
+      <MemoryRouter initialEntries={["/kilns/7"]}>
+        <HomeLayout />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /Mis hornos/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("keeps kilns active while an administrator views its history", () => {
+    render(
+      <MemoryRouter initialEntries={["/management/kilns/7/history"]}>
+        <HomeLayout />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /Hornos/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: /Resumen/ })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("keeps support highlighted while viewing a ticket detail", () => {
     authState.user = { id: 2, name: "Técnico", role: "TECHNICIAN" };
     render(

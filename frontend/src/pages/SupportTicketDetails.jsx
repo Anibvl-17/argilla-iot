@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import {
-  LuArrowLeft,
-  LuChevronDown,
-  LuCircuitBoard,
-  LuCopy,
-  LuFlame,
-  LuSearch,
-  LuWrench,
-} from "react-icons/lu";
+import { LuArrowLeft, LuChevronDown, LuSearch, LuWrench } from "react-icons/lu";
 import { toast } from "sonner";
 import { useAuth } from "@context/AuthContext";
+import {
+  ControllerEquipmentDetails,
+  KilnEquipmentDetails,
+} from "@components/EquipmentInformation";
+import FiringCycleHistory from "@components/FiringCycleHistory";
 import FloatingDropdown from "@components/FloatingDropdown";
-import Pagination from "@components/Pagination";
 import {
   assignSupportTicket,
   claimSupportTicket,
@@ -24,44 +20,11 @@ import {
   updateTicketMaintenance,
   updateSupportTicketStatus,
 } from "@services/support.service";
-import {
-  FIRING_CYCLE_STATUS_LABELS,
-  MAINTENANCE_TYPE_LABELS,
-} from "@constants/support.constants";
-import {
-  getControllerConnectionLabel,
-  getOperationalStatusLabel,
-  getPhaseCountLabel,
-} from "@constants/controller.constants";
+import { MAINTENANCE_TYPE_LABELS } from "@constants/support.constants";
 import { ROLES, ROLE_LABELS } from "@constants/user.constants";
 
 const inputClass =
   "w-full rounded-lg border-2 border-control-border bg-field px-3 py-2 text-sm text-content outline-none focus:border-focus";
-
-function Detail({ label, value, copyValue }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface-muted p-3">
-      <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
-      <dd className="mt-1 flex items-center gap-2 wrap-break-word text-sm font-medium">
-        <span>{value ?? "No disponible"}</span>
-        {copyValue && (
-          <button
-            type="button"
-            title="Copiar ID"
-            aria-label="Copiar ID del controlador"
-            onClick={() => {
-              navigator.clipboard.writeText(copyValue);
-              toast.success("¡ID copiada!");
-            }}
-            className="shrink-0 text-muted transition-colors hover:cursor-pointer hover:text-accent"
-          >
-            <LuCopy />
-          </button>
-        )}
-      </dd>
-    </div>
-  );
-}
 
 function normalizeSearch(value) {
   return value
@@ -156,7 +119,20 @@ function AssigneeSearch({ assignees, value, onSelect }) {
   );
 }
 
-function Diagnostics({ data, onCycleOpen }) {
+function Diagnostics({ data, ticketId, unavailable }) {
+  const getTelemetry = useCallback(
+    (_kilnId, cycleId, page, pageSize) =>
+      getSupportTelemetry(ticketId, cycleId, page, pageSize),
+    [ticketId],
+  );
+  const handleRequestError = useCallback(
+    (result) => {
+      if ([403, 404].includes(result.status)) unavailable(result.message);
+      else toast.error(result.message || "No fue posible cargar el historial.");
+    },
+    [unavailable],
+  );
+
   if (!data)
     return (
       <div className="rounded-xl border border-border p-5 text-muted">
@@ -166,230 +142,45 @@ function Diagnostics({ data, onCycleOpen }) {
   return (
     <section className="space-y-5">
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <LuFlame className="text-accent" /> Ficha del horno
-        </h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Detail label="Horno" value={`${data.name} (#${data.kilnId})`} />
-          <Detail label="Capacidad" value={`${data.liters} L`} />
-          <Detail
-            label="Eléctrico"
-            value={`${data.nominalVoltage} V - ${data.nominalCurrent} A - ${getPhaseCountLabel(data.phaseCount)}`}
-          />
-          <Detail
-            label="Estado"
-            value={getOperationalStatusLabel(data.operationalStatus)}
-          />
-        </dl>
-        <h3 className="mt-5 flex items-center gap-2 font-semibold">
-          <LuCircuitBoard className="text-accent" /> Controlador actual
-        </h3>
-        {data.controller ? (
-          <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Detail
-              label="Identificador"
-              value={`...${data.controller.controllerCode}`}
-              copyValue={data.controller.controllerCode}
+        <h2 className="text-lg font-semibold">Información del equipo</h2>
+        <p className="mt-1 text-sm text-secondary">
+          {data.name} · Horno #{data.kilnId}
+        </p>
+        <div className="mt-5 grid gap-7 lg:grid-cols-2 lg:gap-0">
+          <div className="min-w-0 lg:border-r lg:border-border lg:pr-8">
+            <h3 className="font-semibold">Información del horno</h3>
+            <KilnEquipmentDetails
+              kiln={data}
+              controller={data.controller}
+              showFiringCount
+              showSwitch={false}
+              className="mt-5"
             />
-            <Detail
-              label="Conexión"
-              value={getControllerConnectionLabel(
-                data.controller.connectionStatus,
-              )}
-            />
-            <Detail
-              label="Temperatura"
-              value={
-                data.controller.temperature == null
-                  ? "No disponible"
-                  : `${data.controller.temperature.toFixed(1)} °C`
-              }
-            />
-            <Detail label="Firmware" value={data.controller.firmwareVersion} />
-          </dl>
-        ) : (
-          <p className="mt-3 text-sm text-muted">
-            El horno no tiene un controlador vinculado actualmente.
-          </p>
-        )}
+          </div>
+          <div className="min-w-0 border-t border-border pt-7 lg:border-t-0 lg:pl-8 lg:pt-0">
+            <h3 className="font-semibold">Información del controlador</h3>
+            {data.controller ? (
+              <ControllerEquipmentDetails
+                controller={data.controller}
+                showLiveDetails
+                className="mt-5"
+              />
+            ) : (
+              <p className="mt-5 text-sm text-muted">
+                El horno no tiene un controlador vinculado actualmente.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <h2 className="font-semibold">Ciclos recientes</h2>
-        {data.firingCycles.length ? (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-180 text-left text-sm">
-              <thead className="text-xs uppercase text-muted">
-                <tr>
-                  <th className="py-2">Inicio</th>
-                  <th>Fin</th>
-                  <th>Programa</th>
-                  <th>Estado</th>
-                  <th className="text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {data.firingCycles.map((cycle) => (
-                  <tr key={cycle.firingCycleId}>
-                    <td className="py-3">
-                      {new Date(cycle.startedAt).toLocaleString("es-CL")}
-                    </td>
-                    <td>
-                      {cycle.endedAt
-                        ? new Date(cycle.endedAt).toLocaleString("es-CL")
-                        : "-"}
-                    </td>
-                    <td>{cycle.program?.name || "No disponible"}</td>
-                    <td>
-                      {FIRING_CYCLE_STATUS_LABELS[cycle.status] ||
-                        "No disponible"}
-                    </td>
-                    <td className="text-right">
-                      <button
-                        type="button"
-                        onClick={() => onCycleOpen(cycle)}
-                        className="rounded-lg border border-control-border px-3 py-2 text-xs font-medium hover:bg-surface-hover"
-                      >
-                        Ver detalle
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="py-8 text-center text-muted">Sin ciclos registrados.</p>
-        )}
-      </div>
+      <FiringCycleHistory
+        kilnId={data.kilnId}
+        cycles={data.firingCycles}
+        getTelemetry={getTelemetry}
+        onRequestError={handleRequestError}
+      />
     </section>
-  );
-}
-
-function CycleTelemetryModal({ ticketId, cycle, onClose, unavailable }) {
-  const [telemetry, setTelemetry] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadPage = useCallback(
-    async (page = 1) => {
-      if (!cycle) return;
-      setLoading(true);
-      const result = await getSupportTelemetry(
-        ticketId,
-        cycle.firingCycleId,
-        page,
-        10,
-      );
-      setLoading(false);
-      if (!result.success) {
-        if ([403, 404].includes(result.status))
-          return unavailable(result.message);
-        setError(result.message);
-        return;
-      }
-      setTelemetry(result.data.items || []);
-      setPagination(result.data.pagination);
-      setError("");
-    },
-    [cycle, ticketId, unavailable],
-  );
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadPage(1);
-  }, [loadPage]);
-
-  if (!cycle) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-      role="presentation"
-    >
-      <section
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cycle-telemetry-title"
-      >
-        <header className="flex items-center justify-between border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
-          <div>
-            <h2
-              id="cycle-telemetry-title"
-              className="text-lg font-bold sm:text-xl"
-            >
-              Telemetría del ciclo #{cycle.firingCycleId}
-            </h2>
-            <p className="mt-1 text-xs text-muted">
-              Iniciado {new Date(cycle.startedAt).toLocaleString("es-CL")}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar detalle"
-            className="rounded-md p-2 text-muted hover:bg-surface-hover hover:text-content"
-          >
-            ✕
-          </button>
-        </header>
-        <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
-          {error ? (
-            <div className="rounded-xl border border-danger-border bg-danger-soft p-4 text-danger">
-              {error}
-            </div>
-          ) : loading ? (
-            <div className="py-16 text-center text-muted">
-              Cargando telemetría...
-            </div>
-          ) : (
-            <table className="w-full min-w-180 text-left text-sm">
-              <thead className="border-b border-border text-xs uppercase text-muted">
-                <tr>
-                  <th className="py-3">Fecha</th>
-                  <th>Temperatura</th>
-                  <th>Temperatura objetivo</th>
-                  <th>Voltaje</th>
-                  <th>Corriente</th>
-                  <th>Estado del relé</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {telemetry.length ? (
-                  telemetry.map((item) => (
-                    <tr key={item.telemetryId}>
-                      <td className="py-3">
-                        {new Date(item.timestamp).toLocaleString("es-CL")}
-                      </td>
-                      <td>{item.temperature.toFixed(1)} °C</td>
-                      <td>{item.setpointTemperature.toFixed(1)} °C</td>
-                      <td>{item.voltage} V</td>
-                      <td>{item.current} A</td>
-                      <td>{item.switchState ? "Activo" : "Inactivo"}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="py-12 text-center text-muted">
-                      Este ciclo no tiene registros de telemetría.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="border-t border-border">
-          <Pagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            onPageChange={loadPage}
-          />
-        </div>
-      </section>
-    </div>
   );
 }
 
@@ -712,7 +503,6 @@ export default function SupportTicketDetails() {
       : "Volver a soporte";
   const [ticket, setTicket] = useState(null);
   const [diagnostics, setDiagnostics] = useState(null);
-  const [selectedCycle, setSelectedCycle] = useState(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState(null);
   const [assignees, setAssignees] = useState([]);
@@ -1000,16 +790,14 @@ export default function SupportTicketDetails() {
       )}
 
       {!isClient && (
-        <Diagnostics data={diagnostics} onCycleOpen={setSelectedCycle} />
+        <Diagnostics
+          data={diagnostics}
+          ticketId={ticketId}
+          unavailable={unavailable}
+        />
       )}
       {!isClient && (
         <>
-          <CycleTelemetryModal
-            ticketId={ticketId}
-            cycle={selectedCycle}
-            onClose={() => setSelectedCycle(null)}
-            unavailable={unavailable}
-          />
           {diagnostics && maintenanceOpen && (
             <MaintenanceModal
               ticketId={ticketId}

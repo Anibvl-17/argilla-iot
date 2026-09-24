@@ -48,6 +48,11 @@ function presentTechnicianKiln(kiln) {
           controllerCode: kiln.controller.controllerId.slice(-6),
           switchType: kiln.controller.switchType,
           switchCurrentCapacity: kiln.controller.switchCurrentCapacity,
+          operationalStatus: kiln.controller.operationalStatus,
+          firmwareVersion: kiln.controller.firmwareVersion,
+          manufacturedAt: kiln.controller.manufacturedAt,
+          deliveredAt: kiln.controller.deliveredAt,
+          firmwareUpdatedAt: kiln.controller.firmwareUpdatedAt,
         }
       : null,
   };

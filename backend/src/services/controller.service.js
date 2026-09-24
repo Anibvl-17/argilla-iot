@@ -67,7 +67,22 @@ function decorateController(controller, { restrictUserDetails = false } = {}) {
     user: decorated.user
       ? { userId: decorated.user.userId, name: decorated.user.name }
       : null,
-    kiln: decorated.kiln ? { kilnId: decorated.kiln.kilnId } : null,
+    kiln: decorated.kiln
+      ? {
+          kilnId: decorated.kiln.kilnId,
+          liters: decorated.kiln.liters,
+          phaseCount: decorated.kiln.phaseCount,
+          nominalVoltage: decorated.kiln.nominalVoltage,
+          nominalCurrent: decorated.kiln.nominalCurrent,
+          operationalStatus: decorated.kiln.operationalStatus,
+          manufacturer: decorated.kiln.manufacturer,
+          manufacturedAt: decorated.kiln.manufacturedAt,
+          deliveredAt: decorated.kiln.deliveredAt,
+          heatingCircuitConfiguration:
+            decorated.kiln.heatingCircuitConfiguration,
+          firingCycleCount: decorated.kiln.firingCycleCount,
+        }
+      : null,
   };
 }
 

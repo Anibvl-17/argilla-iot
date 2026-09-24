@@ -386,6 +386,7 @@ export async function getSupportDiagnostics(actor, supportTicketId) {
       operationalStatus: true,
       manufacturer: true,
       heatingCircuitConfiguration: true,
+      _count: { select: { firingCycles: true } },
       controller: {
         select: {
           controllerId: true,
@@ -415,8 +416,10 @@ export async function getSupportDiagnostics(actor, supportTicketId) {
     },
   });
   if (!kiln) return null;
+  const { _count, ...kilnDetails } = kiln;
   return {
-    ...kiln,
+    ...kilnDetails,
+    firingCycleCount: _count.firingCycles,
     controller: kiln.controller
       ? {
           ...kiln.controller,

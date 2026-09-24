@@ -127,14 +127,16 @@ export default function TelemetryChart({ telemetry }) {
 
   if (!samples.length) return null;
   return (
-    <div className="h-56 w-full sm:h-64">
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label="Temperatura real y setpoint del ciclo a través del tiempo"
-      >
-        Gráfico de temperatura real y setpoint del ciclo.
-      </canvas>
+    <div className="w-full min-w-0 overflow-x-auto pb-2">
+      <div className="h-56 min-w-xl sm:h-64 sm:min-w-0">
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label="Temperatura real y setpoint del ciclo a través del tiempo"
+        >
+          Gráfico de temperatura real y setpoint del ciclo.
+        </canvas>
+      </div>
     </div>
   );
 }

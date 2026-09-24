@@ -210,12 +210,14 @@ export default function FiringCycleHistory({
   kilnId,
   getCycles,
   getTelemetry,
+  cycles: providedCycles = null,
+  onRequestError,
 }) {
   const [cycles, setCycles] = useState([]);
   const [selectedCycle, setSelectedCycle] = useState(null);
   const [telemetry, setTelemetry] = useState([]);
   const [chartTelemetry, setChartTelemetry] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!Array.isArray(providedCycles));
   const [telemetryLoading, setTelemetryLoading] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
   const [cyclePagination, setCyclePagination] = useState({
@@ -226,13 +228,38 @@ export default function FiringCycleHistory({
     page: 1,
     totalPages: 1,
   });
+  const hasProvidedCycles = Array.isArray(providedCycles);
+  const visibleCycles = hasProvidedCycles
+    ? providedCycles.slice(
+        (cyclePagination.page - 1) * 10,
+        cyclePagination.page * 10,
+      )
+    : cycles;
 
   const fetchCycles = useCallback(
     async (page = 1) => {
       setLoading(true);
+      if (hasProvidedCycles) {
+        const totalPages = Math.max(1, Math.ceil(providedCycles.length / 10));
+        const normalizedPage = Math.min(Math.max(1, page), totalPages);
+        setCyclePagination({ page: normalizedPage, totalPages });
+        setSelectedCycle((current) =>
+          current
+            ? providedCycles.find(
+                ({ firingCycleId }) => firingCycleId === current.firingCycleId,
+              ) || null
+            : null,
+        );
+        setLoading(false);
+        return;
+      }
+
       const result = await getCycles(kilnId, page, 10);
       setLoading(false);
-      if (!result.success) return;
+      if (!result.success) {
+        onRequestError?.(result);
+        return;
+      }
       const items = result.data.items || [];
       setCycles(items);
       setCyclePagination(result.data.pagination || { page: 1, totalPages: 1 });
@@ -244,7 +271,7 @@ export default function FiringCycleHistory({
           : null,
       );
     },
-    [getCycles, kilnId],
+    [getCycles, hasProvidedCycles, kilnId, onRequestError, providedCycles],
   );
 
   useEffect(() => {
@@ -255,9 +282,11 @@ export default function FiringCycleHistory({
   useFiringRealtime(
     useCallback(
       (event) => {
-        if (event.kilnId === Number(kilnId)) void fetchCycles(1);
+        if (!hasProvidedCycles && event.kilnId === Number(kilnId)) {
+          void fetchCycles(1);
+        }
       },
-      [fetchCycles, kilnId],
+      [fetchCycles, hasProvidedCycles, kilnId],
     ),
   );
 
@@ -272,9 +301,11 @@ export default function FiringCycleHistory({
         setTelemetryPagination(
           result.data.pagination || { page: 1, totalPages: 1 },
         );
+      } else {
+        onRequestError?.(result);
       }
     },
-    [getTelemetry, kilnId, selectedCycle?.firingCycleId],
+    [getTelemetry, kilnId, onRequestError, selectedCycle?.firingCycleId],
   );
 
   const fetchChart = useCallback(
@@ -284,6 +315,7 @@ export default function FiringCycleHistory({
       if (!first.success) {
         setChartTelemetry([]);
         setChartLoading(false);
+        onRequestError?.(first);
         return;
       }
       const items = [...(first.data.items || [])];
@@ -296,12 +328,13 @@ export default function FiringCycleHistory({
         );
         remaining.forEach((result) => {
           if (result.success) items.push(...(result.data.items || []));
+          else onRequestError?.(result);
         });
       }
       setChartTelemetry(items);
       setChartLoading(false);
     },
-    [getTelemetry, kilnId],
+    [getTelemetry, kilnId, onRequestError],
   );
 
   function openCycle(cycle) {
@@ -327,10 +360,10 @@ export default function FiringCycleHistory({
         </p>
       </div>
       <div className="overflow-auto">
-        <table className="w-full table-fixed text-left text-sm sm:table-auto">
+        <table className="w-full table-fixed text-left text-xs sm:table-auto sm:text-sm">
           <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
             <tr>
-              <th className="px-4 py-3 font-medium sm:px-6">Inicio</th>
+              <th className="px-4 py-3 font-medium sm:px-6">Fecha</th>
               <th className="px-4 py-3 font-medium sm:px-6">Programa</th>
               <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">
                 Duración
@@ -342,13 +375,13 @@ export default function FiringCycleHistory({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {cycles.length ? (
-              cycles.map((cycle) => (
-                <tr key={cycle.firingCycleId}>
+            {visibleCycles.length ? (
+              visibleCycles.map((cycle) => (
+                <tr className="text-xs sm:text-sm" key={cycle.firingCycleId}>
                   <td className="whitespace-nowrap px-4 py-3 sm:px-6">
                     {formatDate(cycle.startedAt)}
                   </td>
-                  <td className="px-4 py-3 sm:px-6">
+                  <td className="truncate px-4 py-3 sm:px-6">
                     {cycle.program?.name || "Programa no disponible"}
                   </td>
                   <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell sm:px-6">

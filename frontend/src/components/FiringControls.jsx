@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { LuArrowRight, LuCirclePause, LuPlay, LuSquare } from "react-icons/lu";
 import AlertDialog from "./AlertDialog";
@@ -259,51 +260,62 @@ export default function FiringControls({
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      {detailsOpen && selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4"
-          onMouseDown={() => setDetailsOpen(false)}
-        >
-          <section
-            onMouseDown={(event) => event.stopPropagation()}
-            className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl border border-border bg-surface p-6"
+      {detailsOpen &&
+        selected &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4"
+            onMouseDown={() => setDetailsOpen(false)}
           >
-            <div className="flex justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold">{selected.name}</h3>
-                <p className="mt-1 text-sm text-muted">
-                  {selected.description}
-                </p>
-              </div>
-              <button onClick={() => setDetailsOpen(false)}>Cerrar</button>
-            </div>
-            <div className="mt-5 rounded-xl bg-surface-muted p-3">
-              <ProgramChart program={selected} />
-            </div>
-            <table className="mt-5 w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted">
-                  <th className="py-2">Etapa</th>
-                  <th>Duración</th>
-                  <th>Objetivo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selected.configuration.stages.map((stage, index) => (
-                  <tr
-                    key={`${stage.durationMinutes}-${index}`}
-                    className="border-t border-border"
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="program-details-title"
+              onMouseDown={(event) => event.stopPropagation()}
+              className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl border border-border bg-surface p-6"
+            >
+              <div className="flex justify-between gap-4">
+                <div>
+                  <h3
+                    id="program-details-title"
+                    className="text-xl font-semibold"
                   >
-                    <td className="py-2">{index + 1}</td>
-                    <td>{stage.durationMinutes} min</td>
-                    <td>{stage.targetTemperature} °C</td>
+                    {selected.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted">
+                    {selected.description}
+                  </p>
+                </div>
+                <button onClick={() => setDetailsOpen(false)}>Cerrar</button>
+              </div>
+              <div className="mt-5 rounded-xl bg-surface-muted p-3">
+                <ProgramChart program={selected} />
+              </div>
+              <table className="mt-5 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted">
+                    <th className="py-2">Etapa</th>
+                    <th>Duración</th>
+                    <th>Objetivo</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {selected.configuration.stages.map((stage, index) => (
+                    <tr
+                      key={`${stage.durationMinutes}-${index}`}
+                      className="border-t border-border"
+                    >
+                      <td className="py-2">{index + 1}</td>
+                      <td>{stage.durationMinutes} min</td>
+                      <td>{stage.targetTemperature} °C</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          </div>,
+          document.body,
+        )}
 
       <AlertDialog
         isOpen={confirmCancel}
