@@ -388,8 +388,8 @@ export default function Profile() {
             <div className="min-w-0">
               <h3 className="font-semibold text-content">Eliminar cuenta</h3>
               <p className="mt-1 text-sm text-secondary">
-                Tus datos personales serán anonimizados y esta acción no se
-                puede deshacer.
+                Tus datos personales serán anonimizados y no se podrán recuperar. 
+                Esta acción no se puede deshacer.
               </p>
             </div>
             <button
