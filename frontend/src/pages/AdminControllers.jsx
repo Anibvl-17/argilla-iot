@@ -111,8 +111,8 @@ function CredentialDialog({ credential, onClose }) {
         </div>
         <div className="space-y-5 p-6">
           <p className="rounded-lg border border-warning-border bg-warning-soft p-3 text-sm text-warning">
-            Guarda la credencial del dispositivo ahora. El secreto no volverá a
-            mostrarse.
+            Registra la credencial en el dispositivo o guárdala en un lugar
+            seguro. El secreto no volverá a mostrarse.
           </p>
           {[
             ["Identificador", credential.controllerId],
