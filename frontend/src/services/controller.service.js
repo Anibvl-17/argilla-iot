@@ -60,6 +60,27 @@ export async function updateController(controllerId, data) {
   }
 }
 
+export async function updateControllerOperationalStatus(
+  controllerId,
+  operationalStatus,
+) {
+  try {
+    const response = await axios.patch(
+      `/controller/${controllerId}/operational-status`,
+      { operationalStatus },
+    );
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "No fue posible actualizar el estado del controlador",
+      data: error.response?.data,
+    };
+  }
+}
+
 export async function getAccessibleControllers(params = {}) {
   try {
     const response = await axios.get("/controller/accessible", { params });
@@ -68,26 +89,6 @@ export async function getAccessibleControllers(params = {}) {
   } catch (error) {
     console.error(
       "Error en el servicio controller -> getAccessibleControllers()",
-      error.response?.data,
-    );
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || "Error al conectar con el servidor",
-      data: error.response?.data,
-    };
-  }
-}
-
-export async function sendAdminControllerCommand(controllerId, command) {
-  try {
-    const response = await axios.post(`/controller/${controllerId}/command`, {
-      command,
-    });
-    return { success: true, data: response.data.data };
-  } catch (error) {
-    console.error(
-      "Error en el servicio controller -> sendAdminControllerCommand()",
       error.response?.data,
     );
     return {
@@ -117,71 +118,16 @@ export async function deleteController(controllerId) {
   }
 }
 
-export async function linkUserToController(controllerId, userId, pin) {
+export async function pairController(partialControllerId, pin) {
   try {
     const response = await axios.patch(`/controller/claim`, {
-      partialControllerId: controllerId,
-      userId,
+      partialControllerId,
       pin,
     });
     return { success: true, data: response.data.data };
   } catch (error) {
     console.error(
-      "Error en el servicio controller -> linkUserToController()",
-      error.response?.data,
-    );
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || "Error al conectar con el servidor",
-      data: error.response?.data,
-    };
-  }
-}
-
-export async function unlinkUserFromController(controllerId, userId) {
-  try {
-    await axios.patch(`/controller/${controllerId}/release`, { userId });
-    return { success: true };
-  } catch (error) {
-    console.error(
-      "Error en el servicio controller -> unlinkUserToController()",
-      error.response?.data,
-    );
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || "Error al conectar con el servidor",
-      data: error.response?.data,
-    };
-  }
-}
-
-export async function generateControllerPin(controllerId) {
-  try {
-    const response = await axios.patch(`/controller/${controllerId}/pin`);
-    return { success: true, data: response.data.data };
-  } catch (error) {
-    console.error(
-      "Error en el servicio controller -> generateControllerPin()",
-      error.response?.data,
-    );
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || "Error al conectar con el servidor",
-      data: error.response?.data,
-    };
-  }
-}
-
-export async function clearControllerPin(controllerId) {
-  try {
-    const response = await axios.delete(`/controller/${controllerId}/pin`);
-    return { success: true, data: response.data.data };
-  } catch (error) {
-    console.error(
-      "Error en el servicio controller -> clearControllerPin()",
+      "Error en el servicio controller -> pairController()",
       error.response?.data,
     );
     return {

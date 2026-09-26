@@ -1,81 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  LuArrowRight,
-  LuCircuitBoard,
-  LuFlame,
-  LuLink,
-  LuPower,
-  LuUsers,
-} from "react-icons/lu";
+import { LuArrowRight, LuCircuitBoard, LuFlame, LuUsers } from "react-icons/lu";
 import { getAdminSummary } from "@services/admin.service";
 import { useAdminSummaryRealtime } from "@hooks/useAdminSummaryRealtime";
 
-function Metric({
-  icon: Icon,
-  value,
-  valueDescription,
-  isLastChild = false,
-  tone = "text-neutral-200",
-}) {
-  return (
-    <div
-      className={
-        "p-4 flex flex-row items-center justify-start gap-2 " +
-        (!isLastChild && "border-b border-neutral-800")
-      }
-    >
-      <Icon className={tone + " h-4 w-4"} aria-hidden="true" />
-      <p className="mb-1 text-2xl text-neutral-200">
-        <span className="mb-1 text-2xl font-bold text-neutral-200">
-          {value}
-        </span>{" "}
-        {valueDescription}
-      </p>
-    </div>
-  );
-}
-
-function TotalStat({ icon: Icon, label, value, to }) {
-  return (
-    <Link
-      to={to}
-      className="group flex min-w-0 items-center gap-3 rounded-xl border border-neutral-800 bg-[#141414] px-4 py-3 transition-colors hover:border-neutral-700 hover:bg-neutral-900/70"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-400">
-        <Icon className="text-2xl" aria-hidden="true" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-medium uppercase tracking-wider text-neutral-400">
-          {label}
-        </span>
-        <span className="mt-0.5 block text-2xl font-bold text-white">
-          {value}
-        </span>
-      </span>
-      <LuArrowRight
-        className="h-4 w-4 shrink-0 text-neutral-600 transition-colors group-hover:text-neutral-300"
-        aria-hidden="true"
-      />
-    </Link>
-  );
-}
-
 function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-xl">
+    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
       <div className="flex items-center gap-3 px-5 py-4">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl  text-red-400">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl text-accent">
           <Icon className="text-2xl" aria-hidden="true" />
         </span>
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
 
-      <div className="grid flex-1 gap-1 px-5">{metrics}</div>
+      <dl className="grid flex-1 grid-cols-2 gap-px border-y border-border bg-border">
+        {metrics.map(
+          ({ label, value, tone = "text-content", wide = false }) => (
+            <div
+              key={label}
+              className={`min-w-0 bg-surface p-4 ${wide ? "col-span-2" : ""}`}
+            >
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                {label}
+              </dt>
+              <dd className={`mt-1 text-2xl font-bold ${tone}`}>{value}</dd>
+            </div>
+          ),
+        )}
+      </dl>
 
       <Link
         to={to}
-        className="mt-4 flex items-center justify-end gap-3 border-t border-neutral-800 px-5 py-4 text-sm font-medium text-neutral-400 transition-colors hover:bg-neutral-900/60 hover:text-white"
+        className="flex items-center justify-end gap-3 px-5 py-4 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-content"
       >
         {linkLabel}
         <LuArrowRight className="text-base" aria-hidden="true" />
@@ -86,23 +43,16 @@ function SummaryCard({ icon: Icon, title, metrics, to, linkLabel }) {
 
 function LoadingCards() {
   return (
-    <div className="space-y-6" aria-label="Cargando resumen">
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[0, 1, 2].map((stat) => (
-          <div
-            key={stat}
-            className="h-20 animate-pulse rounded-xl border border-neutral-800 bg-[#141414]"
-          />
-        ))}
-      </div>
-      <div className="grid gap-5 lg:grid-cols-2">
-        {[0, 1].map((card) => (
-          <div
-            key={card}
-            className="h-72 animate-pulse rounded-2xl border border-neutral-800 bg-[#141414]"
-          />
-        ))}
-      </div>
+    <div
+      className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+      aria-label="Cargando resumen"
+    >
+      {[0, 1, 2].map((card) => (
+        <div
+          key={card}
+          className="h-72 animate-pulse rounded-2xl border border-border bg-surface"
+        />
+      ))}
     </div>
   );
 }
@@ -142,7 +92,7 @@ export const AdminHome = () => {
 
   if (loading && !summary) {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-content">
         <PageHeading />
         <LoadingCards />
       </div>
@@ -151,15 +101,15 @@ export const AdminHome = () => {
 
   if (error && !summary) {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-content">
         <PageHeading />
-        <div className="rounded-2xl border border-red-900/60 bg-red-950/20 p-6 text-red-300">
+        <div className="rounded-2xl border border-danger-border bg-danger-soft p-6 text-danger">
           <h2 className="font-semibold">No pudimos cargar el resumen</h2>
-          <p className="mt-2 text-sm text-red-200/70">{error}</p>
+          <p className="mt-2 text-sm">{error}</p>
           <button
             type="button"
             onClick={loadSummary}
-            className="mt-5 rounded-lg border border-red-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-950/60"
+            className="mt-5 rounded-lg border border-danger-border px-4 py-2 text-sm font-medium transition-colors hover:bg-danger-soft"
           >
             Reintentar
           </button>
@@ -169,99 +119,91 @@ export const AdminHome = () => {
   }
 
   const hasRecords =
-    summary.kilns.registered > 0 ||
-    summary.controllers.registered > 0 ||
-    summary.users.registered > 0;
+    summary.kilns.total > 0 ||
+    summary.controllers.total > 0 ||
+    summary.users.total > 0;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-content">
       <PageHeading />
 
       {!hasRecords && (
-        <p className="rounded-xl border border-neutral-800 bg-[#141414] p-4 text-sm text-neutral-400">
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
           Aún no hay registros en el sistema. Puedes comenzar desde cualquiera
           de las secciones de administración.
         </p>
       )}
 
-      <section
-        aria-label="Totales registrados"
-        className="grid gap-4 sm:grid-cols-3"
-      >
-        <TotalStat
-          icon={LuFlame}
-          label="Hornos registrados"
-          value={summary.kilns.registered}
-          to="/admin/kilns"
-        />
-        <TotalStat
-          icon={LuCircuitBoard}
-          label="Controladores registrados"
-          value={summary.controllers.registered}
-          to="/admin/controllers"
-        />
-        <TotalStat
-          icon={LuUsers}
-          label="Usuarios registrados"
-          value={summary.users.registered}
-          to="/admin/users"
-        />
-      </section>
-
-      <div className="grid items-stretch gap-5 lg:grid-cols-2">
+      <div className="grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3">
         <SummaryCard
           icon={LuFlame}
           title="Hornos"
-          to="/admin/kilns"
+          to="/management/kilns"
           linkLabel="Ver hornos"
-          metrics={
-            <>
-              <Metric
-                icon={LuLink}
-                label="Vinculados"
-                value={summary.kilns.linked}
-                valueDescription="vinculados"
-                tone={
-                  summary.kilns.linked > 0 ? "text-blue-400" : "text-amber-400"
-                }
-              />
-              <Metric
-                icon={LuPower}
-                label="En funcionamiento"
-                value={summary.kilns.operational}
-                valueDescription="en funcionamiento"
-                tone={
-                  summary.kilns.operational > 0
-                    ? "text-green-400"
-                    : "text-amber-400"
-                }
-                isLastChild
-              />
-            </>
-          }
+          metrics={[
+            { label: "Total", value: summary.kilns.total },
+            { label: "Con propietario", value: summary.kilns.withOwner },
+            {
+              label: "Operativos",
+              value: summary.kilns.operational,
+              tone:
+                summary.kilns.operational > 0 ? "text-info" : "text-warning",
+            },
+            {
+              label: "Fuera de servicio",
+              value: summary.kilns.outOfService,
+              tone:
+                summary.kilns.outOfService > 0
+                  ? "text-warning"
+                  : "text-content",
+            },
+          ]}
         />
 
         <SummaryCard
           icon={LuCircuitBoard}
           title="Controladores"
-          to="/admin/controllers"
+          to="/management/controllers"
           linkLabel="Ver controladores"
-          metrics={
-            <>
-              <Metric
-                icon={LuLink}
-                label="Vinculados"
-                value={summary.controllers.linked}
-                valueDescription="vinculados"
-                isLastChild
-                tone={
-                  summary.controllers.linked > 0
-                    ? "text-blue-400"
-                    : "text-amber-400"
-                }
-              />
-            </>
-          }
+          metrics={[
+            { label: "Total", value: summary.controllers.total },
+            {
+              label: "Con propietario",
+              value: summary.controllers.withOwner,
+            },
+            {
+              label: "Operativos",
+              value: summary.controllers.operational,
+              tone:
+                summary.controllers.operational > 0
+                  ? "text-info"
+                  : "text-warning",
+            },
+            {
+              label: "Fuera de servicio",
+              value: summary.controllers.outOfService,
+              tone:
+                summary.controllers.outOfService > 0
+                  ? "text-warning"
+                  : "text-content",
+            },
+          ]}
+        />
+
+        <SummaryCard
+          icon={LuUsers}
+          title="Usuarios"
+          to="/management/users"
+          linkLabel="Ver usuarios"
+          metrics={[
+            { label: "Total", value: summary.users.total },
+            {
+              label: "Administradores",
+              value: summary.users.administrators,
+            },
+            { label: "Técnicos", value: summary.users.technicians },
+            { label: "Clientes", value: summary.users.clients },
+          ]}
         />
       </div>
     </div>
@@ -272,7 +214,7 @@ function PageHeading() {
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">Resumen</h1>
-      <p className="mt-1 text-sm text-neutral-300">
+      <p className="mt-1 text-sm text-secondary">
         Estado general de los equipos y usuarios de la plataforma.
       </p>
     </div>

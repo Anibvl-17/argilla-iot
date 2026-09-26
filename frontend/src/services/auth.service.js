@@ -8,7 +8,10 @@ export async function login(email, password) {
 
     cookies.set("jwt-auth", token, { path: "/" });
 
-    return { success: true, user };
+    return {
+      success: true,
+      user: { ...user, id: user.id ?? user.userId },
+    };
   } catch (error) {
     console.error("Error en el servicio auth -> login()", error.response?.data);
     return {
@@ -41,9 +44,9 @@ export async function register(data) {
 export async function logout() {
   try {
     await axios.post("/auth/logout");
-
-    cookies.remove("jwt-auth");
   } catch (error) {
     console.error("Error al cerrar sesión", error);
+  } finally {
+    cookies.remove("jwt-auth", { path: "/" });
   }
 }

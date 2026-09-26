@@ -1,15 +1,16 @@
 import { Router } from "express";
 import {
   addKiln,
+  changeKilnOperationalStatus,
   editKiln,
   getAllKilns,
   getUserKilns,
   getUserKiln,
   getOwnedKilnTelemetryHistory,
   getAdminKiln,
+  getAdminKilnCycles,
+  getAdminKilnCycleTelemetry,
   getAdminKilnTelemetryHistory,
-  renameOwnedKiln,
-  sendOwnedKilnControllerCommand,
   linkController,
   linkUser,
   removeKiln,
@@ -25,52 +26,77 @@ import {
   editKilnValidation,
   linkUserValidation,
   linkControllerValidation,
-  kilnControllerCommandValidation,
-  unlinkUserValidation,
-  renameUserKilnValidation,
 } from "../validations/kiln.validation.js";
+import { updateOperationalStatusValidation } from "../validations/equipmentStatus.validation.js";
 
 const router = Router();
 
 router.use(authenticateJWT);
 
-router.get("/my-kilns", getUserKilns);
-router.get("/my-kilns/:kilnId", getUserKiln);
-router.get("/my-kilns/:kilnId/telemetry", getOwnedKilnTelemetryHistory);
-router.patch(
-  "/my-kilns/:kilnId/name",
-  validateSchema(renameUserKilnValidation),
-  renameOwnedKiln,
+router.get("/my-kilns", verifyRoles([ROLES.CLIENT]), getUserKilns);
+router.get("/my-kilns/:kilnId", verifyRoles([ROLES.CLIENT]), getUserKiln);
+router.get(
+  "/my-kilns/:kilnId/telemetry",
+  verifyRoles([ROLES.CLIENT]),
+  getOwnedKilnTelemetryHistory,
 );
-router.post(
-  "/my-kilns/:kilnId/controller/command",
-  validateSchema(kilnControllerCommandValidation),
-  sendOwnedKilnControllerCommand,
-);
-
-router.use(verifyRoles([ROLES.ADMIN]));
-
 router.post(
   "/:kilnId/link",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(linkControllerValidation),
   linkController,
 );
-router.post("/:kilnId/unlink", unlinkController);
-router.patch(
-  "/:kilnId/release",
-  validateSchema(unlinkUserValidation),
-  unlinkUser,
-);
+router.post("/:kilnId/unlink", verifyRoles([ROLES.ADMIN]), unlinkController);
+router.patch("/:kilnId/release", verifyRoles([ROLES.ADMIN]), unlinkUser);
 
 // CRUD
-router.get("/all", getAllKilns);
-router.get("/admin/:kilnId", getAdminKiln);
-router.get("/admin/:kilnId/telemetry", getAdminKilnTelemetryHistory);
-router.post("/create", validateSchema(createKilnValidation), addKiln);
-router.patch("/:kilnId/edit", validateSchema(editKilnValidation), editKiln);
+router.get("/all", verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]), getAllKilns);
+router.get(
+  "/admin/:kilnId",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  getAdminKiln,
+);
+router.get(
+  "/admin/:kilnId/telemetry",
+  verifyRoles([ROLES.ADMIN]),
+  getAdminKilnTelemetryHistory,
+);
+router.get(
+  "/admin/:kilnId/cycles",
+  verifyRoles([ROLES.ADMIN]),
+  getAdminKilnCycles,
+);
+router.get(
+  "/admin/:kilnId/cycles/:firingCycleId/telemetry",
+  verifyRoles([ROLES.ADMIN]),
+  getAdminKilnCycleTelemetry,
+);
+router.post(
+  "/create",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(createKilnValidation),
+  addKiln,
+);
+router.patch(
+  "/:kilnId/edit",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(editKilnValidation),
+  editKiln,
+);
+router.patch(
+  "/:kilnId/operational-status",
+  verifyRoles([ROLES.ADMIN]),
+  validateSchema(updateOperationalStatusValidation),
+  changeKilnOperationalStatus,
+);
 router.delete("/:kilnId/delete", verifyRoles([ROLES.ADMIN]), removeKiln);
 
 // Vinculaciones
-router.patch("/:kilnId/claim", validateSchema(linkUserValidation), linkUser);
+router.patch(
+  "/:kilnId/claim",
+  verifyRoles([ROLES.ADMIN]),
+  validateSchema(linkUserValidation),
+  linkUser,
+);
 
 export default router;

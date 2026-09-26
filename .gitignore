@@ -1,4 +1,6 @@
 node_modules
+.simulator-state/
+backend/.simulator-state/
 
 .vscode
 .env

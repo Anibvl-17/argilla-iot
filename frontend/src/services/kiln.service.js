@@ -57,26 +57,31 @@ export async function getAdminKilnTelemetry(kilnId, page = 1, pageSize = 10) {
   }
 }
 
-export async function renameMyKiln(kilnId, name) {
+export async function getAdminKilnCycles(kilnId, page = 1, pageSize = 10) {
   try {
-    const response = await axios.patch(`/kiln/my-kilns/${kilnId}/name`, {
-      name,
+    const response = await axios.get(`/kiln/admin/${kilnId}/cycles`, {
+      params: { page, pageSize },
     });
     return { success: true, data: response.data.data };
   } catch (error) {
-    return serviceError(error, "No fue posible actualizar el nombre");
+    return serviceError(error, "No fue posible cargar los ciclos");
   }
 }
 
-export async function sendMyKilnControllerCommand(kilnId, command) {
+export async function getAdminKilnCycleTelemetry(
+  kilnId,
+  firingCycleId,
+  page = 1,
+  pageSize = 20,
+) {
   try {
-    const response = await axios.post(
-      `/kiln/my-kilns/${kilnId}/controller/command`,
-      { command },
+    const response = await axios.get(
+      `/kiln/admin/${kilnId}/cycles/${firingCycleId}/telemetry`,
+      { params: { page, pageSize } },
     );
     return { success: true, data: response.data.data };
   } catch (error) {
-    return serviceError(error, "No fue posible enviar el comando");
+    return serviceError(error, "No fue posible cargar la telemetría del ciclo");
   }
 }
 
@@ -137,6 +142,17 @@ export async function updateKiln(kilnId, data) {
   }
 }
 
+export async function updateKilnOperationalStatus(kilnId, operationalStatus) {
+  try {
+    const response = await axios.patch(`/kiln/${kilnId}/operational-status`, {
+      operationalStatus,
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible actualizar el estado del horno");
+  }
+}
+
 export async function deleteKiln(kilnId) {
   try {
     await axios.delete(`/kiln/${kilnId}/delete`);
@@ -174,9 +190,9 @@ export async function linkUser(kilnId, userId) {
   }
 }
 
-export async function unlinkUser(kilnId, userId) {
+export async function unlinkUser(kilnId) {
   try {
-    const response = await axios.patch(`/kiln/${kilnId}/release`, { userId });
+    const response = await axios.patch(`/kiln/${kilnId}/release`);
     return { success: true, data: response.data.data };
   } catch (error) {
     console.error(
@@ -192,11 +208,10 @@ export async function unlinkUser(kilnId, userId) {
   }
 }
 
-export async function linkController(kilnId, partialControllerId, pin) {
+export async function linkController(kilnId, controllerId) {
   try {
     const response = await axios.post(`/kiln/${kilnId}/link`, {
-      partialControllerId,
-      pin: Number(pin),
+      controllerId,
     });
 
     return { success: true, data: response.data.data };

@@ -8,11 +8,9 @@ import {
   edit,
   getKilnsByUserId,
   getUserKilnById,
-  getOwnedKilnController,
   getOwnedKilnTelemetry,
   getAdminKilnById,
   getAdminKilnTelemetry,
-  renameUserKiln,
   linkControllerToKiln,
   linkUserToKiln,
   remove,
@@ -20,8 +18,16 @@ import {
   unlinkUserFromKiln,
   getKilnsPage,
 } from "../services/kiln.service.js";
+import {
+  getAdminCycleTelemetry,
+  listAdminCycles,
+} from "../services/firing.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
-import { publishControllerCommand } from "../config/mqttClient.js";
+import { ROLES } from "../constants/user.constants.js";
+import {
+  EQUIPMENT_STATUS_TARGETS,
+  updateEquipmentOperationalStatus,
+} from "../services/equipmentStatus.service.js";
 
 export async function addKiln(req, res) {
   try {
@@ -71,74 +77,6 @@ export async function getUserKiln(req, res) {
   }
 }
 
-export async function renameOwnedKiln(req, res) {
-  try {
-    const kilnId = Number(req.params.kilnId);
-    if (!Number.isInteger(kilnId) || kilnId < 1) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    const kiln = await renameUserKiln(req.user.id, kilnId, req.body.name);
-
-    if (!kiln) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    return handleSuccess(res, 200, "Nombre actualizado exitosamente", kiln);
-  } catch (error) {
-    return handleErrorServer(
-      res,
-      500,
-      "Error al actualizar nombre del horno",
-      error.message,
-    );
-  }
-}
-
-export async function sendOwnedKilnControllerCommand(req, res) {
-  try {
-    const kilnId = Number(req.params.kilnId);
-    if (!Number.isInteger(kilnId) || kilnId < 1) {
-      return handleErrorClient(res, 404, "Horno no encontrado");
-    }
-
-    const controller = await getOwnedKilnController(req.user.id, kilnId);
-
-    if (!controller) {
-      return handleErrorClient(res, 404, "Horno sin controlador disponible");
-    }
-
-    if (controller.connectionStatus !== "ONLINE") {
-      return handleErrorClient(
-        res,
-        409,
-        "No se puede operar un controlador desconectado",
-      );
-    }
-
-    await publishControllerCommand(controller.controllerId, req.body.command);
-
-    return handleSuccess(res, 200, "Comando enviado exitosamente", {
-      controllerCode: controller.controllerId.slice(-6),
-      command: req.body.command,
-    });
-  } catch (error) {
-    if (error.code === "MQTT_COMMAND_PENDING") {
-      return handleErrorClient(res, 409, error.message);
-    }
-    if (error.code === "MQTT_COMMAND_TIMEOUT") {
-      return handleErrorServer(res, 504, error.message);
-    }
-
-    return handleErrorServer(
-      res,
-      500,
-      "Error al enviar comando",
-      error.message,
-    );
-  }
-}
-
 export async function getOwnedKilnTelemetryHistory(req, res) {
   try {
     const kilnId = Number(req.params.kilnId);
@@ -182,7 +120,10 @@ export async function getAdminKiln(req, res) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
 
-    const kiln = await getAdminKilnById(kilnId);
+    const kiln = await getAdminKilnById(
+      kilnId,
+      req.user.role === ROLES.TECHNICIAN,
+    );
     if (!kiln) {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
@@ -228,36 +169,69 @@ export async function getAdminKilnTelemetryHistory(req, res) {
   }
 }
 
-/**
- * Endpoint para vincular un controlador a un horno utilizando una porción del
- * UUID del controlador y un PIN generado automaticamente
- *
- * @returns HTTP 400: Pin no proporcionado; HTTP 200: Vinculado con exito;
- * HTTP 500: Error de servidor
- */
+export async function getAdminKilnCycles(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    if (!Number.isInteger(kilnId) || kilnId < 1) {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+    const cycles = await listAdminCycles(
+      kilnId,
+      req.query.page,
+      req.query.pageSize,
+    );
+    if (!cycles) return handleErrorClient(res, 404, "Horno no encontrado");
+    return handleSuccess(res, 200, "Ciclos obtenidos", cycles);
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener ciclos",
+      error.message,
+    );
+  }
+}
+
+export async function getAdminKilnCycleTelemetry(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    const firingCycleId = Number(req.params.firingCycleId);
+    if (
+      !Number.isInteger(kilnId) ||
+      kilnId < 1 ||
+      !Number.isInteger(firingCycleId) ||
+      firingCycleId < 1
+    ) {
+      return handleErrorClient(res, 404, "Ciclo no encontrado");
+    }
+    const telemetry = await getAdminCycleTelemetry(
+      kilnId,
+      firingCycleId,
+      req.query.page,
+      req.query.pageSize,
+    );
+    if (!telemetry) return handleErrorClient(res, 404, "Ciclo no encontrado");
+    return handleSuccess(res, 200, "Telemetría obtenida", telemetry);
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      "Error al obtener telemetría del ciclo",
+      error.message,
+    );
+  }
+}
+
+/** Vincula un controlador a un horno. */
 export async function linkController(req, res) {
   try {
     const { kilnId } = req.params;
-    const { partialControllerId, pin } = req.body;
-
-    if (!pin) {
-      return handleErrorClient(res, 400, "El PIN es requerido", null, "pin");
-    }
-
-    if (!partialControllerId) {
-      return handleErrorClient(
-        res,
-        400,
-        "El ID del controlador es requerido",
-        null,
-        "partialControllerId",
-      );
-    }
+    const { controllerId } = req.body;
 
     const updatedKiln = await linkControllerToKiln(
       parseInt(kilnId),
-      partialControllerId,
-      pin,
+      controllerId,
+      { restrictPresentation: req.user.role === ROLES.TECHNICIAN },
     );
     void emitAdminSummary();
 
@@ -268,15 +242,12 @@ export async function linkController(req, res) {
       updatedKiln,
     );
   } catch (error) {
-    const field = /pin|credencial/i.test(error.message)
-      ? "pin"
-      : "partialControllerId";
     return handleErrorClient(
       res,
-      400,
+      409,
       "No se pudo vincular el controlador",
       error.message,
-      field,
+      "controllerId",
     );
   }
 }
@@ -309,12 +280,7 @@ export async function unlinkController(req, res) {
   }
 }
 
-/**
- * Endpoint de administrador para enlazar un horno a un usuario. Utilizado en
- * casos donde el horno existe sin controlador
- * @returns HTTP 400: falta ID de horno o ID de usuario, HTTP 200: vinculo
- *          exitoso
- */
+/** Vincula un horno y su controlador a un cliente activo. */
 export async function linkUser(req, res) {
   try {
     const { kilnId } = req.params;
@@ -350,9 +316,7 @@ export async function linkUser(req, res) {
 export async function unlinkUser(req, res) {
   try {
     const { kilnId } = req.params;
-    const { userId } = req.body;
-
-    await unlinkUserFromKiln(parseInt(userId), parseInt(kilnId));
+    await unlinkUserFromKiln(parseInt(kilnId));
     void emitAdminSummary();
 
     return handleSuccess(res, 200, "Usuario desvinculado exitosamente");
@@ -371,7 +335,10 @@ export async function editKiln(req, res) {
     const { kilnId } = req.params;
     const { body } = req;
 
-    const updatedKiln = await edit(parseInt(kilnId), body);
+    const updatedKiln = await edit(parseInt(kilnId), body, {
+      requireUnowned: req.user.role === ROLES.TECHNICIAN,
+      restrictPresentation: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(
       res,
@@ -380,11 +347,52 @@ export async function editKiln(req, res) {
       updatedKiln,
     );
   } catch (error) {
+    if (error.code === "INCOMPATIBLE_CONTROLLER_AMPERAGE") {
+      return handleErrorClient(res, 409, error.message, null, "nominalCurrent");
+    }
+
     if (error.code === "P2025") {
       return handleErrorClient(res, 404, "Horno no encontrado");
     }
 
+    if (error.code === "KILN_HAS_OWNER") {
+      return handleErrorClient(
+        res,
+        403,
+        "Los técnicos solo pueden editar hornos sin cliente asociado",
+      );
+    }
+
     return handleErrorServer(res, 500, "Error al editar horno", error.message);
+  }
+}
+
+export async function changeKilnOperationalStatus(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    if (!Number.isInteger(kilnId) || kilnId < 1) {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+    const kiln = await updateEquipmentOperationalStatus({
+      target: EQUIPMENT_STATUS_TARGETS.KILN,
+      kilnId,
+      operationalStatus: req.body.operationalStatus,
+    });
+    void emitAdminSummary();
+    return handleSuccess(res, 200, "Estado del horno actualizado", kiln);
+  } catch (error) {
+    if (error.code === "NOT_FOUND") {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if (["CYCLE_ACTIVE", "STATE_CONFLICT"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(
+      res,
+      500,
+      "Error al actualizar el estado del horno",
+      error.message,
+    );
   }
 }
 
@@ -402,6 +410,13 @@ export async function removeKiln(req, res) {
 
     return handleSuccess(res, 200, "Horno eliminado exitosamente");
   } catch (error) {
+    if (error.code === "P2003") {
+      return handleErrorClient(
+        res,
+        409,
+        "El horno conserva información histórica",
+      );
+    }
     return handleErrorServer(
       res,
       500,
@@ -413,7 +428,10 @@ export async function removeKiln(req, res) {
 
 export async function getAllKilns(req, res) {
   try {
-    const kilns = await getKilnsPage(req.query);
+    const kilns = await getKilnsPage({
+      ...req.query,
+      restrictUserDetails: req.user.role === ROLES.TECHNICIAN,
+    });
 
     return handleSuccess(res, 200, "Hornos obtenidos exitosamente", kilns);
   } catch (error) {

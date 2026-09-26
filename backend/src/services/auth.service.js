@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail } from "./user.service.js";
+import { JWT_SECRET } from "../config/configEnv.js";
+import { ROLES } from "../constants/user.constants.js";
+import { presentUser } from "../utils/entityPresentation.js";
 
 export async function login(email, password) {
   const user = await findUserByEmail(email);
@@ -9,7 +12,13 @@ export async function login(email, password) {
     throw new Error("Credenciales incorrectas");
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  if (!user.isActive || user.anonymizedAt) {
+    const error = new Error("La cuenta está desactivada");
+    error.code = "ACCOUNT_INACTIVE";
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
 
   if (!isMatch) {
     throw new Error("Credenciales incorrectas");
@@ -21,15 +30,14 @@ export async function login(email, password) {
     email: user.email,
     role: user.role,
   };
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
-  delete user.password;
-  return { user, token };
+  return { user: presentUser(user), token };
 }
 
 export async function register(data) {
-  // Evita el paso de rol al registrarse.
-  const { name, email, password } = data;
-
-  return createUser({ name, email, password });
+  return createUser(
+    { ...data, role: ROLES.CLIENT },
+    { allowIncompleteContact: true },
+  );
 }

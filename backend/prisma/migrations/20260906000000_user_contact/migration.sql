@@ -1,0 +1,6 @@
+ALTER TABLE "User"
+ALTER COLUMN "phone" TYPE VARCHAR(32),
+ADD COLUMN "countryCode" VARCHAR(2),
+ADD COLUMN "regionCode" VARCHAR(2),
+ADD COLUMN "addressLine" VARCHAR(300);
+

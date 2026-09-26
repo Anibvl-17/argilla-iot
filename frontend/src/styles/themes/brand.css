@@ -1,0 +1,16 @@
+:root {
+  --primary: #b91c1c;
+  --on-action: #ffffff;
+  --nav: #141414;
+  --nav-border: #303030;
+  --nav-content: #ffffff;
+  --nav-muted: #a3a3a3;
+  --nav-hover: #262626;
+  --nav-active: #301718;
+  --nav-accent: #f87171;
+  --overlay: rgb(0 0 0 / 60%);
+  --success-action: #15803d;
+  --success-action-hover: #166534;
+  --warning-action: #854d0e;
+  --warning-action-hover: #713f12;
+}

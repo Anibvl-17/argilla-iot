@@ -5,6 +5,8 @@ export default function FloatingDropdown({
   anchorRef,
   open,
   onRequestClose,
+  minWidth = 0,
+  maxHeight = 320,
   children,
 }) {
   const dropdownRef = useRef(null);
@@ -15,13 +17,41 @@ export default function FloatingDropdown({
     if (!anchor) return;
 
     const rect = anchor.getBoundingClientRect();
+    const viewportPadding = 12;
+    const gap = 4;
+    const boundary = anchor.closest("[data-floating-dropdown-boundary]");
+    const boundaryRect = boundary?.getBoundingClientRect();
+    const boundaryTop = Math.max(
+      viewportPadding,
+      (boundaryRect?.top ?? 0) + viewportPadding,
+    );
+    const boundaryBottom = Math.min(
+      window.innerHeight - viewportPadding,
+      (boundaryRect?.bottom ?? window.innerHeight) - viewportPadding,
+    );
+    const availableBelow = Math.max(0, boundaryBottom - rect.bottom - gap);
+    const availableAbove = Math.max(0, rect.top - boundaryTop - gap);
+    const openAbove =
+      availableBelow < maxHeight && availableAbove > availableBelow;
+    const desiredWidth = Math.min(
+      Math.max(rect.width, minWidth),
+      window.innerWidth - viewportPadding * 2,
+    );
+    const left = Math.min(
+      Math.max(viewportPadding, rect.left),
+      window.innerWidth - desiredWidth - viewportPadding,
+    );
+    const availableHeight = openAbove ? availableAbove : availableBelow;
+
     setPosition({
-      left: rect.left,
-      top: rect.bottom + 4,
-      width: rect.width,
-      maxHeight: Math.max(96, window.innerHeight - rect.bottom - 12),
+      left,
+      width: desiredWidth,
+      maxHeight: Math.max(0, Math.min(maxHeight, availableHeight)),
+      ...(openAbove
+        ? { bottom: window.innerHeight - rect.top + gap }
+        : { top: rect.bottom + gap }),
     });
-  }, [anchorRef]);
+  }, [anchorRef, maxHeight, minWidth]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -52,7 +82,7 @@ export default function FloatingDropdown({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-70 overflow-y-auto rounded-xl border border-neutral-700 bg-[#0a0a0a] shadow-2xl"
+      className="fixed z-70 overflow-hidden rounded-xl border border-control-border bg-surface-muted shadow-dialog"
       style={position}
     >
       {children}

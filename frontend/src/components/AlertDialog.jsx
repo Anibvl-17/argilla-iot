@@ -17,7 +17,7 @@ export default function AlertDialog({
     danger: {
       icon: (
         <svg
-          className="w-6 h-6 text-red-500"
+          className="w-6 h-6 text-accent"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -30,14 +30,14 @@ export default function AlertDialog({
           />
         </svg>
       ),
-      iconBg: "bg-red-500/10 border-red-500/20",
+      iconBg: "bg-danger-soft border-danger-border",
       btnConfirm:
-        "bg-red-700 hover:bg-red-600 text-white shadow-lg shadow-red-900/20",
+        "bg-primary hover:bg-primary-hover text-on-action shadow-card",
     },
     warning: {
       icon: (
         <svg
-          className="w-6 h-6 text-yellow-500"
+          className="w-6 h-6 text-warning"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -50,14 +50,14 @@ export default function AlertDialog({
           />
         </svg>
       ),
-      iconBg: "bg-yellow-500/10 border-yellow-500/20",
+      iconBg: "bg-warning-soft border-warning-border",
       btnConfirm:
-        "bg-yellow-600 hover:bg-yellow-500 text-white shadow-lg shadow-yellow-900/20",
+        "bg-warning-action hover:bg-warning-action-hover text-on-action shadow-card",
     },
     info: {
       icon: (
         <svg
-          className="w-6 h-6 text-neutral-300"
+          className="w-6 h-6 text-secondary"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -70,8 +70,8 @@ export default function AlertDialog({
           />
         </svg>
       ),
-      iconBg: "bg-neutral-800 border-neutral-700",
-      btnConfirm: "bg-neutral-200 hover:bg-white text-black",
+      iconBg: "bg-surface-hover border-control-border",
+      btnConfirm: "bg-inverse hover:bg-inverse-hover text-on-inverse",
     },
   };
 
@@ -79,11 +79,11 @@ export default function AlertDialog({
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-overlay p-2 backdrop-blur-sm sm:p-4"
       onClick={!isLoading ? onClose : undefined} // No permite cerrar si está cargando
     >
       <div
-        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-sm flex-col items-center overflow-y-auto rounded-2xl border border-neutral-800 bg-[#141414] p-4 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:p-6"
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-sm flex-col items-center overflow-y-auto rounded-2xl border border-border bg-surface p-4 text-center shadow-dialog animate-in fade-in zoom-in-95 duration-200 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ícono superior */}
@@ -94,7 +94,7 @@ export default function AlertDialog({
         </div>
 
         {/* Textos */}
-        <h3 className="text-xl font-bold text-white tracking-tight mb-2">
+        <h3 className="text-xl font-bold text-content tracking-tight mb-2">
           {title}
         </h3>
         {CustomMessage ? (
@@ -102,7 +102,7 @@ export default function AlertDialog({
             <CustomMessage className="mb-8" />
           </span>
         ) : (
-          <p className="text-sm text-neutral-300 mb-8 leading-relaxed">
+          <p className="text-sm text-secondary mb-8 leading-relaxed">
             {message}
           </p>
         )}
@@ -112,7 +112,7 @@ export default function AlertDialog({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 py-2.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 border border-control-border hover:bg-surface-hover text-secondary rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>

@@ -9,13 +9,17 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    environment: "jsdom",
+    include: ["tests/**/*.test.{js,jsx}"],
+    setupFiles: "./tests/setup.js",
+  },
   resolve: {
     alias: {
       "@components": path.resolve(__dirname, "./src/components"),
       "@constants": path.resolve(__dirname, "./src/constants"),
       "@services": path.resolve(__dirname, "./src/services"),
       "@context": path.resolve(__dirname, "./src/context"),
-      "@helpers": path.resolve(__dirname, "./src/helpers"),
       "@layouts": path.resolve(__dirname, "./src/layouts"),
       "@styles": path.resolve(__dirname, "./src/styles"),
       "@assets": path.resolve(__dirname, "./src/assets"),

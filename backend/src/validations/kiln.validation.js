@@ -1,101 +1,71 @@
 import { z } from "zod";
 
-export const createKilnValidation = z
+const connectionType = z.enum(["SERIES", "PARALLEL"]);
+const nodeName = z.string().trim().min(1, "El nombre no puede estar vacío");
+
+const circuitNode = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z
+      .object({
+        type: z.literal("GROUP"),
+        name: nodeName,
+        connectionType,
+        elements: z
+          .array(circuitNode)
+          .min(1, "El grupo debe contener al menos un elemento"),
+      })
+      .strict(),
+    z
+      .object({
+        type: z.literal("CHANNEL"),
+        name: nodeName,
+        resistanceOhms: z
+          .number()
+          .positive("La resistencia debe ser mayor que cero"),
+        lengthMeters: z
+          .number()
+          .positive("La longitud debe ser mayor que cero"),
+      })
+      .strict(),
+  ]),
+);
+
+export const heatingCircuitConfigurationValidation = z
   .object({
-    name: z
-      .string("Debe incluir nombre de tipo texto")
-      .trim()
-      .min(2, "El nombre debe tener al menos 2 caracteres")
-      .max(100, "El nombre debe tener como máximo 100 caracteres"),
-    liters: z
-      .number("Los litros deben ser un número positivo")
-      .int("Los litros deben ser un número entero")
-      .min(1, "Debe ingresar entre 1 a 500 litros")
-      .max(500, "Debe ingresar entre 1 a 500 litros"),
-    phases: z.union(
-      [z.literal(1), z.literal(3)],
-      "Las fases solo pueden ser número 1 o 3",
-    ),
-    volts: z
-      .number("El voltaje debe ser un número positivo")
-      .int("El voltaje debe ser un número entero")
-      .min(100, "Debe ingresar entre 100 a 600 V")
-      .max(600, "Debe ingresar entre 100 a 600 V"),
-    amps: z
-      .number("El amperaje debe ser un número positivo")
-      .int("El amperaje debe ser un número entero")
-      .min(1, "Debe ingresar entre 1 a 500 A")
-      .max(500, "Debe ingresar entre 1 a 500 A"),
+    type: z.literal("ROOT"),
+    connectionType,
+    elements: z
+      .array(circuitNode)
+      .min(1, "La raíz debe contener al menos un elemento"),
   })
   .strict();
 
-export const editKilnValidation = z
-  .object({
-    name: z
-      .string("El nombre debe ser de tipo texto")
-      .trim()
-      .min(2, "El nombre debe tener al menos 2 caracteres")
-      .max(100, "El nombre debe tener como máximo 100 caracteres")
-      .optional(),
-    liters: z
-      .number("Los litros deben ser un número")
-      .int("Los litros deben ser un número entero")
-      .min(1, "Debe ingresar entre 1 a 500 litros")
-      .max(500, "Debe ingresar entre 1 a 500 litros")
-      .optional(),
-    phases: z
-      .union([z.literal(1), z.literal(3)], "Solo se permite 1 fase o 3 fases")
-      .optional(),
-    volts: z
-      .number("El voltaje debe ser un número positivo")
-      .int("El voltaje debe ser un número entero")
-      .min(100, "Debe ingresar entre 100 a 600 V")
-      .max(600, "Debe ingresar entre 100 a 600 V")
-      .optional(),
-    amps: z
-      .number("El amperaje debe ser un número positivo")
-      .int("El amperaje debe ser un número entero")
-      .min(1, "Debe ingresar entre 1 a 500 A")
-      .max(500, "Debe ingresar entre 1 a 500 A")
-      .optional(),
-  })
-  .strict();
+const dateValue = z
+  .string()
+  .refine(
+    (value) => !Number.isNaN(new Date(value).getTime()),
+    "Fecha inválida",
+  );
+const nullableDateValue = dateValue.nullable();
+
+const kilnFields = {
+  name: z.string().trim().min(2).max(100),
+  liters: z.number().int().min(1).max(500),
+  phaseCount: z.union([z.literal(1), z.literal(3)]),
+  nominalVoltage: z.number().int().min(100).max(600),
+  nominalCurrent: z.number().int().min(1).max(500),
+  manufacturedAt: dateValue,
+  deliveredAt: nullableDateValue.optional(),
+  manufacturer: z.string().trim().min(1).max(150),
+  heatingCircuitConfiguration: heatingCircuitConfigurationValidation,
+};
+
+export const createKilnValidation = z.object(kilnFields).strict();
+export const editKilnValidation = z.object(kilnFields).partial().strict();
 
 export const linkUserValidation = z
-  .object({
-    userId: z.int("Debe incluir ID de tipo número"),
-  })
+  .object({ userId: z.number().int().positive() })
   .strict();
-
-export const linkControllerValidation = z.object({
-  partialControllerId: z
-    .string("Debe incluir el ID de tipo texto")
-    .trim()
-    .length(6, "El ID del controlador debe ser exactamente 6 caracteres"),
-  pin: z
-    .number("El PIN debe ser un número positivo")
-    .min(100000, "El PIN esta fuera del rango permitido")
-    .max(999999, "El PIN esta fuera del rango permitido"),
-});
-
-export const unlinkUserValidation = z
-  .object({
-    userId: z.int("Debe incluir ID de usuario de válida"),
-  })
-  .strict();
-
-export const renameUserKilnValidation = z
-  .object({
-    name: z
-      .string("El nombre debe ser de tipo texto")
-      .trim()
-      .min(2, "El nombre debe tener al menos 2 caracteres")
-      .max(100, "El nombre debe tener como máximo 100 caracteres"),
-  })
-  .strict();
-
-export const kilnControllerCommandValidation = z
-  .object({
-    command: z.enum(["ON", "OFF"], "El comando debe ser ON u OFF"),
-  })
+export const linkControllerValidation = z
+  .object({ controllerId: z.uuid() })
   .strict();

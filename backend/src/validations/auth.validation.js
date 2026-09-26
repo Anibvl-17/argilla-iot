@@ -7,7 +7,7 @@ export const registerValidation = z
       .trim()
       .min(2, "El nombre debe tener al menos 2 caracteres")
       .max(150, "El nombre debe tener máximo 150 caracteres")
-      .regex(/^[a-zA-Z ]+$/, "El nombre solo puede contener letras y espacios"),
+      .regex(/^[\p{L} .'-]+$/u, "El nombre contiene caracteres no permitidos"),
     email: z.email("El email es obligatorio, debe ser un correo válido"),
     password: z
       .string("Debe incluir contraseña de tipo texto")

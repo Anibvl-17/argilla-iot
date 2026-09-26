@@ -34,7 +34,6 @@ services:
       MQTT_URL: mqtt://broker-mqtt:1883
       MQTT_USER: ""
       MQTT_PASS: ""
-      TELEMETRY_SAMPLE_SECONDS: ${TELEMETRY_SAMPLE_SECONDS:-30}
       PORT: 3000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       MQTT_COMMAND_TIMEOUT_MS: ${MQTT_COMMAND_TIMEOUT_MS:-6000}
@@ -72,19 +71,43 @@ services:
       MQTT_URL: mqtt://broker-mqtt:1883
       MQTT_USER: ""
       MQTT_PASS: ""
-      SIMULATOR_TEMP_INTERVAL_MS: ${SIMULATOR_TEMP_INTERVAL_MS:-5000}
+      SIMULATOR_TEMP_INTERVAL_MS: ${SIMULATOR_TEMP_INTERVAL_MS:-1000}
       SIMULATOR_TEMP_MIN: ${SIMULATOR_TEMP_MIN:-20}
-      SIMULATOR_TEMP_MAX: ${SIMULATOR_TEMP_MAX:-1240}
+      SIMULATOR_TEMP_MAX: ${SIMULATOR_TEMP_MAX:-1300}
       SIMULATOR_TEMP_START: ${SIMULATOR_TEMP_START:-25}
       SIMULATOR_REFRESH_MS: ${SIMULATOR_REFRESH_MS:-15000}
+      SIMULATOR_TIME_SCALE: ${SIMULATOR_TIME_SCALE:-60}
+      SIMULATOR_HEAT_C_PER_MIN: ${SIMULATOR_HEAT_C_PER_MIN:-12}
+      SIMULATOR_COOL_C_PER_MIN: ${SIMULATOR_COOL_C_PER_MIN:-2}
+      SIMULATOR_STATE_DIR: /app/.simulator-state
+      SIMULATOR_PAIRING_PIN: ${SIMULATOR_PAIRING_PIN:-}
+      SEED_DEVICE_SECRET: ${SEED_DEVICE_SECRET:-argilla-local-device-secret-change-me}
     depends_on:
       backend:
         condition: service_healthy
       broker-mqtt:
         condition: service_healthy
+      simulator-state-init:
+        condition: service_completed_successfully
     restart: unless-stopped
+    volumes:
+      - simulator_state:/app/.simulator-state
     networks:
       - backend_network
+
+  # Corrige el propietario del volumen persistente antes de ejecutar el
+  # simulador como usuario no privilegiado. También repara volúmenes creados
+  # por versiones anteriores de la configuración.
+  simulator-state-init:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    user: "0:0"
+    command: ["chown", "-R", "node:node", "/app/.simulator-state"]
+    restart: "no"
+    volumes:
+      - simulator_state:/app/.simulator-state
 
   # Migraciones y datos demo. Debe finalizar correctamente antes de iniciar la API.
   init:
@@ -99,6 +122,10 @@ services:
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@argilla.test}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
       SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-Password123!}
+      SEED_TECHNICIAN_NAME: ${SEED_TECHNICIAN_NAME:-Técnico Argilla}
+      SEED_TECHNICIAN_EMAIL: ${SEED_TECHNICIAN_EMAIL:-tecnico@argilla.test}
+      SEED_TECHNICIAN_PASSWORD: ${SEED_TECHNICIAN_PASSWORD:-Tecnico123!}
+      SEED_DEVICE_SECRET: ${SEED_DEVICE_SECRET:-argilla-local-device-secret-change-me}
     depends_on:
       db:
         condition: service_healthy
@@ -171,3 +198,4 @@ volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_log:
+  simulator_state:

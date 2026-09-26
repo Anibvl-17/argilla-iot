@@ -1,16 +1,18 @@
 import { Badge } from "@components/Badge";
-import { getControllerOperationLabel } from "@constants/controller.constants";
+import {
+  CONTROLLER_ACTIVITY_STYLES,
+  getControllerActivityLabel,
+} from "@constants/controller.constants";
 
 export default function ControllerStatus({ controller }) {
   if (!controller) {
     return <Badge text="Sin controlador" />;
   }
 
-  const isOn = controller.operativeStatus === "ON";
   return (
     <Badge
-      style={isOn ? "success" : "default"}
-      text={getControllerOperationLabel(controller.operativeStatus)}
+      style={CONTROLLER_ACTIVITY_STYLES[controller.activityStatus] || "default"}
+      text={getControllerActivityLabel(controller.activityStatus)}
     />
   );
 }

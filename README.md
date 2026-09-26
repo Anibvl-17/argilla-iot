@@ -16,13 +16,17 @@ Aplicación local para monitorear y controlar hornos cerámicos eléctricos. Inc
 
 ## Funcionalidades
 
-- Registro e inicio de sesión con JWT; roles `USER` y `ADMIN`.
-- Gestión administrativa de usuarios, hornos y controladores.
-- Vinculación de controladores y hornos mediante PIN temporal.
-- Visualización de temperatura, estado de conexión y estado del switch en tiempo real.
-- Control `ON`/`OFF` del controlador vinculado a un horno.
-- Historial de telemetría por horno, con muestreo configurable.
-- Simulador MQTT integrado: cada controlador de la base de datos recibe su propia instancia simulada.
+- Registro e inicio de sesión con JWT; roles `CLIENT`, `TECHNICIAN` y `ADMIN`.
+- Gestión de usuarios, hornos, controladores y circuitos de resistencias jerárquicos.
+- Vinculación de conjuntos horno–controlador mediante PIN temporal generado por el ESP32.
+- Programas globales de quema y selección persistente por horno.
+- Ciclos confirmados por el controlador con pausa, reanudación, cancelación e historial.
+- Visualización en tiempo real y telemetría histórica inicial, cada diez minutos y final.
+- Soporte por tickets con motivos administrables, asignación atómica, diagnóstico
+  contextual, resolución y mantenimientos asociados. Los técnicos acceden a los
+  equipos únicamente desde tickets sin asignar o asignados a ellos.
+- Ejecución local y sincronización posterior cuando un controlador pierde conexión MQTT.
+- Simulador MQTT integrado con el mismo contrato de ciclos que los controladores físicos.
 
 ## Desarrollo local (flujo principal)
 
@@ -76,7 +80,7 @@ En otra terminal, desde `backend` y usando el mismo archivo `.env`:
 npm run simulator
 ```
 
-El servicio sincroniza periódicamente los controladores registrados. Cada controlador tiene una sola instancia de simulación, que publica temperatura y estado MQTT, y recibe comandos `ON` y `OFF`.
+El servicio sincroniza periódicamente los controladores registrados. Cada instancia conserva su catálogo, ciclo activo, comandos deduplicados y muestras pendientes en `.simulator-state`. `SIMULATOR_TIME_SCALE` permite acelerar las curvas durante desarrollo. Por defecto actualiza la simulación cada segundo, sin acreditar tiempo antes del primer intervalo.
 
 ### 4. Configurar e iniciar el frontend
 
@@ -105,7 +109,11 @@ Abre la URL que indique Vite, habitualmente <http://localhost:5173>.
 
 ## Datos de demostración
 
-El seed crea o normaliza datos locales sin eliminar los existentes. Las credenciales predeterminadas son únicamente para desarrollo:
+El seed crea o sincroniza sus datos locales sin eliminar registros ajenos. Además de
+las cuentas y equipos, incorpora selecciones de programas, ciclos terminales con
+telemetría, tickets en distintos estados y mantenimientos para recorrer los flujos
+principales de la aplicación. Puede ejecutarse más de una vez sin duplicar esos
+registros. Las credenciales predeterminadas son únicamente para desarrollo:
 
 ```text
 Administrador
@@ -115,17 +123,25 @@ Contraseña: Admin123!
 Ceramistas varios
 [nombre]@argilla.test
 Contraseña común: Password123!
+
+Técnico
+Correo: tecnico@argilla.test
+Contraseña: Tecnico123!
 ```
 
 Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de `backend/.env`.
+
+Las migraciones están orientadas a bases de desarrollo recreables y no trasladan
+datos de modelos anteriores. Si una base local aplicó una versión previa de las
+migraciones, debe recrearse antes de continuar.
 
 ## Variables de entorno
 
 | Ubicación | Variables principales |
 | --- | --- |
-| `backend/.env` | `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `MQTT_URL`, `MQTT_USER`, `MQTT_PASS`, `TELEMETRY_SAMPLE_SECONDS`, `MQTT_COMMAND_TIMEOUT_MS`. |
+| `backend/.env` | `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `MQTT_URL`, `MQTT_USER`, `MQTT_PASS`, `MQTT_COMMAND_TIMEOUT_MS` y variables `SEED_*`. |
 | `frontend/.env` | `VITE_BASE_URL`, `VITE_SOCKET_URL`. |
-| `backend/.env` (simulador) | `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`. |
+| `backend/.env` (simulador) | `SEED_DEVICE_SECRET`, `SIMULATOR_TEMP_INTERVAL_MS`, `SIMULATOR_TEMP_MIN`, `SIMULATOR_TEMP_MAX`, `SIMULATOR_TEMP_START`, `SIMULATOR_REFRESH_MS`, `SIMULATOR_PAIRING_PIN`. |
 
 ## Docker Compose (opcional)
 
@@ -141,10 +157,41 @@ No usar los valores por defecto de Compose ni la configuración MQTT anónima fu
 
 ## Verificación disponible
 
-```bash
-cd frontend
-npm run lint
+Después de instalar las dependencias de `backend` y `frontend`, ejecuta desde
+la raíz:
 
-cd ../backend
-npx prisma validate
+```bash
+npm run check
 ```
+
+Este comando ejecuta el lint de ambos módulos, todas las pruebas, la validación
+estática del esquema Prisma y el build de producción. La validación del esquema
+usa una URL sintácticamente válida, pero no se conecta a PostgreSQL.
+
+Las verificaciones del modelo y de los servicios sí necesitan una base de datos
+migrada y con el seed cargado:
+
+```bash
+cd backend
+npm run verify:model
+npm run verify:services
+```
+
+También puede comprobarse la configuración de contenedores sin levantarlos:
+
+```bash
+docker compose config --quiet
+```
+
+### Alcance de la simulación
+
+El simulador permite verificar el contrato MQTT versionado, la idempotencia de
+comandos persistidos, las curvas y mesetas, pausa y recuperación lógica,
+telemetría inicial/periódica/final, mensajes desordenados o duplicados,
+continuidad offline y reconciliación de ciclos.
+
+Siguen pendientes de firmware y validación con hardware real el control PID y
+la modulación del relé, la lectura y seguridad eléctrica de sensores, la
+persistencia no volátil del ESP32, el umbral físico de arranque bajo 35 °C, las
+tolerancias exactas de recuperación térmica y el comportamiento ante cortes de
+energía o fallas de componentes.

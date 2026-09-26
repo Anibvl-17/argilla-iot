@@ -1,168 +1,93 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Modal from "@components/Modal";
-import FloatingDropdown from "@components/FloatingDropdown";
-import Pagination from "@components/Pagination";
 import {
-  getAllKilns,
-  createKiln,
-  updateKiln,
-  deleteKiln,
-  linkController,
-  unlinkUser,
-  unlinkController,
-} from "@services/kiln.service";
-import { getAllUsers } from "@services/user.service";
-import {
-  LuLink,
+  LuArrowLeft,
   LuEye,
   LuEyeOff,
   LuHistory,
   LuPencil,
-  LuPower,
+  LuPlus,
   LuTrash2,
   LuUnlink,
-  LuUserRoundPlus,
   LuUserRoundMinus,
+  LuWrench,
 } from "react-icons/lu";
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
-import { linkUser } from "@services/kiln.service";
 import { Badge } from "@components/Badge";
-import { sendAdminControllerCommand } from "@services/controller.service";
+import { ControllerEquipmentDetails } from "@components/EquipmentInformation";
+import HeatingCircuitEditor from "@components/HeatingCircuitEditor";
+import Modal from "@components/Modal";
+import OperationalStatusDialog from "@components/OperationalStatusDialog";
+import Pagination from "@components/Pagination";
+import { SearchableCatalogField } from "@components/UserContactFields";
+import { useAuth } from "@context/AuthContext";
 import { useControllerRealtime } from "@hooks/useControllerRealtime";
-import { getControllerOperationLabel } from "@constants/controller.constants";
 import {
-  formError,
-  hasFormError,
-  normalizeFormError,
-} from "../utils/formError";
-import FieldError from "@components/FieldError";
+  ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES,
+  getControllerActivityLabel,
+  getOperationalStatusLabel,
+  getSwitchLabel,
+  OPERATIONAL_STATUS_OPTIONS,
+  OPERATIONAL_STATUS_STYLES,
+} from "@constants/controller.constants";
+import { ROLES } from "@constants/user.constants";
+import { getAllControllers } from "@services/controller.service";
+import {
+  createKiln,
+  deleteKiln,
+  getAllKilns,
+  linkController,
+  linkUser,
+  unlinkController,
+  unlinkUser,
+  updateKiln,
+  updateKilnOperationalStatus,
+} from "@services/kiln.service";
+import { getAllUsers } from "@services/user.service";
+import {
+  createDefaultCircuit,
+  summarizeHeatingCircuit,
+} from "../utils/heatingCircuit";
 import { getPageAfterDeletion } from "../utils/pagination";
 
-const KilnStatusBadge = ({ controller }) => {
-  if (!controller) {
-    return <span className="text-sm italic text-neutral-400/70">Inactivo</span>;
-  }
+const PAGE_SIZE = 10;
+const today = () => new Date().toISOString().slice(0, 10);
+function emptyForm() {
+  return {
+    name: "",
+    liters: 40,
+    phaseCount: 1,
+    nominalVoltage: 220,
+    nominalCurrent: 20,
+    manufacturedAt: today(),
+    deliveredAt: "",
+    manufacturer: "Argillá",
+    heatingCircuitConfiguration: createDefaultCircuit(),
+  };
+}
 
-  const isOn = controller.operativeStatus === "ON";
-  const text =
-    isOn && controller.temp != null
-      ? `Encendido`
-      : getControllerOperationLabel(controller.operativeStatus);
-
+function Field({ label, children }) {
   return (
-    <Badge
-      style={isOn ? "success" : "default"}
-      text={text}
-      description={
-        isOn && controller.temp != null
-          ? controller.temp.toFixed(1) + " °C"
-          : null
-      }
-    />
+    <label className="text-sm font-medium text-secondary">
+      {label}
+      {children}
+    </label>
   );
-};
+}
 
-const kilnFields = [
-  {
-    name: "name",
-    label: "Nombre del horno",
-    type: "text",
-    placeholder: "Horno Taller #40",
-    inputProps: {
-      minLength: 2,
-      maxLength: 100,
-    },
-  },
-  {
-    name: "liters",
-    label: "Capacidad (Litros)",
-    type: "number",
-    placeholder: "40",
-    inputProps: { min: 1, max: 500, step: 1 },
-  },
-  {
-    name: "amps",
-    label: "Amperaje",
-    type: "number",
-    placeholder: "25",
-    inputProps: { min: 1, max: 500, step: 1 },
-  },
-  {
-    name: "volts",
-    label: "Voltaje",
-    type: "number",
-    placeholder: "220",
-    inputProps: { min: 100, max: 600, step: 1 },
-  },
-  {
-    name: "phases",
-    label: "Fases",
-    type: "select",
-    options: [
-      { value: "1", label: "Monofásico" },
-      { value: "3", label: "Trifásico" },
-    ],
-  },
-];
-
-const normalizeKilnFormData = (formData) => ({
-  ...formData,
-  liters: Number(formData.liters),
-  amps: Number(formData.amps),
-  volts: Number(formData.volts),
-  phases: Number(formData.phases),
-});
-
-const linkUserFields = [{ name: "userId", label: "Usuario", type: "custom" }];
-
-const linkControllerFields = [
-  {
-    name: "controllerSuffix",
-    label: "Últimos 6 caracteres de la UUID del controlador",
-    type: "text",
-    placeholder: "A1B2C3",
-    inputProps: {
-      autoComplete: "off",
-      maxLength: 6,
-    },
-  },
-  {
-    name: "controllerPin",
-    label: "PIN de 6 dígitos",
-    type: "password",
-    placeholder: "123456",
-    inputProps: {
-      autoComplete: "one-time-code",
-      inputMode: "numeric",
-      maxLength: 6,
-    },
-  },
-];
-
-const normalizeSearchTerm = (value) => value.trim().toLowerCase();
-const PAGE_SIZE = 8;
+const fieldClass =
+  "mt-2 w-full rounded-lg border-2 border-control-border bg-field px-3 py-2.5 text-content outline-none transition-colors focus:border-focus";
 
 export default function AdminKilns() {
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user.role === ROLES.ADMIN;
+  const [loading, setLoading] = useState(true);
   const [kilns, setKilns] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [controllers, setControllers] = useState([]);
+  const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalError, setModalError] = useState(null);
-  const [modalMode, setModalMode] = useState("create");
-  const [selectedKiln, setSelectedKiln] = useState(null);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isLinkUserModalOpen, setIsLinkUserModalOpen] = useState(false);
-  const [isLinkControllerModalOpen, setIsLinkControllerModalOpen] =
-    useState(false);
-  const [linkUserError, setLinkUserError] = useState(null);
-  const [linkControllerError, setLinkControllerError] = useState(null);
-  const [linkUserSearchTerm, setLinkUserSearchTerm] = useState("");
-  const [selectedUserToLink, setSelectedUserToLink] = useState(null);
-  const [expandedKilnId, setExpandedKilnId] = useState(null);
-  const [commandLoadingId, setCommandLoadingId] = useState("");
+  const [operationalStatusFilter, setOperationalStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [summary, setSummary] = useState({
@@ -170,440 +95,445 @@ export default function AdminKilns() {
     withoutController: 0,
     withoutOwner: 0,
   });
-  const linkUserSearchRef = useRef(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm());
+  const [editingId, setEditingId] = useState(null);
+  const [formError, setFormError] = useState("");
+  const [expandedKilnId, setExpandedKilnId] = useState(null);
+  const [selectedKiln, setSelectedKiln] = useState(null);
+  const [statusKiln, setStatusKiln] = useState(null);
+  const [associationKiln, setAssociationKiln] = useState(null);
+  const [associationControllerId, setAssociationControllerId] = useState("");
+  const [associationLoading, setAssociationLoading] = useState(false);
+  const [controllerInfo, setControllerInfo] = useState(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const fetchKilns = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getAllKilns({
+    setLoading(true);
+    const [kilnResult, controllerResult, userResult] = await Promise.all([
+      getAllKilns({
         page,
         pageSize: PAGE_SIZE,
         search: searchTerm,
-      });
-      const payload = result.data || {};
-      setKilns(payload.items || []);
-      setTotalPages(payload.pagination?.totalPages || 1);
-      setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, searchTerm]);
+        operationalStatusFilter: operationalStatusFilter || undefined,
+      }),
+      getAllControllers({ pageSize: 100 }),
+      isAdmin
+        ? getAllUsers({ pageSize: 100 })
+        : Promise.resolve({ success: true, data: { items: [] } }),
+    ]);
+    setLoading(false);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const result = await getAllUsers({ pageSize: 100 });
-      setUsers(result.data?.items || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!kilnResult.success) return toast.error(kilnResult.message);
+    const payload = kilnResult.data || {};
+    setKilns(payload.items || []);
+    setTotalPages(payload.pagination?.totalPages || 1);
+    setSummary((current) => ({ ...current, ...(payload.summary || {}) }));
+    if (controllerResult.success)
+      setControllers(controllerResult.data.items || []);
+    if (userResult.success)
+      setClients(
+        (userResult.data.items || []).filter(
+          (item) =>
+            item.role === ROLES.CLIENT && item.isActive && !item.anonymizedAt,
+        ),
+      );
+  }, [isAdmin, operationalStatusFilter, page, searchTerm]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchKilns();
+    const timer = setTimeout(fetchKilns, 200);
+    return () => clearTimeout(timer);
   }, [fetchKilns]);
 
-  const handleTelemetry = useCallback((telemetry) => {
-    setKilns((current) =>
-      current.map((kiln) =>
-        kiln.controller?.controllerId === telemetry.controllerId
-          ? {
-              ...kiln,
-              controller: {
-                ...kiln.controller,
-                operativeStatus: telemetry.operativeStatus,
-                connectionStatus: telemetry.connectionStatus,
-                temp: telemetry.temp,
-              },
-            }
-          : kiln,
-      ),
+  useControllerRealtime(
+    useCallback((telemetry) => {
+      setKilns((current) =>
+        current.map((kiln) => ({
+          ...kiln,
+          controller:
+            kiln.controller?.controllerId === telemetry.controllerId
+              ? { ...kiln.controller, ...telemetry }
+              : kiln.controller,
+        })),
+      );
+    }, []),
+  );
+
+  function openCreateView() {
+    setEditingId(null);
+    setForm(emptyForm());
+    setFormError("");
+    setShowForm(true);
+  }
+
+  function openEditView(kiln) {
+    setEditingId(kiln.kilnId);
+    setForm({
+      name: kiln.name || "",
+      liters: kiln.liters,
+      phaseCount: kiln.phaseCount,
+      nominalVoltage: kiln.nominalVoltage,
+      nominalCurrent: kiln.nominalCurrent,
+      manufacturedAt: kiln.manufacturedAt?.slice(0, 10) || today(),
+      deliveredAt: kiln.deliveredAt?.slice(0, 10) || "",
+      manufacturer: kiln.manufacturer,
+      heatingCircuitConfiguration: kiln.heatingCircuitConfiguration,
+    });
+    setFormError("");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
+    setFormError("");
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!form.heatingCircuitConfiguration?.elements?.length) {
+      setFormError(
+        "El circuito de resistencias debe contener al menos un elemento.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    const payload = {
+      ...form,
+      liters: Number(form.liters),
+      phaseCount: Number(form.phaseCount),
+      nominalVoltage: Number(form.nominalVoltage),
+      nominalCurrent: Number(form.nominalCurrent),
+      deliveredAt: form.deliveredAt || null,
+    };
+    if (!isAdmin && editingId) delete payload.name;
+    const result = editingId
+      ? await updateKiln(editingId, payload)
+      : await createKiln(payload);
+    setLoading(false);
+
+    if (!result.success) {
+      setFormError(result.data?.errorDetails || result.message);
+      return;
+    }
+
+    toast.success(
+      editingId
+        ? "Horno actualizado exitosamente."
+        : "Horno creado exitosamente.",
     );
-  }, []);
+    closeForm();
+    await fetchKilns();
+  }
 
-  useControllerRealtime(handleTelemetry);
+  async function attach(kiln, controllerId) {
+    if (!controllerId) return;
+    setAssociationLoading(true);
+    const result = await linkController(kiln.kilnId, controllerId);
+    setAssociationLoading(false);
+    if (!result.success)
+      return toast.error(result.data?.errorDetails || result.message);
+    toast.success("Controlador asociado exitosamente.");
+    closeAssociationModal();
+    await fetchKilns();
+  }
 
-  const openCreateModal = () => {
-    setModalMode("create");
-    setSelectedKiln(null);
-    setModalError(null);
-    setIsModalOpen(true);
-  };
+  function closeAssociationModal() {
+    setAssociationKiln(null);
+    setAssociationControllerId("");
+    setAssociationLoading(false);
+  }
 
-  const openEditModal = (kiln) => {
-    setModalMode("edit");
-    setSelectedKiln(kiln);
-    setModalError(null);
-    setIsModalOpen(true);
-  };
+  function getAvailableControllerOptions(kiln) {
+    return controllers
+      .filter(
+        (controller) =>
+          (!controller.kiln || controller.kiln.kilnId === kiln.kilnId) &&
+          ASSOCIATION_ELIGIBLE_OPERATIONAL_STATUSES.includes(
+            controller.operationalStatus,
+          ) &&
+          (!controller.user ||
+            !kiln.user ||
+            controller.user.userId === kiln.user.userId),
+      )
+      .map((controller) => ({
+        code: controller.controllerId,
+        name: `...${controller.controllerCode} - ${controller.user?.name || "Sin propietario"}`,
+        secondary: `${getSwitchLabel(controller.switchType)} ${controller.switchCurrentCapacity} A`,
+        operationalStatus: controller.operationalStatus,
+        searchText: `${controller.controllerId} ...${controller.controllerCode} ${controller.user?.name || ""}`,
+      }));
+  }
 
-  const openLinkUserModal = (kiln) => {
-    setSelectedKiln(kiln);
-    setLinkUserError(null);
-    setLinkUserSearchTerm("");
-    setSelectedUserToLink(null);
-    setIsLinkControllerModalOpen(false);
-    setIsAlertOpen(false);
-    setIsLinkUserModalOpen(true);
+  async function detach(kiln) {
+    const result = await unlinkController(kiln.kilnId);
+    if (!result.success) return toast.error(result.message);
+    toast.success("Controlador desvinculado.");
+    await fetchKilns();
+  }
 
-    if (users.length === 0 && !loading) {
-      fetchUsers();
-    }
-  };
+  async function assign(kiln, userId) {
+    if (!userId) return;
+    const result = await linkUser(kiln.kilnId, Number(userId));
+    if (!result.success)
+      return toast.error(result.data?.errorDetails || result.message);
+    toast.success("Propiedad asignada al conjunto horno-controlador.");
+    await fetchKilns();
+  }
 
-  const closeLinkUserModal = () => {
-    setIsLinkUserModalOpen(false);
-    setLinkUserError(null);
-    setLinkUserSearchTerm("");
-    setSelectedUserToLink(null);
-    setSelectedKiln(null);
-  };
+  async function release(kiln) {
+    const result = await unlinkUser(kiln.kilnId);
+    if (!result.success) return toast.error(result.message);
+    toast.success("Propiedad del conjunto liberada.");
+    await fetchKilns();
+  }
 
-  const openLinkControllerModal = (kiln) => {
-    setSelectedKiln(kiln);
-    setLinkControllerError(null);
-    setIsLinkUserModalOpen(false);
-    setIsAlertOpen(false);
-    setIsLinkControllerModalOpen(true);
-  };
-
-  const closeLinkControllerModal = () => {
-    setIsLinkControllerModalOpen(false);
-    setLinkControllerError(null);
-    setSelectedKiln(null);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalError(null);
-    setSelectedKiln(null);
-  };
-
-  const handleCreateKiln = async (formData) => {
+  async function confirmDelete() {
     setLoading(true);
-    setModalError(null);
+    const result = await deleteKiln(selectedKiln.kilnId);
+    setLoading(false);
+    setIsAlertOpen(false);
+    if (!result.success) return toast.error(result.message);
+    const nextPage = getPageAfterDeletion({ page, itemsOnPage: kilns.length });
+    toast.success("Horno eliminado exitosamente.");
+    setSelectedKiln(null);
+    if (nextPage !== page) setPage(nextPage);
+    else await fetchKilns();
+  }
 
-    try {
-      const data = normalizeKilnFormData(formData);
-      const response =
-        modalMode === "create"
-          ? await createKiln(data)
-          : await updateKiln(selectedKiln.kilnId, data);
-
-      if (response.success) {
-        toast.success(
-          `Horno ${modalMode === "create" ? "creado" : "actualizado"} exitosamente`,
-        );
-        closeModal();
-        fetchKilns();
-        return;
-      }
-
-      setModalError(normalizeFormError(response));
-    } catch (error) {
-      setModalError(normalizeFormError(error));
-    } finally {
-      setLoading(false);
+  async function changeOperationalStatus(operationalStatus) {
+    const result = await updateKilnOperationalStatus(
+      statusKiln.kilnId,
+      operationalStatus,
+    );
+    if (result.success) {
+      toast.success("Estado del horno actualizado.");
+      await fetchKilns();
     }
-  };
+    return result;
+  }
 
-  const confirmDelete = async () => {
-    setLoading(true);
-    try {
-      const response = await deleteKiln(selectedKiln.kilnId);
+  if (showForm) {
+    return (
+      <div className="min-w-0 space-y-6 text-content">
+        <button
+          type="button"
+          onClick={closeForm}
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-content"
+        >
+          <LuArrowLeft /> Volver a hornos
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {editingId ? "Editar horno" : "Crear horno"}
+          </h1>
+          <p className="mt-1 text-sm text-secondary">
+            Completa la información técnica y configura el circuito de
+            resistencias.
+          </p>
+        </div>
 
-      if (response.success) {
-        const nextPage = getPageAfterDeletion({
-          page,
-          itemsOnPage: kilns.length,
-        });
-        toast.success("Horno eliminado exitosamente.");
-        if (nextPage !== page) {
-          setPage(nextPage);
-        } else {
-          fetchKilns();
-        }
-      }
-    } catch (error) {
-      toast.error("Error al eliminar horno", error.message);
-    } finally {
-      setIsAlertOpen(false);
-      setSelectedKiln(null);
-      setLoading(false);
-    }
-  };
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 rounded-2xl border border-border bg-surface p-4 shadow-panel sm:p-6"
+        >
+          <section>
+            <h2 className="text-lg font-semibold">Información general</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {(isAdmin || !editingId) && (
+                <Field label="Nombre">
+                  <input
+                    required
+                    minLength={2}
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm({ ...form, name: event.target.value })
+                    }
+                    className={fieldClass}
+                  />
+                </Field>
+              )}
+              <Field label="Capacidad (litros)">
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={form.liters}
+                  onChange={(event) =>
+                    setForm({ ...form, liters: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Cantidad de fases">
+                <select
+                  value={form.phaseCount}
+                  onChange={(event) =>
+                    setForm({ ...form, phaseCount: event.target.value })
+                  }
+                  className={fieldClass}
+                >
+                  <option value={1}>Monofásico</option>
+                  <option value={3}>Trifásico</option>
+                </select>
+              </Field>
+              <Field label="Voltaje nominal (V)">
+                <input
+                  required
+                  type="number"
+                  min="100"
+                  max="600"
+                  value={form.nominalVoltage}
+                  onChange={(event) =>
+                    setForm({ ...form, nominalVoltage: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Corriente nominal (A)">
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={form.nominalCurrent}
+                  onChange={(event) =>
+                    setForm({ ...form, nominalCurrent: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Fabricante">
+                <input
+                  required
+                  value={form.manufacturer}
+                  onChange={(event) =>
+                    setForm({ ...form, manufacturer: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Fecha de fabricación">
+                <input
+                  required
+                  type="date"
+                  value={form.manufacturedAt}
+                  onChange={(event) =>
+                    setForm({ ...form, manufacturedAt: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Fecha de entrega">
+                <input
+                  type="date"
+                  value={form.deliveredAt}
+                  onChange={(event) =>
+                    setForm({ ...form, deliveredAt: event.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </Field>
+            </div>
+          </section>
 
-  const handleLinkUserSubmit = async ({ userId }) => {
-    if (!selectedKiln) {
-      setLinkUserError(
-        formError("Selecciona un horno antes de enlazar un usuario."),
-      );
-      return;
-    }
-
-    if (
-      !selectedUserToLink ||
-      String(selectedUserToLink.userId) !== String(userId)
-    ) {
-      setLinkUserError(
-        formError(
-          "Selecciona un usuario de la lista para continuar.",
-          "userId",
-        ),
-      );
-      return;
-    }
-
-    if (parseInt(selectedKiln?.userId) === parseInt(userId)) {
-      setLinkUserError(
-        formError(
-          "El horno ya está vinculado al usuario seleccionado",
-          "userId",
-        ),
-      );
-      return;
-    }
-
-    try {
-      const response = await linkUser(
-        parseInt(selectedKiln.kilnId),
-        parseInt(userId),
-      );
-      if (response.success) {
-        toast.success(
-          `Usuario ${selectedUserToLink.name} enlazado al horno #${selectedKiln.kilnId}.`,
-        );
-        fetchKilns();
-        fetchUsers();
-        closeLinkUserModal();
-      } else {
-        setLinkUserError(normalizeFormError(response));
-        return;
-      }
-    } catch (error) {
-      setLinkUserError(normalizeFormError(error));
-    }
-  };
-
-  const handleUnlinkUser = async () => {
-    if (!selectedKiln?.userId) {
-      setLinkUserError("El horno no tiene un usuario vinculado.");
-      return;
-    }
-
-    try {
-      const response = await unlinkUser(
-        parseInt(selectedKiln.kilnId),
-        parseInt(selectedKiln.userId),
-      );
-
-      if (response.success) {
-        toast.success(
-          `Usuario desvinculado del horno #${selectedKiln.kilnId}.`,
-        );
-        fetchKilns();
-        fetchUsers();
-        closeLinkUserModal();
-        return;
-      }
-
-      throw new Error(response.message || "Error al desvincular usuario");
-    } catch (error) {
-      toast.error("Error al desvincular usuario", {
-        description: error.message,
-      });
-    }
-  };
-
-  const handleLinkControllerSubmit = async ({
-    controllerSuffix,
-    controllerPin,
-  }) => {
-    const suffix = String(controllerSuffix || "").trim();
-    const pin = String(controllerPin || "").trim();
-
-    if (!selectedKiln) {
-      setLinkControllerError(
-        formError("Selecciona un horno antes de enlazar un controlador."),
-      );
-      return;
-    }
-
-    const validationErrors = [];
-    if (!/^[a-fA-F0-9]{6}$/.test(suffix)) {
-      validationErrors.push({
-        message: "Ingresa los últimos 6 caracteres válidos de la UUID.",
-        field: "partialControllerId",
-      });
-    }
-
-    if (!/^\d{6}$/.test(pin)) {
-      validationErrors.push({
-        message: "El PIN debe contener exactamente 6 dígitos.",
-        field: "pin",
-      });
-    }
-
-    if (validationErrors.length) {
-      setLinkControllerError(normalizeFormError({ errors: validationErrors }));
-      return;
-    }
-
-    try {
-      const response = await linkController(
-        parseInt(selectedKiln.kilnId),
-        suffix,
-        pin,
-      );
-
-      if (response.success) {
-        toast.success(`Controlador enlazado al horno #${selectedKiln.kilnId}.`);
-        fetchKilns();
-        closeLinkControllerModal();
-        return;
-      }
-
-      setLinkControllerError(normalizeFormError(response));
-    } catch (error) {
-      setLinkControllerError(normalizeFormError(error));
-    }
-  };
-
-  const handleUnlinkController = async () => {
-    if (!selectedKiln?.controllerId) {
-      setLinkControllerError("El horno no tiene un controlador vinculado.");
-      return;
-    }
-
-    try {
-      const response = await unlinkController(selectedKiln.kilnId);
-
-      if (response.success) {
-        toast.success(
-          `Controlador desvinculado del horno #${selectedKiln.kilnId}.`,
-        );
-        fetchKilns();
-        closeLinkControllerModal();
-        return;
-      }
-
-      setLinkControllerError(normalizeFormError(response));
-    } catch (error) {
-      setLinkControllerError(normalizeFormError(error));
-    }
-  };
-
-  const handleKilnCommand = async (kiln) => {
-    if (!kiln.controller) return;
-
-    const command = kiln.controller.operativeStatus === "ON" ? "OFF" : "ON";
-    setCommandLoadingId(String(kiln.kilnId));
-
-    try {
-      const response = await sendAdminControllerCommand(
-        kiln.controller.controllerId,
-        command,
-      );
-
-      if (response.success) {
-        toast.success(`Comando ${command} enviado al horno ${kiln.kilnId}.`);
-        return;
-      }
-
-      throw new Error(response.message || "Error al enviar comando");
-    } catch (error) {
-      toast.error("Error al enviar comando", { description: error.message });
-    } finally {
-      setCommandLoadingId("");
-    }
-  };
-
-  const filteredUsersForLink = users
-    .filter((user) => {
-      if (user.userId === selectedKiln?.user?.userId) return false;
-      if (user.userId === selectedUserToLink?.userId) return false;
-
-      const search = normalizeSearchTerm(linkUserSearchTerm);
-
-      if (!search) {
-        return false;
-      }
-
-      return (
-        String(user.userId).toLowerCase().includes(search) ||
-        user.name.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search)
-      );
-    })
-    .slice(0, 8);
-
-  const selectedKilnHasOwner = Boolean(selectedKiln?.user);
-  const selectedKilnHasController = Boolean(selectedKiln?.controllerId);
+          <section className="border-t border-border pt-6">
+            <h2 className="mb-4 text-lg font-semibold">
+              Circuito de resistencias
+            </h2>
+            <HeatingCircuitEditor
+              value={form.heatingCircuitConfiguration}
+              onChange={(heatingCircuitConfiguration) =>
+                setForm({ ...form, heatingCircuitConfiguration })
+              }
+            />
+          </section>
+          {formError && (
+            <p className="rounded-lg border border-danger-border bg-danger-soft p-3 text-sm text-danger">
+              {String(formError)}
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={closeForm}
+              disabled={loading}
+              className="rounded-lg border border-control-border px-5 py-2.5 text-sm font-medium text-secondary hover:bg-surface-hover"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={loading}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action hover:bg-primary-hover disabled:opacity-60"
+            >
+              {loading
+                ? "Guardando..."
+                : editingId
+                  ? "Guardar cambios"
+                  : "Crear horno"}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-w-0 space-y-6 text-white">
-      {/* Cabecera */}
+    <div className="min-w-0 space-y-6 text-content">
       <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Hornos
           </h1>
-          <p className="text-neutral-300 mt-1 text-sm">
-            Gestión centralizada de todos los hornos de la plataforma.
+          <p className="mt-1 text-sm text-secondary">
+            Gestión centralizada de los hornos y sus asociaciones.
           </p>
         </div>
         <button
-          onClick={openCreateModal}
-          className="w-full rounded-lg bg-red-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:w-auto"
+          type="button"
+          onClick={openCreateView}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action transition-colors hover:bg-primary-hover sm:w-auto"
         >
-          Añadir Nuevo Horno
+          <LuPlus /> Crear horno
         </button>
       </div>
 
-      {/* Cards de Resumen */}
-      <div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-4">
-          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
-              Total Hornos
+      <div className="hidden grid-cols-3 gap-4 sm:grid">
+        {[
+          ["Total hornos", summary.total],
+          ["Sin controlador", summary.withoutController],
+          ["Sin propietario", summary.withoutOwner],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-5"
+          >
+            <p className="mb-1 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted sm:text-xs sm:tracking-wider">
+              {label}
             </p>
-            <p className="text-xl font-bold sm:text-3xl">{summary.total}</p>
-          </div>
-          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
-              Sin Controlador
-            </p>
-            <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
-              {summary.withoutController}
-            </p>
-          </div>
-          <div className="rounded-xl border border-neutral-800 bg-[#141414] p-2.5 shadow-md sm:p-5">
-            <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-wide text-neutral-500 sm:text-xs sm:tracking-wider">
-              Sin Propietario
-            </p>
-            <p className="text-xl font-bold text-neutral-300 sm:text-3xl">
-              {summary.withoutOwner}
+            <p
+              aria-live="polite"
+              className={`${loading ? "text-sm sm:text-base" : "text-xl sm:text-3xl"} font-bold text-content`}
+            >
+              {loading ? "Cargando..." : value}
             </p>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* Barra de búsqueda */}
-      <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#141414] shadow-2xl">
-        <div className="border-b border-neutral-800 p-4">
-          <p className="mb-2 text-sm md:text-base text-neutral-400">
-            Busca hornos por ID, propietario o ID del controlador vinculado.
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
+        <div className="border-b border-border p-4">
+          <p className="mb-2 text-sm text-muted md:text-base">
+            Busca por ID de horno, fabricante, propietario o controlador.
           </p>
-          <div className="relative w-full sm:w-96">
-            {/* Icono de Lupa  */}
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="grid gap-3 sm:grid-cols-[minmax(16rem,24rem)_14rem]">
+            <div className="relative">
               <svg
-                className="h-5 w-5 text-neutral-500"
+                className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-muted"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -615,457 +545,456 @@ export default function AdminKilns() {
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
+              <input
+                type="search"
+                placeholder="6, Argillá, Camila, A1B2C3..."
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-lg border border-control-border bg-field py-2.5 pl-10 pr-4 text-sm outline-none focus:border-focus focus:ring-1 focus:ring-focus"
+              />
             </div>
-
-            <input
-              type="text"
-              placeholder="3, matias@argilla.cl, 123456..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
+            <select
+              aria-label="Filtrar por estado operacional"
+              value={operationalStatusFilter}
+              onChange={(event) => {
+                setOperationalStatusFilter(event.target.value);
                 setPage(1);
               }}
-              className="w-full bg-[#0a0a0a] border border-neutral-700 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-white placeholder-neutral-500"
-            />
+              className="w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-sm text-content outline-none focus:border-focus focus:ring-1 focus:ring-focus"
+            >
+              <option value="">Todos los estados</option>
+              {OPERATIONAL_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        {/* Contenedor de la Tabla */}
-        {summary.total > 0 || searchTerm ? (
-          !loading && (
-            <div className="overflow-auto">
-              <table className="w-full text-left text-xs sm:min-w-190 sm:text-sm">
-                {/* Títulos de Columna */}
-                <thead className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0a0a] text-xs uppercase tracking-wider text-neutral-500">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 font-medium sm:px-6 sm:py-4"
-                    >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 font-medium sm:px-6 sm:py-4"
-                    >
-                      Propietario
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 font-medium sm:table-cell sm:px-6 sm:py-4"
-                    >
-                      Controlador
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4"
-                    >
-                      Estado
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
-                    >
-                      Litros
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden px-3 py-3 text-center font-medium md:table-cell sm:px-6 sm:py-4"
-                    >
-                      Datos eléctricos
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-center font-medium sm:px-6 sm:py-4"
-                    >
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-
-                {/* Cuerpo de la Tabla */}
-                <tbody className="divide-y divide-neutral-800/60">
-                  {kilns.length > 0 ? (
-                    kilns.map((kiln) => (
-                      <Fragment key={kiln.kilnId}>
-                        <tr className="hover:bg-neutral-900/30 transition-colors">
-                          {/* Columna ID */}
-                          <td className="px-3 py-4 font-mono text-neutral-300 sm:px-6 sm:py-5 sm:text-base">
+        <div className="overflow-hidden">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted text-xs uppercase tracking-wider text-muted">
+              <tr>
+                <th className="px-4 py-4 sm:px-6">ID</th>
+                <th className="px-3 py-4 sm:px-6">
+                  <span className="lg:hidden">
+                    Propietario
+                    <br />
+                    Controlador
+                  </span>
+                  <span className="hidden lg:inline">Propietario</span>
+                </th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">
+                  Capacidad
+                </th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">
+                  Datos eléctricos
+                </th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">
+                  Controlador
+                </th>
+                <th className="hidden px-6 py-4 text-center lg:table-cell">
+                  Estado
+                </th>
+                <th className="py-4 pl-3 pr-5 text-center sm:px-6">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {!loading &&
+                kilns.map((kiln) => {
+                  const availableControllerOptions =
+                    getAvailableControllerOptions(kiln);
+                  const circuitSummary = summarizeHeatingCircuit(
+                    kiln.heatingCircuitConfiguration,
+                  );
+                  return (
+                    <Fragment key={kiln.kilnId}>
+                      <tr className="transition-colors hover:bg-surface-hover">
+                        <td className="px-4 py-5 sm:px-6">
+                          <p className="font-mono text-sm text-muted">
                             {kiln.kilnId}
-                          </td>
-
-                          {/* Columna Propietario */}
-                          <td className="max-w-32 wrap-break-word px-3 py-4 sm:max-w-none sm:px-6 sm:py-5">
-                            <div className="flex flex-col">
-                              {kiln.user ? (
-                                <>
-                                  <span className="font-semibold text-neutral-100 text-base">
-                                    {kiln.user.name}
-                                  </span>
-                                  <span className="text-sm font-medium text-neutral-400 mt-0.5">
-                                    {kiln.user.email}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-sm text-neutral-400/70 italic">
-                                  Sin propietario
-                                </span>
+                          </p>
+                        </td>
+                        <td className="max-w-44 px-3 py-5 sm:px-6 lg:max-w-none">
+                          {kiln.user ? (
+                            <>
+                              <p>{kiln.user.name}</p>
+                              {isAdmin && (
+                                <p className="mt-1 hidden break-all text-secondary lg:block">
+                                  {kiln.user.email}
+                                </p>
                               )}
-                            </div>
-                          </td>
-
-                          {/* Columna ID Controlador */}
-                          <td className="hidden px-3 py-4 text-sm sm:table-cell sm:px-6 sm:py-5">
-                            {kiln.controllerId ? (
-                              <span
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    kiln.controllerId,
-                                  );
-                                  toast.success("¡ID copiada!");
-                                }}
-                                title={"Copiar id: " + kiln.controllerId}
-                                className="font-mono bg-neutral-800/60 px-2.5 py-1 rounded-md border border-neutral-700/60 text-red-400 truncate hover:underline"
-                              >
-                                ...{kiln.controllerId.slice(-6)}
-                              </span>
-                            ) : (
-                              <span className="text-neutral-400/70 italic">
-                                No vinculado
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Columna Estado badge */}
-                          <td className="px-3 py-4 text-center sm:px-6 sm:py-5">
-                            <div className="flex flex-row justify-center items-center">
-                              <KilnStatusBadge controller={kiln.controller} />
-                            </div>
-                          </td>
-
-                          {/* Columna Litros */}
-                          <td className="hidden px-3 py-4 text-center font-mono text-neutral-400 md:table-cell sm:px-6 sm:py-5 sm:text-base">
-                            {kiln.liters}
-                          </td>
-
-                          {/* Columna Voltaje Amperaje */}
-                          <td className="hidden px-3 py-4 text-center text-neutral-400 md:table-cell sm:px-6 sm:py-5">
-                            <span className="font-mono">
-                              {kiln.amps}A - {kiln.volts}V
-                            </span>{" "}
-                            <br />
-                            <span className="text-neutral-400/70">
-                              {kiln.phases === 1
-                                ? "Monofásico"
-                                : "Trifásico"}{" "}
+                            </>
+                          ) : (
+                            <span className="italic text-muted">
+                              Sin propietario
                             </span>
-                          </td>
-
-                          {/* Botones de Acción */}
-                          <td className="px-2 py-4 text-center text-base sm:px-6 sm:py-5 sm:text-lg">
-                            <div className="flex justify-center gap-0.5 sm:gap-2">
+                          )}
+                          <div className="mt-1 font-mono text-accent lg:hidden">
+                            {kiln.controller ? (
                               <button
                                 type="button"
-                                disabled={
-                                  !kiln.controller ||
-                                  kiln.controller.connectionStatus !==
-                                    "ONLINE" ||
-                                  commandLoadingId === String(kiln.kilnId)
-                                }
-                                onClick={() => handleKilnCommand(kiln)}
-                                className={
-                                  "hidden rounded-lg p-1.5 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 sm:p-2 md:inline-flex " +
-                                  (kiln.controller?.operativeStatus === "ON"
-                                    ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400"
-                                    : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400")
-                                }
-                                title={
-                                  !kiln.controller
-                                    ? "Requiere controlador"
-                                    : kiln.controller.operativeStatus === "ON"
-                                      ? "Apagar horno"
-                                      : "Encender horno"
-                                }
-                              >
-                                <LuPower />
-                              </button>
-                              <button
-                                type="button"
+                                className="text-accent hover:cursor-pointer hover:underline"
+                                title="Ver información del controlador"
                                 onClick={() =>
-                                  setExpandedKilnId((current) =>
-                                    current === kiln.kilnId
-                                      ? null
-                                      : kiln.kilnId,
-                                  )
+                                  setControllerInfo(kiln.controller)
                                 }
-                                className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white md:hidden"
-                                title={
+                              >
+                                ...{kiln.controller.controllerCode}
+                              </button>
+                            ) : (
+                              <p className="font-sans italic text-muted">
+                                Sin controlador
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="hidden px-3 py-5 text-center lg:table-cell">
+                          <p className="font-medium">{kiln.liters} litros</p>
+                        </td>
+                        <td className="font-mono hidden px-3 py-5 text-center lg:table-cell">
+                          <p className="font-medium">
+                            {kiln.nominalVoltage} V - {kiln.nominalCurrent} A
+                          </p>
+                          <p className="mt-1 text-secondary text-xs">
+                            {kiln.phaseCount === 1 ? "Monofásico" : "Trifásico"}
+                          </p>
+                        </td>
+                        <td className="hidden px-6 py-5 lg:table-cell text-center">
+                          {kiln.controller ? (
+                            <button
+                              type="button"
+                              className="font-mono text-accent hover:cursor-pointer hover:underline"
+                              title="Ver información del controlador"
+                              onClick={() => setControllerInfo(kiln.controller)}
+                            >
+                              ...{kiln.controller.controllerCode}
+                            </button>
+                          ) : (
+                            <span className="italic text-muted">
+                              Sin asociar
+                            </span>
+                          )}
+                        </td>
+                        <td className="hidden px-6 py-5 lg:table-cell">
+                          <span className="flex justify-center">
+                            <Badge
+                              style={
+                                OPERATIONAL_STATUS_STYLES[
+                                  kiln.operationalStatus
+                                ]
+                              }
+                              text={getOperationalStatusLabel(
+                                kiln.operationalStatus,
+                              )}
+                            />
+                          </span>
+                        </td>
+                        <td className="py-5 pl-3 pr-5 sm:px-6">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedKilnId(
                                   expandedKilnId === kiln.kilnId
-                                    ? "Ocultar detalles"
-                                    : "Ver detalles"
-                                }
-                                aria-label={
-                                  expandedKilnId === kiln.kilnId
-                                    ? `Ocultar detalles del horno ${kiln.kilnId}`
-                                    : `Ver detalles del horno ${kiln.kilnId}`
-                                }
-                                aria-expanded={expandedKilnId === kiln.kilnId}
-                              >
-                                {expandedKilnId === kiln.kilnId ? (
-                                  <LuEyeOff />
-                                ) : (
-                                  <LuEye />
-                                )}
-                              </button>
-                              {/* Enlazar/Desenlazar usuario */}
+                                    ? null
+                                    : kiln.kilnId,
+                                )
+                              }
+                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                              title={
+                                expandedKilnId === kiln.kilnId
+                                  ? "Ocultar detalles"
+                                  : "Ver detalles"
+                              }
+                            >
+                              {expandedKilnId === kiln.kilnId ? (
+                                <LuEyeOff className="text-base" />
+                              ) : (
+                                <LuEye className="text-base" />
+                              )}
+                            </button>
+                            {(isAdmin || !kiln.user) && (
                               <button
-                                onClick={() => openLinkUserModal(kiln)}
-                                className={
-                                  "hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer md:inline-flex" +
-                                  (kiln.user
-                                    ? " hover:text-red-400 hover:bg-red-400/10"
-                                    : " hover:text-green-400 hover:bg-green-400/10")
-                                }
-                                title={
-                                  kiln.user
-                                    ? "Desvincular usuario"
-                                    : "Asignar usuario"
-                                }
+                                type="button"
+                                onClick={() => openEditView(kiln)}
+                                className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                                title="Editar horno"
                               >
-                                {kiln.user ? (
-                                  <LuUserRoundMinus />
-                                ) : (
-                                  <LuUserRoundPlus />
-                                )}
+                                <LuPencil className="text-base" />
                               </button>
-
-                              {/* Enlazar/Desenlazar controlador */}
-                              <button
-                                onClick={() => openLinkControllerModal(kiln)}
-                                className={
-                                  "hidden rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer md:inline-flex" +
-                                  (kiln.controller
-                                    ? " hover:text-red-400 hover:bg-red-400/10"
-                                    : " hover:text-green-400 hover:bg-green-400/10")
-                                }
-                                title={
-                                  kiln.controller
-                                    ? "Desvincular controlador"
-                                    : "Asignar controlador"
-                                }
-                              >
-                                {kiln.controller ? <LuUnlink /> : <LuLink />}
-                              </button>
-
-                              {/* Editar datos */}
-                              <Link
-                                to={`/admin/kilns/${kiln.kilnId}/history`}
-                                className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white sm:p-2 md:inline-flex"
-                                title="Ver historial"
-                                aria-label={`Ver historial del horno ${kiln.kilnId}`}
-                              >
-                                <LuHistory />
-                              </Link>
-
-                              {/* Editar datos */}
-                              <button
-                                onClick={() => openEditModal(kiln)}
-                                className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white sm:p-2 md:inline-flex"
-                                title="Editar datos"
-                              >
-                                <LuPencil />
-                              </button>
-
-                              {/* Eliminar */}
-                              <button
-                                onClick={() => {
-                                  setSelectedKiln(kiln);
-                                  setIsAlertOpen(true);
-                                }}
-                                className="hidden rounded-lg p-1.5 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400 sm:p-2 md:inline-flex"
-                                title="Eliminar horno"
-                              >
-                                <LuTrash2 />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        {expandedKilnId === kiln.kilnId && (
-                          <tr className="bg-neutral-950/60 md:hidden">
-                            <td colSpan="7" className="px-3 py-3">
-                              <dl className="grid grid-cols-2 gap-x-3 gap-y-4 text-xs">
+                            )}
+                            {isAdmin && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setStatusKiln(kiln)}
+                                  className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                                  title="Cambiar estado del horno"
+                                >
+                                  <LuWrench className="text-base" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedKiln(kiln);
+                                    setIsAlertOpen(true);
+                                  }}
+                                  className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger"
+                                  title="Eliminar horno"
+                                >
+                                  <LuTrash2 className="text-base" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedKilnId === kiln.kilnId && (
+                        <tr className="bg-surface-muted">
+                          <td colSpan={7} className="px-6 py-5">
+                            <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                              {isAdmin && (
                                 <div>
-                                  <dt className="font-bold text-neutral-400">
-                                    Temperatura
+                                  <dt className="text-xs font-bold uppercase text-muted">
+                                    Nombre
                                   </dt>
-                                  <dd className="mt-1 text-neutral-200">
-                                    {kiln.controller?.temp == null
-                                      ? "No disponible"
-                                      : `${kiln.controller.temp.toFixed(1)} °C`}
-                                  </dd>
+                                  <dd className="mt-1">{kiln.name}</dd>
                                 </div>
-                                <div>
-                                  <dt className="font-bold text-neutral-400">
-                                    Capacidad
-                                  </dt>
-                                  <dd className="mt-1 text-neutral-200">
-                                    {kiln.liters} litros
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt className="font-bold text-neutral-400">
-                                    Datos eléctricos
-                                  </dt>
-                                  <dd className="mt-1 text-neutral-200">
-                                    <span className="font-mono">
-                                      {kiln.amps}A / {kiln.volts}V{" "}
-                                    </span>
-                                    {kiln.phases === 1
+                              )}
+                              <div className="lg:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Capacidad
+                                </dt>
+                                <dd className="mt-1">{kiln.liters} litros</dd>
+                              </div>
+                              <div className="lg:hidden">
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Datos eléctricos
+                                </dt>
+                                <dd className="mt-1">
+                                  <p>
+                                    {kiln.nominalVoltage} V -{" "}
+                                    {kiln.nominalCurrent} A
+                                  </p>
+                                  <p className="mt-1 text-secondary">
+                                    {kiln.phaseCount === 1
                                       ? "Monofásico"
                                       : "Trifásico"}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt className="font-bold text-neutral-400">
-                                    Controlador
-                                  </dt>
-                                  <dd className="mt-1 break-all font-mono text-neutral-200">
-                                    {kiln.controllerId
-                                      ? `...${kiln.controllerId.slice(-6)}`
-                                      : "No vinculado"}
-                                  </dd>
-                                </div>
-                              </dl>
-                              <div className="mt-4 border-t border-neutral-800 pt-3">
-                                <p className="mb-2 text-xs font-bold text-neutral-400">
-                                  Acciones
-                                </p>
-                                <div className="flex flex-wrap items-center gap-2 text-base">
+                                  </p>
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Circuito
+                                </dt>
+                                <dd className="mt-1">
+                                  <p>
+                                    {circuitSummary.groups}{" "}
+                                    {circuitSummary.groups === 1
+                                      ? "grupo"
+                                      : "grupos"}
+                                  </p>
+                                  <p className="mt-1 text-secondary">
+                                    {circuitSummary.channels}{" "}
+                                    {circuitSummary.channels === 1
+                                      ? "canal de resistencia"
+                                      : "canales de resistencia"}
+                                  </p>
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Fabricante
+                                </dt>
+                                <dd className="mt-1">{kiln.manufacturer}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Estado
+                                </dt>
+                                <dd className="mt-1">
+                                  {getOperationalStatusLabel(
+                                    kiln.operationalStatus,
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Quemas realizadas
+                                </dt>
+                                <dd className="mt-1">
+                                  {kiln.firingCycleCount ?? 0}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Fabricación
+                                </dt>
+                                <dd className="mt-1">
+                                  {new Date(
+                                    kiln.manufacturedAt,
+                                  ).toLocaleDateString("es-CL")}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs font-bold uppercase text-muted">
+                                  Entrega
+                                </dt>
+                                <dd className="mt-1">
+                                  {kiln.deliveredAt ? (
+                                    new Date(
+                                      kiln.deliveredAt,
+                                    ).toLocaleDateString("es-CL")
+                                  ) : (
+                                    <span className="italic text-muted">
+                                      Pendiente
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              {kiln.controller && (
+                                <>
+                                  {isAdmin && (
+                                    <div>
+                                      <dt className="text-xs font-bold uppercase text-muted">
+                                        Actividad
+                                      </dt>
+                                      <dd className="mt-1">
+                                        {getControllerActivityLabel(
+                                          kiln.controller.activityStatus,
+                                        )}
+                                      </dd>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <dt className="text-xs font-bold uppercase text-muted">
+                                      Switch
+                                    </dt>
+                                    <dd className="mt-1">
+                                      {getSwitchLabel(
+                                        kiln.controller.switchType,
+                                      )}{" "}
+                                      {kiln.controller.switchCurrentCapacity} A
+                                    </dd>
+                                  </div>
+                                </>
+                              )}
+                            </dl>
+                            {(isAdmin || !kiln.controller) && (
+                              <div className="mt-5 grid items-end gap-3 border-t border-border pt-5 sm:grid-cols-2 lg:grid-cols-3">
+                                {kiln.controller ? (
+                                  isAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={() => detach(kiln)}
+                                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                    >
+                                      <LuUnlink className="text-base" />{" "}
+                                      Desvincular controlador
+                                    </button>
+                                  )
+                                ) : isAdmin ? (
+                                  <SearchableCatalogField
+                                    label="Asociar controlador"
+                                    value=""
+                                    options={availableControllerOptions}
+                                    onSelect={(controllerId) =>
+                                      attach(kiln, controllerId)
+                                    }
+                                    placeholder="Selecciona un controlador"
+                                    searchPlaceholder="Buscar por ID o cliente"
+                                    searchPrompt="Busca un controlador por sus últimos 6 dígitos o cliente, si está disponible."
+                                    noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
+                                    listboxLabel="Controladores disponibles"
+                                    getSearchText={(option) =>
+                                      option.searchText
+                                    }
+                                  />
+                                ) : (
                                   <button
                                     type="button"
-                                    disabled={
-                                      !kiln.controller ||
-                                      kiln.controller.connectionStatus !==
-                                        "ONLINE" ||
-                                      commandLoadingId === String(kiln.kilnId)
-                                    }
-                                    onClick={() => handleKilnCommand(kiln)}
-                                    className={
-                                      "inline-flex rounded-lg p-2 text-neutral-400 transition-colors enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 " +
-                                      (kiln.controller?.operativeStatus === "ON"
-                                        ? "enabled:hover:bg-red-400/10 enabled:hover:text-red-400"
-                                        : "enabled:hover:bg-green-400/10 enabled:hover:text-green-400")
-                                    }
-                                    title={
-                                      !kiln.controller
-                                        ? "Requiere controlador"
-                                        : kiln.controller.operativeStatus ===
-                                            "ON"
-                                          ? "Apagar horno"
-                                          : "Encender horno"
-                                    }
-                                  >
-                                    <LuPower />
-                                  </button>
-                                  <button
-                                    onClick={() => openLinkUserModal(kiln)}
-                                    className={
-                                      "inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer" +
-                                      (kiln.user
-                                        ? " hover:text-red-400 hover:bg-red-400/10"
-                                        : " hover:text-green-400 hover:bg-green-400/10")
-                                    }
-                                    title={
-                                      kiln.user
-                                        ? "Desvincular usuario"
-                                        : "Asignar usuario"
-                                    }
-                                  >
-                                    {kiln.user ? (
-                                      <LuUserRoundMinus />
-                                    ) : (
-                                      <LuUserRoundPlus />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      openLinkControllerModal(kiln)
-                                    }
-                                    className={
-                                      "inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer" +
-                                      (kiln.controller
-                                        ? " hover:text-red-400 hover:bg-red-400/10"
-                                        : " hover:text-green-400 hover:bg-green-400/10")
-                                    }
-                                    title={
-                                      kiln.controller
-                                        ? "Desvincular controlador"
-                                        : "Asignar controlador"
-                                    }
-                                  >
-                                    {kiln.controller ? (
-                                      <LuUnlink />
-                                    ) : (
-                                      <LuLink />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => openEditModal(kiln)}
-                                    className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-neutral-800 hover:text-white"
-                                    title="Editar datos"
-                                  >
-                                    <LuPencil />
-                                  </button>
-                                  <Link
-                                    to={`/admin/kilns/${kiln.kilnId}/history`}
-                                    className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
-                                    title="Ver historial"
-                                    aria-label={`Ver historial del horno ${kiln.kilnId}`}
-                                  >
-                                    <LuHistory />
-                                  </Link>
-                                  <button
                                     onClick={() => {
-                                      setSelectedKiln(kiln);
-                                      setIsAlertOpen(true);
+                                      setAssociationKiln(kiln);
+                                      setAssociationControllerId("");
                                     }}
-                                    className="inline-flex rounded-lg p-2 text-neutral-400 transition-colors hover:cursor-pointer hover:bg-red-400/10 hover:text-red-400"
-                                    title="Eliminar horno"
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
                                   >
-                                    <LuTrash2 />
+                                    Asociar controlador
                                   </button>
-                                </div>
+                                )}
+                                {isAdmin &&
+                                  (kiln.user ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => release(kiln)}
+                                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                    >
+                                      <LuUserRoundMinus className="text-base" />{" "}
+                                      Liberar propiedad
+                                    </button>
+                                  ) : (
+                                    <label className="w-full text-sm font-medium text-muted">
+                                      Asignación excepcional
+                                      <select
+                                        disabled={!kiln.controller}
+                                        defaultValue=""
+                                        onChange={(event) =>
+                                          assign(kiln, event.target.value)
+                                        }
+                                        className="mt-2 w-full rounded-lg border border-control-border bg-field px-3 py-2.5 text-content disabled:opacity-40"
+                                      >
+                                        <option value="">
+                                          Selecciona un cliente
+                                        </option>
+                                        {clients.map((client) => (
+                                          <option
+                                            key={client.userId}
+                                            value={client.userId}
+                                          >
+                                            {client.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  ))}
+                                {isAdmin && (
+                                  <Link
+                                    to={`/management/kilns/${kiln.kilnId}/history`}
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-4 text-sm font-medium hover:bg-surface-hover"
+                                  >
+                                    <LuHistory className="text-base" /> Ver
+                                    historial
+                                  </Link>
+                                )}
                               </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="8"
-                        className="px-6 py-12 text-center text-neutral-500"
-                      >
-                        No se encontraron hornos que coincidan con la búsqueda "
-                        {searchTerm}".
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : (
-          <p className="text-neutral-300 text-sm/relaxed p-4 text-center">
-            No hay hornos registrados. <br />
-            Haz click en el botón{" "}
-            <span className="rounded-lg font-medium">
-              Añadir Nuevo horno
-            </span>{" "}
-            para registrar un horno.
-          </p>
-        )}
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              {!loading && kilns.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                    No se encontraron hornos.
+                  </td>
+                </tr>
+              )}
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                    Cargando hornos...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
         <Pagination
           page={page}
           totalPages={totalPages}
@@ -1074,266 +1003,72 @@ export default function AdminKilns() {
       </div>
 
       <Modal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        title={modalMode === "create" ? "Crear Nuevo Horno" : "Editar Horno"}
-        fields={kilnFields}
-        initialData={selectedKiln}
-        submitLabel={modalMode === "create" ? "Crear Horno" : "Guardar Cambios"}
-        onSubmit={handleCreateKiln}
-        error={modalError}
-        loading={loading}
-        onClearError={setModalError}
+        isOpen={Boolean(controllerInfo)}
+        onClose={() => setControllerInfo(null)}
+        title="Información del controlador"
+        fields={[]}
+        onSubmit={() => {}}
+        showSubmit={false}
+        cancelLabel="Cerrar"
+        renderContent={() => (
+          <ControllerEquipmentDetails controller={controllerInfo} />
+        )}
       />
 
       <Modal
-        isOpen={isLinkUserModalOpen}
-        onClose={closeLinkUserModal}
-        title={
-          (selectedKilnHasOwner
-            ? "Desvincular usuario de "
-            : "Asignar usuario a ") +
-          "Horno #" +
-          selectedKiln?.kilnId
-        }
-        fields={linkUserFields}
-        submitLabel={
-          selectedKilnHasOwner ? "Desvincular usuario" : "Asignar usuario"
-        }
-        onSubmit={
-          selectedKilnHasOwner ? handleUnlinkUser : handleLinkUserSubmit
-        }
-        error={linkUserError}
-        loading={false}
-        onClearError={setLinkUserError}
-        renderContent={({ setFormData, onClearError, error }) => {
-          return (
-            <div className="flex flex-col gap-6">
-              {!selectedKilnHasOwner && (
-                <div className="flex flex-col gap-1.5">
-                  <div className="relative" ref={linkUserSearchRef}>
-                    <label className="text-sm font-medium text-neutral-400 ml-1">
-                      Busca por nombre, correo electrónico o ID de usuario
-                    </label>
-                    <input
-                      type="text"
-                      name="userId"
-                      value={linkUserSearchTerm}
-                      placeholder="Juan, matias@argilla.cl, 3..."
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setLinkUserSearchTerm(value);
-                        setFormData((prev) => ({ ...prev, userId: "" }));
-
-                        onClearError("userId");
-                      }}
-                      aria-invalid={hasFormError(error, "userId") || undefined}
-                      aria-describedby={
-                        hasFormError(error, "userId")
-                          ? "kiln-user-error"
-                          : undefined
-                      }
-                      className="mt-2 w-full bg-[#0a0a0a] border-2 border-neutral-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-red-600 transition-colors"
-                    />
-                    <FieldError
-                      error={error}
-                      field="userId"
-                      id="kiln-user-error"
-                    />
-
-                    {linkUserSearchTerm.trim() && (
-                      <FloatingDropdown
-                        anchorRef={linkUserSearchRef}
-                        open
-                        onRequestClose={() => setLinkUserSearchTerm("")}
-                      >
-                        {loading ? (
-                          <div className="px-4 py-3 text-sm text-neutral-500">
-                            Cargando usuarios...
-                          </div>
-                        ) : filteredUsersForLink.length > 0 ? (
-                          filteredUsersForLink.map((user) => {
-                            const isSelected =
-                              selectedUserToLink?.userId === user.userId;
-
-                            const isOwner =
-                              selectedKilnHasOwner &&
-                              selectedKiln?.user?.userId === user.userId;
-
-                            if (isSelected || isOwner) return;
-
-                            return (
-                              <button
-                                key={user.userId}
-                                type="button"
-                                onClick={() => {
-                                  if (isSelected || isOwner) {
-                                    return false;
-                                  }
-
-                                  setSelectedUserToLink(user);
-                                  setLinkUserSearchTerm("");
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    userId: String(user.userId),
-                                  }));
-                                  onClearError("userId");
-                                }}
-                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-neutral-900 hover:cursor-pointer"
-                              >
-                                <span className="text-sm font-medium text-white">
-                                  {user.name}
-                                </span>
-                                <span className="text-xs font-bold text-neutral-400">
-                                  #{user.userId} - {user.email}
-                                </span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-neutral-500">
-                            No se encontraron usuarios con ese criterio.
-                          </div>
-                        )}
-                      </FloatingDropdown>
-                    )}
-                  </div>
-                </div>
+        isOpen={!isAdmin && Boolean(associationKiln)}
+        onClose={closeAssociationModal}
+        title="Asociar controlador"
+        fields={[]}
+        onSubmit={() => attach(associationKiln, associationControllerId)}
+        submitLabel="Confirmar vinculación"
+        submitDisabled={!associationControllerId}
+        loading={associationLoading}
+        renderContent={() => (
+          <div className="space-y-4">
+            <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-secondary">
+              Horno seleccionado:{" "}
+              <span className="font-mono text-content">
+                {associationKiln?.kilnId}
+              </span>
+            </p>
+            <p className="text-sm text-secondary">
+              Busca un controlador por sus últimos 6 dígitos o cliente, si está
+              disponible.
+            </p>
+            <SearchableCatalogField
+              label="Controlador disponible"
+              value={associationControllerId}
+              options={
+                associationKiln
+                  ? getAvailableControllerOptions(associationKiln)
+                  : []
+              }
+              onSelect={setAssociationControllerId}
+              placeholder="Selecciona un controlador"
+              searchPlaceholder="Buscar por ID o cliente"
+              searchPrompt="Escribe los últimos 6 dígitos o el nombre del cliente para buscar controladores."
+              noResultsMessage="No encontramos controladores disponibles para esa búsqueda."
+              listboxLabel="Controladores disponibles"
+              getSearchText={(option) => option.searchText}
+              disabled={associationLoading}
+              renderOption={(option) => (
+                <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-content">
+                      {option.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted">
+                      {option.secondary}
+                    </span>
+                  </span>
+                  <Badge
+                    style={OPERATIONAL_STATUS_STYLES[option.operationalStatus]}
+                    text={getOperationalStatusLabel(option.operationalStatus)}
+                  />
+                </span>
               )}
-              {!selectedKilnHasOwner && selectedKiln?.controller && (
-                <p className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300">
-                  Si el controlador asociado está libre, también se vinculará a
-                  este propietario.
-                </p>
-              )}
-              {selectedKiln?.user && (
-                <div className="flex flex-col gap-4">
-                  <p className="text-neutral-300 text-pretty">
-                    {selectedKiln?.controller
-                      ? "El usuario será desvinculado del horno y del controlador asociado."
-                      : "El usuario será desvinculado del horno."}
-                  </p>
-
-                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                    <p className="text-sm text-neutral-300">
-                      Propietario actual
-                    </p>
-                    <p className="text-base">
-                      {selectedKiln?.user?.name} - {selectedKiln?.user?.email}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {!selectedKilnHasOwner && selectedUserToLink && (
-                <>
-                  <div className="rounded-xl border border-neutral-500 bg-neutral-800 px-4 py-3 flex flex-row flex-wrap items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-300">
-                        Nuevo propietario
-                      </p>
-                      <p className="mt-1">
-                        {selectedUserToLink.name} - {selectedUserToLink.email}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedUserToLink(null)}
-                      className="inline-flex items-center rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 hover:cursor-pointer"
-                    >
-                      Quitar selección
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        }}
-      />
-
-      <Modal
-        isOpen={isLinkControllerModalOpen}
-        onClose={closeLinkControllerModal}
-        title={
-          selectedKilnHasController
-            ? `Desvincular controlador ...${selectedKiln.controllerId.slice(-6)}`
-            : "Enlazar Controlador"
-        }
-        fields={linkControllerFields}
-        submitLabel={
-          selectedKilnHasController
-            ? "Desvincular controlador"
-            : "Enlazar controlador"
-        }
-        onSubmit={
-          selectedKilnHasController
-            ? handleUnlinkController
-            : handleLinkControllerSubmit
-        }
-        error={linkControllerError}
-        loading={false}
-        onClearError={setLinkControllerError}
-        renderContent={({ formData, setFormData, onClearError, error }) => (
-          <div className="space-y-6">
-            {selectedKiln?.controllerId && (
-              <p className="text-neutral-300 text-center">
-                El controlador será desvinculado del horno.
-              </p>
-            )}
-
-            {!selectedKilnHasController && (
-              <div className="space-y-4">
-                {selectedKiln?.user && (
-                  <p className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300">
-                    Si el controlador está libre, también se vinculará al
-                    propietario actual del horno.
-                  </p>
-                )}
-
-                {linkControllerFields.map((field) => {
-                  const errorField =
-                    field.name === "controllerSuffix"
-                      ? "partialControllerId"
-                      : "pin";
-                  return (
-                    <div key={field.name} className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-neutral-400 ml-1">
-                        {field.label}
-                      </label>
-
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        placeholder={field.placeholder || ""}
-                        value={formData[field.name] || ""}
-                        onChange={(e) => {
-                          const { name, value } = e.target;
-                          setFormData((prev) => ({ ...prev, [name]: value }));
-
-                          onClearError(errorField);
-                        }}
-                        aria-invalid={
-                          hasFormError(error, errorField) || undefined
-                        }
-                        aria-describedby={
-                          hasFormError(error, errorField)
-                            ? `${field.name}-error`
-                            : undefined
-                        }
-                        required={field.required !== false}
-                        className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-red-500 transition-colors"
-                        {...(field.inputProps || {})}
-                      />
-                      <FieldError
-                        error={error}
-                        field={errorField}
-                        id={`${field.name}-error`}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            />
           </div>
         )}
       />
@@ -1346,19 +1081,21 @@ export default function AdminKilns() {
         }}
         onConfirm={confirmDelete}
         title="¿Eliminar horno?"
-        CustomMessage={() => (
-          <p className="text-neutral-300">
-            El horno{" "}
-            <span className="font-bold">
-              {selectedKiln?.kilnId} - "{selectedKiln?.name}"
-            </span>{" "}
-            será eliminado permanentemente
-          </p>
-        )}
-        type="danger"
-        confirmText="Eliminar horno"
+        message={`El horno ${selectedKiln?.name || "seleccionado"} será eliminado permanentemente si no conserva información histórica.`}
+        confirmText="Eliminar"
         cancelText="Cancelar"
         isLoading={loading}
+      />
+      <OperationalStatusDialog
+        isOpen={Boolean(statusKiln)}
+        equipmentLabel={
+          statusKiln
+            ? `${statusKiln.name || "Horno"} · Horno #${statusKiln.kilnId}`
+            : "Horno"
+        }
+        currentStatus={statusKiln?.operationalStatus}
+        onClose={() => setStatusKiln(null)}
+        onSubmit={changeOperationalStatus}
       />
     </div>
   );

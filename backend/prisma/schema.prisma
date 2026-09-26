@@ -7,87 +7,290 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER // Ceramistas
-  ADMIN // Administrador del sistema
+enum UserRole {
+  ADMIN
+  TECHNICIAN
+  CLIENT
 }
 
-enum SwitchTypes {
-  SSR
-  CONTACTOR
+enum FiringCycleStatus {
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+  ERROR
+  UNKNOWN
 }
 
-enum CtrlOperativeStatus {
-  ON
-  OFF
+enum TelemetrySampleType {
+  INITIAL
+  PERIODIC
+  FINAL
 }
 
-enum CtrlConnectionStatus {
+enum ControllerActivityStatus {
+  IDLE
+  FIRING
+  PAUSED
+  ERROR
+}
+
+enum ConnectionStatus {
   ONLINE
   OFFLINE
 }
 
+enum OperationalStatus {
+  OPERATIONAL
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+}
+
+enum SwitchType {
+  CONTACTOR
+  SSR
+}
+
 model User {
-  userId    Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
+  userId       Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?   @db.VarChar(32)
+  countryId    Int?
+  communeId    Int?
+  addressLine  String?   @db.VarChar(300)
+  role         UserRole  @default(CLIENT)
+  createdAt    DateTime  @default(now())
+  isActive     Boolean   @default(true)
+  anonymizedAt DateTime?
+
+  programs                    Program[]
+  controllers                 Controller[]
+  kilns                       Kiln[]
+  createdSupportTickets       SupportTicket[]     @relation("SupportTicketCreatedBy")
+  assignedSupportTickets      SupportTicket[]     @relation("SupportTicketAssignedTo")
+  performedMaintenanceRecords MaintenanceRecord[] @relation("MaintenancePerformedBy")
+  country                     Country?            @relation(fields: [countryId], references: [countryId], onDelete: Restrict)
+  commune                     Commune?            @relation(fields: [communeId], references: [communeId], onDelete: Restrict)
+
+  @@index([countryId])
+  @@index([communeId])
+}
+
+model Country {
+  countryId Int    @id @default(autoincrement())
+  isoCode   String @unique @db.VarChar(2)
   name      String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
 
-  // Un usuario puede tener cero o varios hornos
-  kilns Kiln[]
-
-  // Un usuario puede tener cero o varios controladores
-  controllers Controller[]
+  regions Region[]
+  users   User[]
 }
 
-// Hardware físico (ESP32)
+model Region {
+  regionId  Int    @id @default(autoincrement())
+  countryId Int
+  code      String @db.VarChar(2)
+  name      String
+
+  country  Country   @relation(fields: [countryId], references: [countryId], onDelete: Restrict)
+  communes Commune[]
+
+  @@unique([countryId, code])
+  @@index([countryId])
+}
+
+model Commune {
+  communeId Int    @id @default(autoincrement())
+  regionId  Int
+  code      String @unique @db.VarChar(5)
+  name      String
+
+  region Region @relation(fields: [regionId], references: [regionId], onDelete: Restrict)
+  users  User[]
+
+  @@index([regionId])
+}
+
+model Program {
+  programId     Int      @id @default(autoincrement())
+  userId        Int?
+  name          String
+  description   String?
+  configuration Json     @db.JsonB
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [userId], onDelete: Restrict)
+  firingCycles    FiringCycle[]
+  selectedByKilns Kiln[]        @relation("SelectedProgram")
+
+  @@index([userId])
+}
+
 model Controller {
-  controllerId     String               @id @default(uuid())
-  temp             Float?
-  pin              Int? // PIN temporal para vinculación
-  operativeStatus  CtrlOperativeStatus  @default(OFF)
-  connectionStatus CtrlConnectionStatus @default(OFFLINE)
-  switchType       SwitchTypes          @default(CONTACTOR)
-  switchAmps       Int                  @default(20)
+  controllerId          String                   @id @default(uuid())
+  userId                Int?
+  deviceSecretHash      String
+  pairingPinHash        String?
+  pairingPinExpiresAt   DateTime?
+  pairingFailedAttempts Int                      @default(0)
+  pairingBlockedUntil   DateTime?
+  temperature           Float?
+  operationalStatus     OperationalStatus        @default(OPERATIONAL)
+  connectionStatus      ConnectionStatus         @default(OFFLINE)
+  activityStatus        ControllerActivityStatus @default(IDLE)
+  switchCurrentCapacity Int                      @default(20)
+  switchType            SwitchType               @default(CONTACTOR)
+  manufacturedAt        DateTime                 @default(now())
+  deliveredAt           DateTime?
+  firmwareVersion       String                   @default("UNKNOWN")
+  firmwareUpdatedAt     DateTime?
 
-  // Controlador instalado en el horno
-  userId Int?
-  user   User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  user               User?               @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  kiln               Kiln?
+  maintenanceRecords MaintenanceRecord[]
 
-  // Un controlador maneja un horno a la vez
-  kiln Kiln?
+  @@index([userId])
 }
 
-// Horno
 model Kiln {
-  kilnId Int    @id @default(autoincrement())
-  name   String @default("Mi Horno Argillá")
-  liters Int // Ej. 30, 40
-  phases Int    @default(1) // 1 = monofasico, 3 = trifasico
-  volts  Int    @default(220)
-  amps   Int // Ej. 20, 25
+  kilnId                      Int               @id @default(autoincrement())
+  userId                      Int?
+  controllerId                String?           @unique
+  selectedProgramId           Int?
+  name                        String            @default("Mi Horno Argillá")
+  liters                      Int
+  phaseCount                  Int               @default(1)
+  nominalVoltage              Int               @default(220)
+  nominalCurrent              Int
+  manufacturedAt              DateTime          @default(now())
+  deliveredAt                 DateTime?
+  operationalStatus           OperationalStatus @default(OPERATIONAL)
+  manufacturer                String            @default("Argillá")
+  heatingCircuitConfiguration Json              @db.JsonB
 
-  // Dueño del horno
-  userId Int?
-  user   User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  user               User?               @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  controller         Controller?         @relation(fields: [controllerId], references: [controllerId], onDelete: SetNull)
+  selectedProgram    Program?            @relation("SelectedProgram", fields: [selectedProgramId], references: [programId], onDelete: Restrict)
+  firingCycles       FiringCycle[]
+  supportTickets     SupportTicket[]
+  maintenanceRecords MaintenanceRecord[]
 
-  // Controlador instalado en el horno
-  controllerId String?     @unique
-  controller   Controller? @relation(fields: [controllerId], references: [controllerId], onDelete: SetNull)
-
-  // Historial térmico (asociado al horno, si se cambia controlador no pasa nada)
-  telemetry Telemetry[]
+  @@index([userId])
+  @@index([selectedProgramId])
 }
 
-// Datos de telemetría
-model Telemetry {
-  telemetryId Int      @id @default(autoincrement())
-  temperature Float
-  switchState Boolean
-  timestamp   DateTime @default(now())
+model FiringCycle {
+  firingCycleId     Int               @id @default(autoincrement())
+  controllerCycleId String            @unique
+  kilnId            Int
+  programId         Int
+  startedAt         DateTime          @default(now())
+  endedAt           DateTime?
+  status            FiringCycleStatus @default(RUNNING)
+  programConfig     Json              @db.JsonB
+  statusReasonCode  String?
+  statusReason      String?
 
-  kilnId Int
-  kiln   Kiln @relation(fields: [kilnId], references: [kilnId], onDelete: Cascade)
+  kiln      Kiln        @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
+  program   Program     @relation(fields: [programId], references: [programId], onDelete: Restrict)
+  telemetry Telemetry[]
+
+  @@index([kilnId, startedAt])
+  @@index([programId])
+}
+
+model Telemetry {
+  telemetryId         Int      @id @default(autoincrement())
+  firingCycleId       Int
+  sampleSequence      Int
+  sampleType          TelemetrySampleType
+  temperature         Float
+  setpointTemperature Float
+  switchState         Boolean
+  stageIndex          Int?
+  voltage             Float
+  current             Float
+  timestamp           DateTime @default(now())
+
+  firingCycle FiringCycle @relation(fields: [firingCycleId], references: [firingCycleId], onDelete: Restrict)
+
+  @@index([firingCycleId, timestamp])
+  @@unique([firingCycleId, sampleSequence])
+}
+
+model SupportReason {
+  supportReasonId Int      @id @default(autoincrement())
+  code            String   @unique
+  name            String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  supportTickets SupportTicket[]
+}
+
+model SupportTicket {
+  supportTicketId  Int                 @id @default(autoincrement())
+  supportReasonId  Int
+  createdByUserId  Int
+  assignedToUserId Int?
+  kilnId           Int
+  title            String
+  description      String
+  status           SupportTicketStatus @default(OPEN)
+  resolution       String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  supportReason      SupportReason       @relation(fields: [supportReasonId], references: [supportReasonId], onDelete: Restrict)
+  createdByUser      User                @relation("SupportTicketCreatedBy", fields: [createdByUserId], references: [userId], onDelete: Restrict)
+  assignedToUser     User?               @relation("SupportTicketAssignedTo", fields: [assignedToUserId], references: [userId], onDelete: SetNull)
+  kiln               Kiln                @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
+  maintenanceRecords MaintenanceRecord[]
+
+  @@index([supportReasonId])
+  @@index([createdByUserId])
+  @@index([assignedToUserId])
+  @@index([kilnId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([assignedToUserId, status, createdAt])
+}
+
+model MaintenanceRecord {
+  maintenanceId     Int             @id @default(autoincrement())
+  kilnId            Int?
+  controllerId      String?
+  performedByUserId Int
+  supportTicketId   Int?
+  type              MaintenanceType
+  title             String
+  workPerformed     String
+  performedAt       DateTime
+  createdAt         DateTime        @default(now())
+
+  kiln            Kiln?          @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
+  controller      Controller?    @relation(fields: [controllerId], references: [controllerId], onDelete: Restrict)
+  performedByUser User           @relation("MaintenancePerformedBy", fields: [performedByUserId], references: [userId], onDelete: Restrict)
+  supportTicket   SupportTicket? @relation(fields: [supportTicketId], references: [supportTicketId], onDelete: SetNull)
+
+  @@index([kilnId, performedAt])
+  @@index([controllerId, performedAt])
+  @@index([performedByUserId])
+  @@index([supportTicketId])
 }
