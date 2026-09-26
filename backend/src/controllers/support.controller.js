@@ -16,9 +16,11 @@ import {
   listSupportReasons,
   listSupportTickets,
   updateSupportReason,
+  updateTicketEquipmentStatus,
   updateTicketMaintenance,
   updateSupportTicketStatus,
 } from "../services/support.service.js";
+import { emitAdminSummary } from "../realtime/socket.js";
 
 function idFrom(value) {
   const id = Number(value);
@@ -44,6 +46,8 @@ function handleSupportError(res, error, fallback) {
       "INVALID_TARGET",
       "INVALID_KILN",
       "INVALID_REASON",
+      "CYCLE_ACTIVE",
+      "CONTROLLER_REQUIRED",
     ].includes(error.code)
   ) {
     return handleErrorClient(res, 409, error.message);
@@ -205,6 +209,27 @@ export async function getDiagnostics(req, res) {
     );
   } catch (error) {
     return handleSupportError(res, error, "Error al obtener diagnóstico");
+  }
+}
+
+export async function changeEquipmentStatus(req, res) {
+  try {
+    const id = idFrom(req.params.ticketId);
+    if (!id) return handleErrorClient(res, 404, "Ticket no encontrado");
+    const equipment = await updateTicketEquipmentStatus(req.user, id, req.body);
+    void emitAdminSummary();
+    return handleSuccess(
+      res,
+      200,
+      "Estado del equipo actualizado exitosamente",
+      equipment,
+    );
+  } catch (error) {
+    return handleSupportError(
+      res,
+      error,
+      "Error al actualizar el estado del equipo",
+    );
   }
 }
 

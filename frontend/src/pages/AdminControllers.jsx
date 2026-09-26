@@ -7,12 +7,14 @@ import {
   LuPencil,
   LuPlus,
   LuTrash2,
+  LuWrench,
 } from "react-icons/lu";
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
 import { Badge } from "@components/Badge";
 import { KilnEquipmentDetails } from "@components/EquipmentInformation";
 import Modal from "@components/Modal";
+import OperationalStatusDialog from "@components/OperationalStatusDialog";
 import Pagination from "@components/Pagination";
 import { SearchableCatalogField } from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
@@ -35,6 +37,7 @@ import {
   deleteController,
   getAllControllers,
   updateController,
+  updateControllerOperationalStatus,
 } from "@services/controller.service";
 import { getAllKilns, linkController } from "@services/kiln.service";
 import { normalizeFormError } from "../utils/formError";
@@ -168,6 +171,7 @@ export default function AdminControllers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [selectedController, setSelectedController] = useState(null);
+  const [statusController, setStatusController] = useState(null);
   const [associationController, setAssociationController] = useState(null);
   const [associationKilnId, setAssociationKilnId] = useState("");
   const [associationLoading, setAssociationLoading] = useState(false);
@@ -343,6 +347,18 @@ export default function AdminControllers() {
     else await fetchControllers();
   }
 
+  async function changeOperationalStatus(operationalStatus) {
+    const result = await updateControllerOperationalStatus(
+      statusController.controllerId,
+      operationalStatus,
+    );
+    if (result.success) {
+      toast.success("Estado del controlador actualizado.");
+      await fetchControllers();
+    }
+    return result;
+  }
+
   function renderControllerActions(controller, withLabels = false) {
     const buttonClass = withLabels
       ? "inline-flex items-center justify-center gap-2 rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-secondary hover:bg-surface-hover"
@@ -362,6 +378,15 @@ export default function AdminControllers() {
         )}
         {isAdmin && (
           <>
+            <button
+              type="button"
+              onClick={() => setStatusController(controller)}
+              className={buttonClass}
+              title="Cambiar estado del controlador"
+            >
+              <LuWrench className="text-base" />
+              {withLabels && "Cambiar estado"}
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -677,6 +702,16 @@ export default function AdminControllers() {
                               title="Editar controlador"
                             >
                               <LuPencil className="text-base" />
+                            </button>
+                          )}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setStatusController(controller)}
+                              className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content lg:hidden"
+                              title="Cambiar estado del controlador"
+                            >
+                              <LuWrench className="text-base" />
                             </button>
                           )}
                           <div className="hidden justify-center gap-2 lg:flex">
@@ -1018,6 +1053,17 @@ export default function AdminControllers() {
         confirmText="Eliminar"
         cancelText="Cancelar"
         isLoading={loading}
+      />
+      <OperationalStatusDialog
+        isOpen={Boolean(statusController)}
+        equipmentLabel={
+          statusController
+            ? `Controlador ...${statusController.controllerCode}`
+            : "Controlador"
+        }
+        currentStatus={statusController?.operationalStatus}
+        onClose={() => setStatusController(null)}
+        onSubmit={changeOperationalStatus}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import {
   addTicket,
   assignTicket,
   changeTicketStatus,
+  changeEquipmentStatus,
   claimTicket,
   editReason,
   editMaintenance,
@@ -28,6 +29,7 @@ import {
   updateMaintenanceValidation,
   updateSupportTicketStatusValidation,
 } from "../validations/support.validation.js";
+import { updateTicketEquipmentStatusValidation } from "../validations/equipmentStatus.validation.js";
 
 const router = Router();
 router.use(authenticateJWT);
@@ -76,6 +78,12 @@ router.get(
   "/tickets/:ticketId/diagnostics",
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   getDiagnostics,
+);
+router.patch(
+  "/tickets/:ticketId/equipment-status",
+  verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
+  validateSchema(updateTicketEquipmentStatusValidation),
+  changeEquipmentStatus,
 );
 router.get(
   "/tickets/:ticketId/telemetry",

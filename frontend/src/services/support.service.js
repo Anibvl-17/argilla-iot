@@ -98,6 +98,13 @@ export function getSupportDiagnostics(ticketId) {
   );
 }
 
+export function updateSupportEquipmentStatus(ticketId, data) {
+  return request(
+    () => axios.patch(`/support/tickets/${ticketId}/equipment-status`, data),
+    "No fue posible actualizar el estado del equipo",
+  );
+}
+
 export function getSupportTelemetry(
   ticketId,
   firingCycleId,

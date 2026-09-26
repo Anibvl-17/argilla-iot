@@ -142,6 +142,17 @@ export async function updateKiln(kilnId, data) {
   }
 }
 
+export async function updateKilnOperationalStatus(kilnId, operationalStatus) {
+  try {
+    const response = await axios.patch(`/kiln/${kilnId}/operational-status`, {
+      operationalStatus,
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return serviceError(error, "No fue posible actualizar el estado del horno");
+  }
+}
+
 export async function deleteKiln(kilnId) {
   try {
     await axios.delete(`/kiln/${kilnId}/delete`);

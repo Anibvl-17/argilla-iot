@@ -20,6 +20,7 @@ const { authState, mocks } = vi.hoisted(() => ({
     getSupportDiagnostics: vi.fn(),
     getSupportTelemetry: vi.fn(),
     updateTicketMaintenance: vi.fn(),
+    updateSupportEquipmentStatus: vi.fn(),
     updateSupportTicketStatus: vi.fn(),
   },
 }));
@@ -36,6 +37,7 @@ vi.mock("@services/support.service", () => ({
   getSupportTelemetry: mocks.getSupportTelemetry,
   getSupportTicket: mocks.getSupportTicket,
   updateTicketMaintenance: mocks.updateTicketMaintenance,
+  updateSupportEquipmentStatus: mocks.updateSupportEquipmentStatus,
   updateSupportTicketStatus: mocks.updateSupportTicketStatus,
 }));
 vi.mock("@components/TelemetryChart", () => ({
@@ -159,6 +161,10 @@ describe("SupportTicketDetails", () => {
       success: true,
       data: {},
     });
+    mocks.updateSupportEquipmentStatus.mockResolvedValue({
+      success: true,
+      data: {},
+    });
   });
 
   it("uses the current equipment information layout for support diagnostics", async () => {
@@ -197,6 +203,90 @@ describe("SupportTicketDetails", () => {
     expect(within(equipmentSection).getByText("abcdef")).toBeInTheDocument();
     expect(within(equipmentSection).getByText("SSR 30 A")).toBeInTheDocument();
     expect(equipmentSection).not.toHaveTextContent("undefined");
+  });
+
+  it("lets the assigned technician change each equipment status and refreshes diagnostics", async () => {
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Cambiar estado del horno" }),
+    );
+    fireEvent.change(screen.getByLabelText("Nuevo estado"), {
+      target: { value: "OUT_OF_SERVICE" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar estado" }));
+
+    await waitFor(() =>
+      expect(mocks.updateSupportEquipmentStatus).toHaveBeenCalledWith("9", {
+        target: "KILN",
+        operationalStatus: "OUT_OF_SERVICE",
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.getSupportDiagnostics).toHaveBeenCalledTimes(2),
+    );
+  });
+
+  it("keeps the status dialog open when an active firing rejects the change", async () => {
+    mocks.updateSupportEquipmentStatus.mockResolvedValue({
+      success: false,
+      status: 409,
+      message: "No se puede cambiar durante una quema activa",
+    });
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Cambiar estado del controlador",
+      }),
+    );
+    fireEvent.change(screen.getByLabelText("Nuevo estado"), {
+      target: { value: "MAINTENANCE" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar estado" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No se puede cambiar durante una quema activa",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Cambiar estado" }),
+    ).toBeInTheDocument();
+  });
+
+  it("hides status controls from technicians once the ticket is resolved", async () => {
+    mocks.getSupportTicket.mockResolvedValue({
+      success: true,
+      data: buildTicket({ status: "RESOLVED", resolution: "Reparado" }),
+    });
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("heading", { name: "Información del equipo" });
+    expect(
+      screen.queryByRole("button", { name: "Cambiar estado del horno" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: "Cambiar estado del controlador",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("tells an administrator that an assigned ticket can be reassigned", async () => {

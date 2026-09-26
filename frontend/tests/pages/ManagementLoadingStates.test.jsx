@@ -37,12 +37,14 @@ vi.mock("@services/kiln.service", () => ({
   unlinkController: vi.fn(),
   unlinkUser: vi.fn(),
   updateKiln: vi.fn(),
+  updateKilnOperationalStatus: vi.fn(),
 }));
 vi.mock("@services/controller.service", () => ({
   getAllControllers: vi.fn(() => pending),
   createController: vi.fn(),
   deleteController: vi.fn(),
   updateController: vi.fn(),
+  updateControllerOperationalStatus: vi.fn(),
 }));
 
 describe("management loading states", () => {

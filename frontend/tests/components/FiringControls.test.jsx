@@ -28,10 +28,14 @@ const programs = [
 
 const kiln = {
   kilnId: 7,
+  operationalStatus: "OPERATIONAL",
   selectedProgramId: 1,
   selectedProgram: programs[0],
   activeFiringCycle: null,
-  controller: { connectionStatus: "ONLINE" },
+  controller: {
+    connectionStatus: "ONLINE",
+    operationalStatus: "OPERATIONAL",
+  },
 };
 
 describe("FiringControls", () => {
@@ -97,6 +101,69 @@ describe("FiringControls", () => {
       screen.getByRole("button", { name: "Iniciar quema" }),
     ).toBeDisabled();
     expect(screen.queryByText("Quema directa")).not.toBeInTheDocument();
+  });
+
+  it("blocks starts and explains when the kiln is in maintenance", () => {
+    render(
+      <FiringControls
+        kiln={{ ...kiln, operationalStatus: "MAINTENANCE" }}
+        programs={programs}
+      />,
+    );
+
+    const startButton = screen.getByRole("button", { name: "Iniciar quema" });
+    expect(startButton).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Tu horno está en mantención.",
+    );
+    fireEvent.click(startButton);
+    expect(mocks.startProgram).not.toHaveBeenCalled();
+  });
+
+  it("blocks compact starts and explains when the controller is out of service", () => {
+    render(
+      <MemoryRouter>
+        <FiringControls
+          compact
+          detailsHref="/kilns/7"
+          kiln={{
+            ...kiln,
+            controller: {
+              ...kiln.controller,
+              operationalStatus: "OUT_OF_SERVICE",
+            },
+          }}
+          programs={programs}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Iniciar quema" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Tu controlador está fuera de servicio.",
+    );
+  });
+
+  it("uses a combined message when both equipment items share the status", () => {
+    render(
+      <FiringControls
+        kiln={{
+          ...kiln,
+          operationalStatus: "MAINTENANCE",
+          controller: {
+            ...kiln.controller,
+            operationalStatus: "MAINTENANCE",
+          },
+        }}
+        programs={programs}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Tu horno y controlador están en mantención.",
+    );
   });
 
   it("shows the frozen stage state during thermal recovery", () => {

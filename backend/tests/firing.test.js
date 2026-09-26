@@ -175,6 +175,7 @@ test("firing request validation only accepts a command id for program starts", (
 
 test("start preconditions reject hot kilns and require a selected program", async () => {
   const base = {
+    operationalStatus: "OPERATIONAL",
     controller: {
       connectionStatus: "ONLINE",
       operationalStatus: "OPERATIONAL",
@@ -194,6 +195,27 @@ test("start preconditions reject hot kilns and require a selected program", asyn
         controller: { ...base.controller, temperature: 25 },
       }),
     { code: "PROGRAM_REQUIRED" },
+  );
+  await assert.rejects(
+    () =>
+      assertCanStart({
+        ...base,
+        operationalStatus: "MAINTENANCE",
+        controller: { ...base.controller, temperature: 25 },
+      }),
+    { code: "KILN_UNAVAILABLE" },
+  );
+  await assert.rejects(
+    () =>
+      assertCanStart({
+        ...base,
+        controller: {
+          ...base.controller,
+          operationalStatus: "OUT_OF_SERVICE",
+          temperature: 25,
+        },
+      }),
+    { code: "CONTROLLER_UNAVAILABLE" },
   );
 });
 

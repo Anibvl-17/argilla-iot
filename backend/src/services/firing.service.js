@@ -43,6 +43,7 @@ export async function getOwnedFiringContext(userId, kilnId) {
     select: {
       kilnId: true,
       userId: true,
+      operationalStatus: true,
       selectedProgramId: true,
       selectedProgram: {
         select: {
@@ -145,6 +146,9 @@ export async function applyControllerSelection(controllerId, programId) {
 
 export async function assertCanStart(context) {
   if (!context) throw serviceError("NOT_FOUND", "Horno no encontrado");
+  if (context.operationalStatus !== "OPERATIONAL") {
+    throw serviceError("KILN_UNAVAILABLE", "El horno no está operativo");
+  }
   if (!context.controller) {
     throw serviceError("CONTROLLER_REQUIRED", "El horno no tiene controlador");
   }

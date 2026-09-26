@@ -60,6 +60,27 @@ export async function updateController(controllerId, data) {
   }
 }
 
+export async function updateControllerOperationalStatus(
+  controllerId,
+  operationalStatus,
+) {
+  try {
+    const response = await axios.patch(
+      `/controller/${controllerId}/operational-status`,
+      { operationalStatus },
+    );
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "No fue posible actualizar el estado del controlador",
+      data: error.response?.data,
+    };
+  }
+}
+
 export async function getAccessibleControllers(params = {}) {
   try {
     const response = await axios.get("/controller/accessible", { params });

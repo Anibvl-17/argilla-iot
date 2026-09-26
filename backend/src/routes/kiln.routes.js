@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addKiln,
+  changeKilnOperationalStatus,
   editKiln,
   getAllKilns,
   getUserKilns,
@@ -26,6 +27,7 @@ import {
   linkUserValidation,
   linkControllerValidation,
 } from "../validations/kiln.validation.js";
+import { updateOperationalStatusValidation } from "../validations/equipmentStatus.validation.js";
 
 const router = Router();
 
@@ -80,6 +82,12 @@ router.patch(
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(editKilnValidation),
   editKiln,
+);
+router.patch(
+  "/:kilnId/operational-status",
+  verifyRoles([ROLES.ADMIN]),
+  validateSchema(updateOperationalStatusValidation),
+  changeKilnOperationalStatus,
 );
 router.delete("/:kilnId/delete", verifyRoles([ROLES.ADMIN]), removeKiln);
 

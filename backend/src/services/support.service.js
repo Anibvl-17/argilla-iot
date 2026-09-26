@@ -1,5 +1,9 @@
 import { prisma } from "../config/prisma.js";
 import { ROLES } from "../constants/user.constants.js";
+import {
+  EQUIPMENT_STATUS_TARGETS,
+  updateEquipmentOperationalStatusInTransaction,
+} from "./equipmentStatus.service.js";
 
 const TICKET_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 
@@ -427,6 +431,74 @@ export async function getSupportDiagnostics(actor, supportTicketId) {
         }
       : null,
   };
+}
+
+export async function updateTicketEquipmentStatus(
+  actor,
+  supportTicketId,
+  { target, operationalStatus },
+) {
+  if (![ROLES.ADMIN, ROLES.TECHNICIAN].includes(actor.role)) {
+    throw serviceError("FORBIDDEN", "No puedes cambiar el estado del equipo");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw`
+      SELECT "supportTicketId" FROM "SupportTicket"
+      WHERE "supportTicketId" = ${supportTicketId}
+      FOR UPDATE
+    `;
+    if (locked.length === 0) {
+      throw serviceError("NOT_FOUND", "Ticket no encontrado");
+    }
+
+    const ticket = await tx.supportTicket.findUnique({
+      where: { supportTicketId },
+      select: {
+        supportTicketId: true,
+        assignedToUserId: true,
+        status: true,
+        kilnId: true,
+        kiln: { select: { controllerId: true } },
+      },
+    });
+    if (!ticket) throw serviceError("NOT_FOUND", "Ticket no encontrado");
+
+    if (
+      actor.role === ROLES.TECHNICIAN &&
+      (ticket.assignedToUserId !== actor.id || ticket.status !== "IN_PROGRESS")
+    ) {
+      throw serviceError(
+        "FORBIDDEN",
+        "Solo el técnico asignado puede cambiar el equipo mientras el ticket está en progreso",
+      );
+    }
+
+    if (target === EQUIPMENT_STATUS_TARGETS.KILN) {
+      return updateEquipmentOperationalStatusInTransaction(tx, {
+        target,
+        kilnId: ticket.kilnId,
+        operationalStatus,
+      });
+    }
+
+    if (target === EQUIPMENT_STATUS_TARGETS.CONTROLLER) {
+      if (!ticket.kiln.controllerId) {
+        throw serviceError(
+          "INVALID_TARGET",
+          "El horno del ticket no tiene un controlador vinculado",
+        );
+      }
+      return updateEquipmentOperationalStatusInTransaction(tx, {
+        target,
+        controllerId: ticket.kiln.controllerId,
+        expectedKilnId: ticket.kilnId,
+        operationalStatus,
+      });
+    }
+
+    throw serviceError("INVALID_TARGET", "Equipo no válido");
+  });
 }
 
 export async function getSupportTelemetry(actor, supportTicketId, query = {}) {

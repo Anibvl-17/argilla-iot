@@ -10,6 +10,7 @@ import {
   LuTrash2,
   LuUnlink,
   LuUserRoundMinus,
+  LuWrench,
 } from "react-icons/lu";
 import { toast } from "sonner";
 import AlertDialog from "@components/AlertDialog";
@@ -17,6 +18,7 @@ import { Badge } from "@components/Badge";
 import { ControllerEquipmentDetails } from "@components/EquipmentInformation";
 import HeatingCircuitEditor from "@components/HeatingCircuitEditor";
 import Modal from "@components/Modal";
+import OperationalStatusDialog from "@components/OperationalStatusDialog";
 import Pagination from "@components/Pagination";
 import { SearchableCatalogField } from "@components/UserContactFields";
 import { useAuth } from "@context/AuthContext";
@@ -40,6 +42,7 @@ import {
   unlinkController,
   unlinkUser,
   updateKiln,
+  updateKilnOperationalStatus,
 } from "@services/kiln.service";
 import { getAllUsers } from "@services/user.service";
 import {
@@ -98,6 +101,7 @@ export default function AdminKilns() {
   const [formError, setFormError] = useState("");
   const [expandedKilnId, setExpandedKilnId] = useState(null);
   const [selectedKiln, setSelectedKiln] = useState(null);
+  const [statusKiln, setStatusKiln] = useState(null);
   const [associationKiln, setAssociationKiln] = useState(null);
   const [associationControllerId, setAssociationControllerId] = useState("");
   const [associationLoading, setAssociationLoading] = useState(false);
@@ -298,6 +302,18 @@ export default function AdminKilns() {
     setSelectedKiln(null);
     if (nextPage !== page) setPage(nextPage);
     else await fetchKilns();
+  }
+
+  async function changeOperationalStatus(operationalStatus) {
+    const result = await updateKilnOperationalStatus(
+      statusKiln.kilnId,
+      operationalStatus,
+    );
+    if (result.success) {
+      toast.success("Estado del horno actualizado.");
+      await fetchKilns();
+    }
+    return result;
   }
 
   if (showForm) {
@@ -712,17 +728,27 @@ export default function AdminKilns() {
                               </button>
                             )}
                             {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedKiln(kiln);
-                                  setIsAlertOpen(true);
-                                }}
-                                className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger"
-                                title="Eliminar horno"
-                              >
-                                <LuTrash2 className="text-base" />
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setStatusKiln(kiln)}
+                                  className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-content"
+                                  title="Cambiar estado del horno"
+                                >
+                                  <LuWrench className="text-base" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedKiln(kiln);
+                                    setIsAlertOpen(true);
+                                  }}
+                                  className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger"
+                                  title="Eliminar horno"
+                                >
+                                  <LuTrash2 className="text-base" />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -1059,6 +1085,17 @@ export default function AdminKilns() {
         confirmText="Eliminar"
         cancelText="Cancelar"
         isLoading={loading}
+      />
+      <OperationalStatusDialog
+        isOpen={Boolean(statusKiln)}
+        equipmentLabel={
+          statusKiln
+            ? `${statusKiln.name || "Horno"} · Horno #${statusKiln.kilnId}`
+            : "Horno"
+        }
+        currentStatus={statusKiln?.operationalStatus}
+        onClose={() => setStatusKiln(null)}
+        onSubmit={changeOperationalStatus}
       />
     </div>
   );

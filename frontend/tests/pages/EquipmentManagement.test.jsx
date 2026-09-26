@@ -17,6 +17,8 @@ const { authState, mocks } = vi.hoisted(() => ({
     getAllControllers: vi.fn(),
     getAllUsers: vi.fn(),
     linkController: vi.fn(),
+    updateKilnOperationalStatus: vi.fn(),
+    updateControllerOperationalStatus: vi.fn(),
   },
 }));
 
@@ -34,6 +36,7 @@ vi.mock("@services/kiln.service", () => ({
   unlinkController: vi.fn(),
   unlinkUser: vi.fn(),
   updateKiln: vi.fn(),
+  updateKilnOperationalStatus: mocks.updateKilnOperationalStatus,
 }));
 vi.mock("@services/controller.service", () => ({
   createController: vi.fn(),
@@ -41,6 +44,7 @@ vi.mock("@services/controller.service", () => ({
   getAllControllers: mocks.getAllControllers,
   sendAdminControllerCommand: vi.fn(),
   updateController: vi.fn(),
+  updateControllerOperationalStatus: mocks.updateControllerOperationalStatus,
 }));
 
 const circuit = {
@@ -149,6 +153,14 @@ describe("technician equipment management", () => {
       },
     });
     mocks.linkController.mockResolvedValue({ success: true, data: {} });
+    mocks.updateKilnOperationalStatus.mockResolvedValue({
+      success: true,
+      data: {},
+    });
+    mocks.updateControllerOperationalStatus.mockResolvedValue({
+      success: true,
+      data: {},
+    });
   });
 
   it("lets technicians create, link, and edit only unowned kilns without history access", async () => {
@@ -233,6 +245,44 @@ describe("technician equipment management", () => {
     );
     expect(screen.queryByText("Nombre")).not.toBeInTheDocument();
     expect(screen.queryByText("Actividad")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Cambiar estado del horno"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("lets administrators change a kiln status from the dedicated dialog", async () => {
+    authState.user = { id: 1, name: "Administradora", role: "ADMIN" };
+    render(
+      <MemoryRouter>
+        <AdminKilns />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      (await screen.findAllByTitle("Cambiar estado del horno"))[0],
+    );
+    expect(
+      screen.getByRole("button", { name: "Guardar estado" }),
+    ).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Nuevo estado"), {
+      target: { value: "MAINTENANCE" },
+    });
+    expect(
+      screen.getByText(/no podrá utilizarse para iniciar nuevas quemas/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Guardar estado" }));
+
+    await waitFor(() =>
+      expect(mocks.updateKilnOperationalStatus).toHaveBeenCalledWith(
+        1,
+        "MAINTENANCE",
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "Cambiar estado" }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("shows the safe controller information available to technicians from the kiln list", async () => {

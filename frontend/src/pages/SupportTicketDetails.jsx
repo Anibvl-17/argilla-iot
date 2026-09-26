@@ -9,6 +9,7 @@ import {
 } from "@components/EquipmentInformation";
 import FiringCycleHistory from "@components/FiringCycleHistory";
 import FloatingDropdown from "@components/FloatingDropdown";
+import OperationalStatusDialog from "@components/OperationalStatusDialog";
 import {
   assignSupportTicket,
   claimSupportTicket,
@@ -18,6 +19,7 @@ import {
   getSupportTelemetry,
   getSupportTicket,
   updateTicketMaintenance,
+  updateSupportEquipmentStatus,
   updateSupportTicketStatus,
 } from "@services/support.service";
 import { MAINTENANCE_TYPE_LABELS } from "@constants/support.constants";
@@ -119,7 +121,13 @@ function AssigneeSearch({ assignees, value, onSelect }) {
   );
 }
 
-function Diagnostics({ data, ticketId, unavailable }) {
+function Diagnostics({
+  data,
+  ticketId,
+  unavailable,
+  canChangeStatus,
+  onChangeStatus,
+}) {
   const getTelemetry = useCallback(
     (_kilnId, cycleId, page, pageSize) =>
       getSupportTelemetry(ticketId, cycleId, page, pageSize),
@@ -148,7 +156,24 @@ function Diagnostics({ data, ticketId, unavailable }) {
         </p>
         <div className="mt-5 grid gap-7 lg:grid-cols-2 lg:gap-0">
           <div className="min-w-0 lg:border-r lg:border-border lg:pr-8">
-            <h3 className="font-semibold">Información del horno</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">Información del horno</h3>
+              {canChangeStatus && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChangeStatus({
+                      target: "KILN",
+                      equipmentLabel: `${data.name} · Horno #${data.kilnId}`,
+                      currentStatus: data.operationalStatus,
+                    })
+                  }
+                  className="shrink-0 rounded-lg border border-control-border px-3 py-1.5 text-xs font-medium hover:bg-surface-hover"
+                >
+                  Cambiar estado del horno
+                </button>
+              )}
+            </div>
             <KilnEquipmentDetails
               kiln={data}
               controller={data.controller}
@@ -158,7 +183,24 @@ function Diagnostics({ data, ticketId, unavailable }) {
             />
           </div>
           <div className="min-w-0 border-t border-border pt-7 lg:border-t-0 lg:pl-8 lg:pt-0">
-            <h3 className="font-semibold">Información del controlador</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">Información del controlador</h3>
+              {canChangeStatus && data.controller && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChangeStatus({
+                      target: "CONTROLLER",
+                      equipmentLabel: `Controlador ...${data.controller.controllerCode}`,
+                      currentStatus: data.controller.operationalStatus,
+                    })
+                  }
+                  className="shrink-0 rounded-lg border border-control-border px-3 py-1.5 text-xs font-medium hover:bg-surface-hover"
+                >
+                  Cambiar estado del controlador
+                </button>
+              )}
+            </div>
             {data.controller ? (
               <ControllerEquipmentDetails
                 controller={data.controller}
@@ -505,6 +547,7 @@ export default function SupportTicketDetails() {
   const [diagnostics, setDiagnostics] = useState(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState(null);
+  const [statusEquipment, setStatusEquipment] = useState(null);
   const [assignees, setAssignees] = useState([]);
   const [resolution, setResolution] = useState("");
   const [loading, setLoading] = useState(true);
@@ -576,6 +619,20 @@ export default function SupportTicketDetails() {
     );
   }
 
+  async function changeEquipmentStatus(operationalStatus) {
+    const result = await updateSupportEquipmentStatus(ticketId, {
+      target: statusEquipment.target,
+      operationalStatus,
+    });
+    if (!result.success) return result;
+
+    const diagnosticResult = await getSupportDiagnostics(ticketId);
+    if (diagnosticResult.success) setDiagnostics(diagnosticResult.data);
+    else unavailable(diagnosticResult.message);
+    toast.success("Estado del equipo actualizado.");
+    return result;
+  }
+
   if (loading || !ticket)
     return (
       <div className="py-20 text-center text-muted">Cargando ticket...</div>
@@ -591,6 +648,12 @@ export default function SupportTicketDetails() {
     canWork &&
     diagnostics &&
     ["IN_PROGRESS", "RESOLVED"].includes(ticket.status);
+  const canChangeEquipmentStatus =
+    isAdmin ||
+    (user.role === ROLES.TECHNICIAN &&
+      hasAssignee &&
+      String(assignedUserId) === String(sessionUserId) &&
+      ticket.status === "IN_PROGRESS");
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
@@ -794,6 +857,8 @@ export default function SupportTicketDetails() {
           data={diagnostics}
           ticketId={ticketId}
           unavailable={unavailable}
+          canChangeStatus={canChangeEquipmentStatus}
+          onChangeStatus={setStatusEquipment}
         />
       )}
       {!isClient && (
@@ -813,6 +878,13 @@ export default function SupportTicketDetails() {
           )}
         </>
       )}
+      <OperationalStatusDialog
+        isOpen={Boolean(statusEquipment)}
+        equipmentLabel={statusEquipment?.equipmentLabel || "Equipo"}
+        currentStatus={statusEquipment?.currentStatus}
+        onClose={() => setStatusEquipment(null)}
+        onSubmit={changeEquipmentStatus}
+      />
     </div>
   );
 }

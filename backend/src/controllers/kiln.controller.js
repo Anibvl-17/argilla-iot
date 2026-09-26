@@ -24,6 +24,10 @@ import {
 } from "../services/firing.service.js";
 import { emitAdminSummary } from "../realtime/socket.js";
 import { ROLES } from "../constants/user.constants.js";
+import {
+  EQUIPMENT_STATUS_TARGETS,
+  updateEquipmentOperationalStatus,
+} from "../services/equipmentStatus.service.js";
 
 export async function addKiln(req, res) {
   try {
@@ -360,6 +364,35 @@ export async function editKiln(req, res) {
     }
 
     return handleErrorServer(res, 500, "Error al editar horno", error.message);
+  }
+}
+
+export async function changeKilnOperationalStatus(req, res) {
+  try {
+    const kilnId = Number(req.params.kilnId);
+    if (!Number.isInteger(kilnId) || kilnId < 1) {
+      return handleErrorClient(res, 404, "Horno no encontrado");
+    }
+    const kiln = await updateEquipmentOperationalStatus({
+      target: EQUIPMENT_STATUS_TARGETS.KILN,
+      kilnId,
+      operationalStatus: req.body.operationalStatus,
+    });
+    void emitAdminSummary();
+    return handleSuccess(res, 200, "Estado del horno actualizado", kiln);
+  } catch (error) {
+    if (error.code === "NOT_FOUND") {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if (["CYCLE_ACTIVE", "STATE_CONFLICT"].includes(error.code)) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(
+      res,
+      500,
+      "Error al actualizar el estado del horno",
+      error.message,
+    );
   }
 }
 

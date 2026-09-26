@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createController,
+  changeControllerOperationalStatus,
   editController,
   getAccessibleControllers,
   getAllControllers,
@@ -16,6 +17,7 @@ import {
   editControllerValidation,
   pairControllerValidation,
 } from "../validations/controller.validation.js";
+import { updateOperationalStatusValidation } from "../validations/equipmentStatus.validation.js";
 
 const router = Router();
 
@@ -50,6 +52,12 @@ router.patch(
   verifyRoles([ROLES.ADMIN, ROLES.TECHNICIAN]),
   validateSchema(editControllerValidation),
   editController,
+);
+router.patch(
+  "/:controllerId/operational-status",
+  verifyRoles([ROLES.ADMIN]),
+  validateSchema(updateOperationalStatusValidation),
+  changeControllerOperationalStatus,
 );
 router.delete(
   "/:controllerId/delete",

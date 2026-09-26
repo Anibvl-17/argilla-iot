@@ -16,6 +16,10 @@ import {
   requestControllerSynchronization,
 } from "../config/mqttClient.js";
 import { ROLES } from "../constants/user.constants.js";
+import {
+  EQUIPMENT_STATUS_TARGETS,
+  updateEquipmentOperationalStatus,
+} from "../services/equipmentStatus.service.js";
 
 /** Crea un controlador lógico. */
 export async function createController(req, res) {
@@ -84,6 +88,38 @@ export async function editController(req, res) {
       res,
       500,
       "Error al editar controlador",
+      error.message,
+    );
+  }
+}
+
+export async function changeControllerOperationalStatus(req, res) {
+  try {
+    const controller = await updateEquipmentOperationalStatus({
+      target: EQUIPMENT_STATUS_TARGETS.CONTROLLER,
+      controllerId: req.params.controllerId,
+      operationalStatus: req.body.operationalStatus,
+    });
+    void emitAdminSummary();
+    return handleSuccess(
+      res,
+      200,
+      "Estado del controlador actualizado",
+      controller,
+    );
+  } catch (error) {
+    if (error.code === "NOT_FOUND") {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if (
+      ["CYCLE_ACTIVE", "STATE_CONFLICT", "INVALID_TARGET"].includes(error.code)
+    ) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(
+      res,
+      500,
+      "Error al actualizar el estado del controlador",
       error.message,
     );
   }

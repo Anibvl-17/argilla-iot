@@ -19,6 +19,39 @@ const STATUS_LABELS = {
   UNKNOWN: "Resultado desconocido",
 };
 
+const UNAVAILABLE_OPERATIONAL_STATUSES = ["MAINTENANCE", "OUT_OF_SERVICE"];
+
+function operationalStatusText(status) {
+  if (status === "MAINTENANCE") return "en mantención";
+  if (status === "OUT_OF_SERVICE") return "fuera de servicio";
+  return null;
+}
+
+function getEquipmentUnavailableMessage(kiln) {
+  const unavailable = [
+    { equipment: "horno", status: kiln.operationalStatus },
+    {
+      equipment: "controlador",
+      status: kiln.controller?.operationalStatus,
+    },
+  ].filter(({ status }) => UNAVAILABLE_OPERATIONAL_STATUSES.includes(status));
+  if (unavailable.length === 0) return "";
+
+  if (
+    unavailable.length === 2 &&
+    unavailable[0].status === unavailable[1].status
+  ) {
+    return `Tu horno y controlador están ${operationalStatusText(unavailable[0].status)}.`;
+  }
+
+  return unavailable
+    .map(
+      ({ equipment, status }) =>
+        `Tu ${equipment} está ${operationalStatusText(status)}.`,
+    )
+    .join(" ");
+}
+
 export default function FiringControls({
   kiln,
   programs,
@@ -37,6 +70,8 @@ export default function FiringControls({
   const online = kiln.controller?.connectionStatus === "ONLINE";
   const reconciled = kiln.reconciliation?.ready !== false;
   const controlsAvailable = online && reconciled;
+  const equipmentUnavailableMessage = getEquipmentUnavailableMessage(kiln);
+  const canStart = controlsAvailable && !equipmentUnavailableMessage;
 
   async function run(action) {
     setBusy(true);
@@ -86,7 +121,7 @@ export default function FiringControls({
                 ))}
               </select>
               <button
-                disabled={busy || !controlsAvailable || !selected}
+                disabled={busy || !canStart || !selected}
                 onClick={() => run(() => startProgram(kiln.kilnId))}
                 className="inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs text-on-action disabled:opacity-50"
               >
@@ -139,6 +174,11 @@ export default function FiringControls({
         {online && !reconciled && (
           <p className="text-xs text-muted">
             Reconciliando el estado del controlador…
+          </p>
+        )}
+        {equipmentUnavailableMessage && !active && (
+          <p className="text-xs font-medium text-warning" role="status">
+            {equipmentUnavailableMessage}
           </p>
         )}
         {error && <p className="text-xs text-danger">{error}</p>}
@@ -218,7 +258,7 @@ export default function FiringControls({
           </div>
         ) : (
           <button
-            disabled={busy || !controlsAvailable || !selected}
+            disabled={busy || !canStart || !selected}
             onClick={() => run(() => startProgram(kiln.kilnId))}
             className="inline-flex w-fit items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 py-2.5 text-sm text-on-action disabled:opacity-50"
           >
@@ -256,6 +296,11 @@ export default function FiringControls({
       {online && !reconciled && (
         <p className="text-sm text-muted">
           Reconciliando el estado del controlador…
+        </p>
+      )}
+      {equipmentUnavailableMessage && !active && (
+        <p className="text-sm font-medium text-warning" role="status">
+          {equipmentUnavailableMessage}
         </p>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
