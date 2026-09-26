@@ -8,7 +8,6 @@ import { prisma } from "../src/config/prisma.js";
 import { createUser } from "../src/services/user.service.js";
 import {
   normalizeInternationalPhone,
-  normalizeLegacyInternationalPhone,
   normalizePhoneSearch,
   normalizeUserContactData,
 } from "../src/utils/userContact.js";
@@ -136,7 +135,7 @@ test("an international user keeps only the country relation", async () => {
   );
 });
 
-test("an incomplete legacy user must choose a country on profile edit", async () => {
+test("an incomplete user must choose a country on profile edit", async () => {
   await assert.rejects(
     normalizeUserContactData({ addressLine: null }, {}, catalogClient),
     {
@@ -174,12 +173,7 @@ test("invalid and context-free national phones are rejected with a field", () =>
   });
 });
 
-test("legacy phone backfill and formatted search remain supported", () => {
-  assert.equal(
-    normalizeLegacyInternationalPhone("+56 9 8765 4321"),
-    "+56987654321",
-  );
-  assert.equal(normalizeLegacyInternationalPhone("987654321"), null);
+test("formatted phone search remains supported", () => {
   assert.equal(normalizePhoneSearch("+56 9 8765-4321"), "+56987654321");
   assert.equal(normalizePhoneSearch("María"), "");
 });

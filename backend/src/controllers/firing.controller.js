@@ -115,7 +115,7 @@ export async function selectProgram(req, res) {
     );
     void publishControllerCatalog(controllerId).catch((error) =>
       console.error(
-        "[Firing] Programa guardado; sincronización pendiente:",
+        "[QUEMA] Programa guardado; sincronización pendiente:",
         error.message,
       ),
     );

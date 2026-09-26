@@ -232,7 +232,7 @@ async function main() {
   await verifyInactiveAndAnonymizedUsers(admin.userId);
   await verifyOwnAccountActions();
   await verifyPairing();
-  console.log("Service verification passed.");
+  console.log("[CHECK] Servicios verificados");
 }
 
 main()

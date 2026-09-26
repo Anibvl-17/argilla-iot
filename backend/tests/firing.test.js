@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import test from "node:test";
 import { prisma } from "../src/config/prisma.js";
 import {
@@ -74,24 +73,6 @@ test("the public contract exposes only program-based starts", () => {
     .filter(Boolean);
   assert.ok(routePaths.includes("/kilns/:kilnId/cycles/program"));
   assert.ok(!routePaths.includes("/kilns/:kilnId/cycles/direct"));
-});
-
-test("the migration refuses DIRECT data before dropping its columns", async () => {
-  const migration = await fs.readFile(
-    new URL(
-      "../prisma/migrations/20260921000000_program_only_firing_cycles/migration.sql",
-      import.meta.url,
-    ),
-    "utf8",
-  );
-  const guardPosition = migration.indexOf("direct_cycle_count > 0");
-  const dropPosition = migration.indexOf('DROP COLUMN "executionType"');
-  assert.ok(guardPosition >= 0 && guardPosition < dropPosition);
-  assert.match(
-    migration,
-    /RAISE EXCEPTION[\s\S]*no eliminará ni convertirá datos/,
-  );
-  assert.doesNotMatch(migration, /DELETE\s+FROM\s+"FiringCycle"/i);
 });
 
 test("global program synchronization updates canonical records without changing ids", async () => {

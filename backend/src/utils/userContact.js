@@ -48,18 +48,6 @@ export function normalizeInternationalPhone(phone, phoneCountryCode = null) {
   }
 }
 
-export function normalizeLegacyInternationalPhone(phone) {
-  if (phone === null || phone === undefined) return null;
-  const rawPhone = String(phone).trim();
-  if (!rawPhone.startsWith("+")) return null;
-
-  try {
-    return normalizeInternationalPhone(rawPhone);
-  } catch {
-    return null;
-  }
-}
-
 export function normalizePhoneSearch(value) {
   const compact = String(value || "").replace(/[^\d+]/g, "");
   return /\d/.test(compact) ? compact : "";

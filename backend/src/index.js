@@ -37,5 +37,5 @@ initializeRealtime(server);
 connectMqtt();
 
 server.listen(PORT, () => {
-  console.log(`=> Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`[INFO] Servidor corriendo en http://localhost:${PORT}`);
 });

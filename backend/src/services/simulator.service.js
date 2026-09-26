@@ -186,7 +186,7 @@ export class ControllerSimulator {
 
   bindEvents() {
     this.client.on("connect", () => {
-      console.log(`[SIM:${this.controllerId}] Conectado a ${MQTT_URL}`);
+      console.log(`[SIM:${this.controllerId.slice(-6)}] Conectado al bróker con éxito`);
       this.publishStatus("online");
       this.client.subscribe(
         [
@@ -208,12 +208,12 @@ export class ControllerSimulator {
     });
     this.client.on("message", (topic, payloadBuffer) => {
       this.handleMessage(topic, payloadBuffer).catch((error) => {
-        console.error(`[SIM:${this.controllerId.slice(-6)}]`, error.message);
+        console.error(`[SIM:${this.controllerId.slice(-6)}] Error:`, error.message);
       });
     });
     this.client.on("error", (error) => {
       if (!this.shuttingDown)
-        console.error(`[SIM:${this.controllerId}]`, error.message);
+        console.error(`[SIM:${this.controllerId}] Error:`, error.message);
     });
   }
 
@@ -778,7 +778,7 @@ export class SimulatorService {
   }
 
   async start() {
-    console.log("[SIM] Iniciando simulador MQTT");
+    console.log("[SIM] Iniciando simulador MQTT...");
     await this.syncControllers();
     this.refreshTimer = setInterval(
       () => void this.syncControllers(),
@@ -800,7 +800,7 @@ export class SimulatorService {
         throw error;
       }
       this.controllers.set(controller.controllerId, simulator);
-      console.log(`[SIM] Controlador agregado: ${controller.controllerId}`);
+      console.log(`[SIM] Controlador agregado: ${controller.controllerId.slice(-6)}`);
     }
     const stops = [];
     for (const [controllerId, simulator] of this.controllers) {

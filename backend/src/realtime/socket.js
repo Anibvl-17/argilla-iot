@@ -47,7 +47,7 @@ export function initializeRealtime(server) {
       try {
         socket.emit("admin:summary", await getAdminSummary());
       } catch (error) {
-        console.error("[Socket] Error enviando resumen:", error.message);
+        console.error("[SOCKET] Error enviando resumen:", error.message);
       }
     }
   });
@@ -75,7 +75,7 @@ export async function emitAdminSummary() {
   try {
     io.to("admins").emit("admin:summary", await getAdminSummary());
   } catch (error) {
-    console.error("[Socket] Error actualizando resumen:", error.message);
+    console.error("[SOCKET] Error actualizando resumen:", error.message);
   }
 }
 

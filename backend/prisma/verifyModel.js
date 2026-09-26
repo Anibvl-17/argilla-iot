@@ -47,8 +47,6 @@ async function verifySeed() {
       "TEMPERATURE",
     ],
   );
-  assert.equal(await prisma.telemetry.count(), 0);
-
   const roles = await prisma.user.groupBy({ by: ["role"] });
   assert.ok(roles.some(({ role }) => role === "ADMIN"));
   assert.ok(roles.some(({ role }) => role === "TECHNICIAN"));
@@ -79,6 +77,79 @@ async function verifySeed() {
       ({ deviceSecretHash, pairingPinHash }) =>
         deviceSecretHash.startsWith("$2") && pairingPinHash === null,
     ),
+  );
+
+  const seededKiln = await prisma.kiln.findFirstOrThrow({
+    where: { userId: seededClient.userId, name: "Horno de María" },
+    include: { selectedProgram: true },
+  });
+  assert.equal(seededKiln.selectedProgram?.name, "Bizcocho");
+
+  const cycleIds = [
+    "seed-maria-bizcocho-completed-001",
+    "seed-jose-gres-cancelled-001",
+    "seed-renata-production-error-001",
+    "seed-felipe-porcelain-unknown-001",
+  ];
+  const cycles = await prisma.firingCycle.findMany({
+    where: { controllerCycleId: { in: cycleIds } },
+    include: { telemetry: { orderBy: { sampleSequence: "asc" } } },
+  });
+  assert.equal(cycles.length, cycleIds.length);
+  assert.deepEqual(cycles.map(({ status }) => status).sort(), [
+    "CANCELLED",
+    "COMPLETED",
+    "ERROR",
+    "UNKNOWN",
+  ]);
+  assert.equal(
+    cycles.some(({ status }) => ["RUNNING", "PAUSED"].includes(status)),
+    false,
+  );
+  assert.ok(
+    cycles.every(({ programConfig, telemetry }) => {
+      const sequences = telemetry.map(({ sampleSequence }) => sampleSequence);
+      return (
+        programConfig.schemaVersion === 1 &&
+        sequences.every((sequence, index) => sequence === index)
+      );
+    }),
+  );
+  assert.deepEqual(
+    [
+      ...new Set(
+        cycles.flatMap(({ telemetry }) =>
+          telemetry.map(({ sampleType }) => sampleType),
+        ),
+      ),
+    ].sort(),
+    ["FINAL", "INITIAL", "PERIODIC"],
+  );
+
+  const ticketTitles = [
+    "Temperatura inestable al comenzar",
+    "Controlador pierde conexión durante la quema",
+    "Corte intermitente del circuito de potencia",
+    "Quema finalizada sin confirmación",
+  ];
+  const tickets = await prisma.supportTicket.findMany({
+    where: { title: { in: ticketTitles } },
+    include: { maintenanceRecords: true },
+  });
+  assert.equal(tickets.length, ticketTitles.length);
+  assert.deepEqual(tickets.map(({ status }) => status).sort(), [
+    "CLOSED",
+    "IN_PROGRESS",
+    "OPEN",
+    "RESOLVED",
+  ]);
+  assert.deepEqual(
+    tickets
+      .flatMap(({ maintenanceRecords }) =>
+        maintenanceRecords.map(({ type }) => type),
+      )
+      .sort(),
+    ["CORRECTIVE", "INSPECTION", "PREVENTIVE"],
   );
 }
 
@@ -275,7 +346,7 @@ async function main() {
   await verifySeed();
   await verifyFiringCycleCheck();
   await verifyRelationsAndChecks();
-  console.log("Model verification passed.");
+  console.log("[CHECK] Modelo verificado");
 }
 
 main()

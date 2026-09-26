@@ -25,7 +25,6 @@
     "verify:model": "node prisma/verifyModel.js",
     "verify:services": "node prisma/verifyServices.js",
     "validate:schema": "prisma validate",
-    "backfill:user-contact": "node prisma/backfillUserContact.js",
     "lint": "eslint .",
     "test": "node --test \"tests/**/*.test.js\"",
     "simulator": "node src/scripts/runSimulator.js"

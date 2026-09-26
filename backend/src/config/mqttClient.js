@@ -868,7 +868,7 @@ export function connectMqtt() {
       if (error.code === "P2025") {
         if (!unregisteredControllerFound) {
           console.warn(
-            `[MQTT] Info: se ignoran publicaciones de controladores no registrados`,
+            "[MQTT] Se ignoran publicaciones de controladores no registrados",
           );
           unregisteredControllerFound = true;
         }
@@ -879,7 +879,10 @@ export function connectMqtt() {
   });
 
   client.on("error", (error) => {
-    console.error("[MQTT] Error de conexión:", error.message);
+    console.error(
+      "[MQTT] Error de conexión:",
+      error.message || "No se puedo establecer la conexión",
+    );
   });
 
   return client;

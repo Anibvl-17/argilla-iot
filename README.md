@@ -109,7 +109,11 @@ Abre la URL que indique Vite, habitualmente <http://localhost:5173>.
 
 ## Datos de demostración
 
-El seed crea o normaliza datos locales sin eliminar los existentes. Las credenciales predeterminadas son únicamente para desarrollo:
+El seed crea o sincroniza sus datos locales sin eliminar registros ajenos. Además de
+las cuentas y equipos, incorpora selecciones de programas, ciclos terminales con
+telemetría, tickets en distintos estados y mantenimientos para recorrer los flujos
+principales de la aplicación. Puede ejecutarse más de una vez sin duplicar esos
+registros. Las credenciales predeterminadas son únicamente para desarrollo:
 
 ```text
 Administrador
@@ -126,6 +130,10 @@ Contraseña: Tecnico123!
 ```
 
 Puedes reemplazar las credenciales y datos de seed con las variables `SEED_*` de `backend/.env`.
+
+Las migraciones están orientadas a bases de desarrollo recreables y no trasladan
+datos de modelos anteriores. Si una base local aplicó una versión previa de las
+migraciones, debe recrearse antes de continuar.
 
 ## Variables de entorno
 
