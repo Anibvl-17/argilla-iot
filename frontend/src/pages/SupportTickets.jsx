@@ -73,14 +73,14 @@ function HeaderAction({
   if (mode === "technician-open" && hasAssignedTickets) {
     return (
       <Link to="/support/assigned" className={className}>
-        <LuClipboardList /> Solicitudes asignadas
+        <LuClipboardList /> Ver solicitudes asignadas
       </Link>
     );
   }
   if (mode === "technician-assigned") {
     return (
       <Link to="/support" className={className}>
-        <LuLifeBuoy /> Solicitudes abiertas
+        <LuLifeBuoy /> Ver solicitudes abiertas
       </Link>
     );
   }
