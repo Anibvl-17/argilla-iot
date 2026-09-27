@@ -777,15 +777,23 @@ export default function SupportTickets() {
           : mode === "technician-assigned"
             ? "Solicitudes que están o estuvieron a tu cargo."
             : "Gestión centralizada de solicitudes y diagnósticos.";
+  const pageClassName = isClient
+    ? "mx-auto w-full max-w-7xl min-w-0 text-content"
+    : "min-w-0 space-y-6 text-content";
+  const headerClassName = `flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center ${isClient ? "mb-6" : ""}`;
+  const headingClassName = isClient
+    ? "mt-2 text-2xl font-semibold tracking-tight sm:text-3xl"
+    : "text-2xl font-bold tracking-tight sm:text-3xl";
+  const descriptionClassName = isClient
+    ? "mt-2 text-secondary"
+    : "mt-1 text-sm text-secondary";
 
   return (
-    <div className="min-w-0 space-y-6 text-content">
-      <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
+    <div className={pageClassName}>
+      <div className={headerClassName}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {heading}
-          </h1>
-          <p className="mt-1 text-sm text-secondary">{description}</p>
+          <h1 className={headingClassName}>{heading}</h1>
+          <p className={descriptionClassName}>{description}</p>
         </div>
         <HeaderAction
           mode={mode}

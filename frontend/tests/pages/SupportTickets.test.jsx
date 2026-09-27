@@ -77,6 +77,19 @@ describe("SupportTickets", () => {
     expect(
       await screen.findByRole("option", { name: "#7 - Mi horno" }),
     ).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { name: "Nueva solicitud" });
+    expect(heading.closest(".max-w-7xl")).toHaveClass(
+      "mx-auto",
+      "w-full",
+      "max-w-7xl",
+    );
+    expect(heading).toHaveClass("mt-2", "font-semibold");
+    expect(heading).not.toHaveClass("font-bold");
+    expect(heading.parentElement.parentElement).toHaveClass("mb-6");
+    expect(screen.getByText("Cuéntanos qué ocurre con uno de tus hornos.")).toHaveClass(
+      "mt-2",
+      "text-secondary",
+    );
     expect(
       screen.getByText(/personal técnico autorizado podrá consultar/i),
     ).toBeInTheDocument();
