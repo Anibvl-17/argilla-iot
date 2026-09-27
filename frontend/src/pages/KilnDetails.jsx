@@ -643,7 +643,7 @@ export default function KilnDetails() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-muted">
+                  <td colSpan="5" className="px-6 py-10 text-center text-muted">
                     Sin ciclos registrados.
                   </td>
                 </tr>
