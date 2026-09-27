@@ -53,6 +53,7 @@ function buildTicket(overrides = {}) {
   return {
     supportTicketId: 9,
     assignedToUserId: 2,
+    kilnId: 7,
     title: "Temperatura irregular",
     description: "La temperatura cae durante el ciclo.",
     status: "IN_PROGRESS",
@@ -203,6 +204,35 @@ describe("SupportTicketDetails", () => {
     expect(within(equipmentSection).getByText("abcdef")).toBeInTheDocument();
     expect(within(equipmentSection).getByText("SSR 30 A")).toBeInTheDocument();
     expect(equipmentSection).not.toHaveTextContent("undefined");
+  });
+
+  it("keeps general ticket actions available without requesting equipment diagnostics", async () => {
+    mocks.getSupportTicket.mockResolvedValue({
+      success: true,
+      data: buildTicket({ kilnId: null, kiln: null }),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Solicitud sin horno asociado."),
+    ).toHaveClass("italic", "text-muted");
+    expect(mocks.getSupportDiagnostics).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("textbox", { name: "Diagnóstico y solución" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Marcar como resuelto" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Registrar mantenimiento" }),
+    ).not.toBeInTheDocument();
   });
 
   it("lets the assigned technician change each equipment status and refreshes diagnostics", async () => {

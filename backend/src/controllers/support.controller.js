@@ -46,6 +46,7 @@ function handleSupportError(res, error, fallback) {
       "INVALID_TARGET",
       "INVALID_KILN",
       "INVALID_REASON",
+      "NO_ASSOCIATED_KILN",
       "CYCLE_ACTIVE",
       "CONTROLLER_REQUIRED",
     ].includes(error.code)

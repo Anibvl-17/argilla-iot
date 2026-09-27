@@ -566,10 +566,14 @@ export default function SupportTicketDetails() {
     setTicket(result.data);
     setResolution(result.data.resolution || "");
     if (!isClient) {
-      const diagnosticResult = await getSupportDiagnostics(ticketId);
-      if (!diagnosticResult.success)
-        return unavailable(diagnosticResult.message);
-      setDiagnostics(diagnosticResult.data);
+      if (result.data.kilnId != null) {
+        const diagnosticResult = await getSupportDiagnostics(ticketId);
+        if (!diagnosticResult.success)
+          return unavailable(diagnosticResult.message);
+        setDiagnostics(diagnosticResult.data);
+      } else {
+        setDiagnostics(null);
+      }
     }
     if (isAdmin) {
       const assigneeResult = await getSupportAssignees();
@@ -717,7 +721,9 @@ export default function SupportTicketDetails() {
                     ? "Puedes reasignar el ticket."
                     : "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
                   : hasAssignee
-                    ? "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución. También puedes registrar mantenimientos asociados a este ticket."
+                    ? ticket.kilnId == null
+                      ? "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución."
+                      : "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución. También puedes registrar mantenimientos asociados a este ticket."
                     : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
               </p>
             </div>
@@ -831,7 +837,7 @@ export default function SupportTicketDetails() {
               </button>
             </div>
           )}
-          {hasAssignee && (
+          {hasAssignee && ticket.kilnId != null && (
             <MaintenanceRecords
               records={ticket.maintenanceRecords}
               currentUserId={sessionUserId}
@@ -852,15 +858,23 @@ export default function SupportTicketDetails() {
         </section>
       )}
 
-      {!isClient && (
-        <Diagnostics
-          data={diagnostics}
-          ticketId={ticketId}
-          unavailable={unavailable}
-          canChangeStatus={canChangeEquipmentStatus}
-          onChangeStatus={setStatusEquipment}
-        />
-      )}
+      {!isClient &&
+        (ticket.kilnId == null ? (
+          <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+            <h2 className="text-lg font-semibold">Diagnóstico técnico</h2>
+            <p className="mt-2 text-sm italic text-muted">
+              Solicitud sin horno asociado.
+            </p>
+          </section>
+        ) : (
+          <Diagnostics
+            data={diagnostics}
+            ticketId={ticketId}
+            unavailable={unavailable}
+            canChangeStatus={canChangeEquipmentStatus}
+            onChangeStatus={setStatusEquipment}
+          />
+        ))}
       {!isClient && (
         <>
           {diagnostics && maintenanceOpen && (

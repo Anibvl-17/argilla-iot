@@ -3,7 +3,9 @@ import test from "node:test";
 import { prisma } from "../src/config/prisma.js";
 import {
   claimSupportTicket,
+  createSupportTicket,
   createTicketMaintenance,
+  getSupportDiagnostics,
   getSupportTicket,
   getSupportTelemetry,
   listSupportTickets,
@@ -12,6 +14,7 @@ import {
 } from "../src/services/support.service.js";
 
 const technician = { id: 41, role: "TECHNICIAN" };
+const client = { id: 7, role: "CLIENT" };
 
 function mockTicketMethod(t, name, implementation) {
   const original = prisma.supportTicket[name];
@@ -28,6 +31,72 @@ function mockMethod(t, target, name, implementation) {
     target[name] = original;
   });
 }
+
+test("clients can create support tickets without a kiln", async (t) => {
+  let kilnLookupCount = 0;
+  let createdData;
+  mockMethod(t, prisma.kiln, "findFirst", async () => {
+    kilnLookupCount += 1;
+    return null;
+  });
+  mockMethod(t, prisma.supportReason, "findFirst", async () => ({
+    supportReasonId: 5,
+    code: "CONNECTIVITY",
+    name: "Problema de conectividad",
+    isActive: true,
+  }));
+  mockTicketMethod(t, "create", async (args) => {
+    createdData = args.data;
+    return {
+      supportTicketId: 12,
+      ...args.data,
+      assignedToUserId: null,
+      kiln: null,
+      supportReason: {
+        supportReasonId: 5,
+        code: "CONNECTIVITY",
+        name: "Problema de conectividad",
+        isActive: true,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      resolution: null,
+      createdByUser: null,
+      assignedToUser: null,
+      maintenanceRecords: [],
+    };
+  });
+
+  const result = await createSupportTicket(client, {
+    supportReasonId: 5,
+    title: "Ayuda de vinculación",
+    description: "El controlador no completa la vinculación.",
+  });
+
+  assert.equal(kilnLookupCount, 0);
+  assert.equal(createdData.kilnId, null);
+  assert.equal(createdData.createdByUserId, client.id);
+  assert.equal(result.kilnId, null);
+  assert.equal(result.kiln, null);
+});
+
+test("a supplied kiln must belong to the client", async (t) => {
+  mockMethod(t, prisma.kiln, "findFirst", async () => null);
+  mockMethod(t, prisma.supportReason, "findFirst", async () => ({
+    supportReasonId: 1,
+    isActive: true,
+  }));
+
+  await assert.rejects(
+    createSupportTicket(client, {
+      supportReasonId: 1,
+      kilnId: 99,
+      title: "Problema del horno",
+      description: "El horno presenta un problema durante la quema.",
+    }),
+    (error) => error.code === "INVALID_KILN",
+  );
+});
 
 test("claim uses one conditional atomic update", async (t) => {
   let updateArguments;
@@ -289,6 +358,50 @@ test("ticket telemetry rejects missing and foreign firing cycles", async (t) => 
   await assert.rejects(
     getSupportTelemetry(technician, 9, { firingCycleId: 55 }),
     (error) => error.code === "NOT_FOUND",
+  );
+});
+
+test("equipment-dependent support operations reject tickets without a kiln", async (t) => {
+  mockTicketMethod(t, "findFirst", async () => ({
+    supportTicketId: 9,
+    kilnId: null,
+  }));
+
+  await assert.rejects(
+    getSupportDiagnostics(technician, 9),
+    (error) => error.code === "NO_ASSOCIATED_KILN",
+  );
+  await assert.rejects(
+    getSupportTelemetry(technician, 9, { firingCycleId: 44 }),
+    (error) => error.code === "NO_ASSOCIATED_KILN",
+  );
+});
+
+test("maintenance rejects a ticket without associated equipment", async (t) => {
+  const transaction = {
+    supportTicket: {
+      findUnique: async () => ({
+        supportTicketId: 9,
+        assignedToUserId: technician.id,
+        kilnId: null,
+        kiln: null,
+        status: "IN_PROGRESS",
+      }),
+    },
+  };
+  mockMethod(t, prisma, "$transaction", async (callback) =>
+    callback(transaction),
+  );
+
+  await assert.rejects(
+    createTicketMaintenance(technician, 9, {
+      kilnId: 99,
+      type: "INSPECTION",
+      title: "Inspección",
+      workPerformed: "Trabajo realizado",
+      performedAt: "2026-09-26T12:00:00.000Z",
+    }),
+    (error) => error.code === "NO_ASSOCIATED_KILN",
   );
 });
 

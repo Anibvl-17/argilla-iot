@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@pages/Home";
@@ -152,5 +152,20 @@ describe("Home kiln cards", () => {
     expect(
       screen.getByRole("button", { name: "Reanudar quema" }),
     ).toBeInTheDocument();
+  });
+
+  it("links pairing help to support with connectivity preselected", async () => {
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Agregar horno" }),
+    );
+    expect(
+      screen.getByRole("link", { name: "Solicita ayuda aquí" }),
+    ).toHaveAttribute("href", "/support?reason=CONNECTIVITY");
   });
 });

@@ -296,3 +296,27 @@ test("administrators can update resolved ticket equipment and missing controller
     (error) => error.code === "INVALID_TARGET",
   );
 });
+
+test("ticket equipment status rejects support requests without a kiln", async (t) => {
+  const tx = {
+    $queryRaw: async () => [{ supportTicketId: 10 }],
+    supportTicket: {
+      findUnique: async () => ({
+        supportTicketId: 10,
+        assignedToUserId: null,
+        status: "OPEN",
+        kilnId: null,
+        kiln: null,
+      }),
+    },
+  };
+  mockMethod(t, prisma, "$transaction", (work) => work(tx));
+
+  await assert.rejects(
+    updateTicketEquipmentStatus({ id: 1, role: "ADMIN" }, 10, {
+      target: "KILN",
+      operationalStatus: "MAINTENANCE",
+    }),
+    (error) => error.code === "NO_ASSOCIATED_KILN",
+  );
+});

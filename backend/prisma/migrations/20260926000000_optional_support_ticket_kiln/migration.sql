@@ -1,0 +1,2 @@
+ALTER TABLE "SupportTicket"
+  ALTER COLUMN "kilnId" DROP NOT NULL;

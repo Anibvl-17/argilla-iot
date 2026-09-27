@@ -12,6 +12,10 @@ export const SUPPORT_STATUS_STYLES = {
   CLOSED: "default",
 };
 
+export const SUPPORT_REASON_CODES = {
+  CONNECTIVITY: "CONNECTIVITY",
+};
+
 export const MAINTENANCE_TYPE_LABELS = {
   PREVENTIVE: "Preventivo",
   CORRECTIVE: "Correctivo",

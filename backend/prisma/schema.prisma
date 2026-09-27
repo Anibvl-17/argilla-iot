@@ -249,7 +249,7 @@ model SupportTicket {
   supportReasonId  Int
   createdByUserId  Int
   assignedToUserId Int?
-  kilnId           Int
+  kilnId           Int?
   title            String
   description      String
   status           SupportTicketStatus @default(OPEN)
@@ -260,7 +260,7 @@ model SupportTicket {
   supportReason      SupportReason       @relation(fields: [supportReasonId], references: [supportReasonId], onDelete: Restrict)
   createdByUser      User                @relation("SupportTicketCreatedBy", fields: [createdByUserId], references: [userId], onDelete: Restrict)
   assignedToUser     User?               @relation("SupportTicketAssignedTo", fields: [assignedToUserId], references: [userId], onDelete: SetNull)
-  kiln               Kiln                @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
+  kiln               Kiln?               @relation(fields: [kilnId], references: [kilnId], onDelete: Restrict)
   maintenanceRecords MaintenanceRecord[]
 
   @@index([supportReasonId])

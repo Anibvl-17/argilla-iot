@@ -8,7 +8,7 @@ import {
   updateMaintenanceValidation,
 } from "../src/validations/support.validation.js";
 
-test("support tickets require a kiln, active reason payload and meaningful text", () => {
+test("support tickets accept an optional kiln and require meaningful text", () => {
   const valid = createSupportTicketValidation.parse({
     kilnId: 12,
     supportReasonId: 3,
@@ -16,6 +16,22 @@ test("support tickets require a kiln, active reason payload and meaningful text"
     description: "La temperatura cae durante la segunda etapa.",
   });
   assert.equal(valid.title, "Temperatura inestable");
+  assert.equal(
+    createSupportTicketValidation.parse({
+      supportReasonId: 3,
+      title: "Ayuda de vinculación",
+      description: "El controlador no completa la vinculación.",
+    }).kilnId,
+    undefined,
+  );
+  assert.throws(() =>
+    createSupportTicketValidation.parse({
+      kilnId: 0,
+      supportReasonId: 3,
+      title: "Ayuda de vinculación",
+      description: "El controlador no completa la vinculación.",
+    }),
+  );
   assert.throws(() =>
     createSupportTicketValidation.parse({
       supportReasonId: 3,

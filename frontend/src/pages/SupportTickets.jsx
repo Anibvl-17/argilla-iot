@@ -21,6 +21,7 @@ import {
   updateSupportReason,
 } from "@services/support.service";
 import {
+  SUPPORT_REASON_CODES,
   SUPPORT_STATUS_LABELS,
   SUPPORT_STATUS_STYLES,
 } from "@constants/support.constants";
@@ -202,7 +203,7 @@ function TicketFilters({ mode, filters, setFilters, reasons }) {
   );
 }
 
-function ClientTicketForm({ reasons, kilns, onCreated }) {
+function ClientTicketForm({ reasons, kilns, onCreated, initialReasonCode }) {
   const [form, setForm] = useState({
     supportReasonId: "",
     kilnId: "",
@@ -210,6 +211,14 @@ function ClientTicketForm({ reasons, kilns, onCreated }) {
     description: "",
   });
   const [saving, setSaving] = useState(false);
+  const preselectedReason = reasons.find(
+    (reason) =>
+      reason.isActive &&
+      reason.code === initialReasonCode &&
+      initialReasonCode === SUPPORT_REASON_CODES.CONNECTIVITY,
+  );
+  const selectedReasonId =
+    form.supportReasonId || String(preselectedReason?.supportReasonId || "");
   const update = (event) =>
     setForm((current) => ({
       ...current,
@@ -220,9 +229,10 @@ function ClientTicketForm({ reasons, kilns, onCreated }) {
     event.preventDefault();
     setSaving(true);
     const result = await createSupportTicket({
-      ...form,
-      supportReasonId: Number(form.supportReasonId),
-      kilnId: Number(form.kilnId),
+      supportReasonId: Number(selectedReasonId),
+      title: form.title,
+      description: form.description,
+      ...(form.kilnId ? { kilnId: Number(form.kilnId) } : {}),
     });
     setSaving(false);
     if (!result.success) return toast.error(result.message);
@@ -240,28 +250,11 @@ function ClientTicketForm({ reasons, kilns, onCreated }) {
         <h2 className="text-lg font-semibold">Información de la solicitud</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-secondary">
-            Horno
-            <select
-              required
-              name="kilnId"
-              value={form.kilnId}
-              onChange={update}
-              className={`mt-2 ${fieldClass}`}
-            >
-              <option value="">Selecciona un horno</option>
-              {kilns.map((kiln) => (
-                <option key={kiln.kilnId} value={kiln.kilnId}>
-                  #{kiln.kilnId} - {kiln.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-secondary">
             Motivo
             <select
               required
               name="supportReasonId"
-              value={form.supportReasonId}
+              value={selectedReasonId}
               onChange={update}
               className={`mt-2 ${fieldClass}`}
             >
@@ -276,6 +269,22 @@ function ClientTicketForm({ reasons, kilns, onCreated }) {
                     {reason.name}
                   </option>
                 ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-secondary">
+            Horno (opcional)
+            <select
+              name="kilnId"
+              value={form.kilnId}
+              onChange={update}
+              className={`mt-2 ${fieldClass}`}
+            >
+              <option value="">Sin horno asociado</option>
+              {kilns.map((kiln) => (
+                <option key={kiln.kilnId} value={kiln.kilnId}>
+                  #{kiln.kilnId} - {kiln.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -306,15 +315,14 @@ function ClientTicketForm({ reasons, kilns, onCreated }) {
         </label>
       </section>
       <p className="rounded-xl border border-border bg-surface-muted p-4 text-sm leading-relaxed text-secondary">
-        Para facilitar el diagnóstico y entregar una mejor atención, el personal
-        técnico autorizado podrá consultar información técnica y registros de
-        uso asociados al horno seleccionado, incluyendo información de su
+        Si seleccionas un horno, el personal técnico autorizado podrá consultar
+        su información técnica y registros de uso, incluyendo información del
         controlador y datos de funcionamiento. Esta información será utilizada
         únicamente para evaluar y atender la solicitud de soporte.
       </p>
       <div className="flex justify-end border-t border-border pt-5">
         <button
-          disabled={saving || kilns.length === 0}
+          disabled={saving}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-on-action hover:bg-primary-hover disabled:opacity-50"
         >
           {saving ? "Enviando..." : "Enviar solicitud"}
@@ -497,13 +505,25 @@ function TicketTable({ tickets, loading, error, mode }) {
               </td>
               <td className="hidden px-5 py-4 md:table-cell">
                 <p>
-                  {isClient
-                    ? ticket.kiln?.name
-                    : ticket.createdByUser?.name || "Sin cliente"}
+                  {isClient ? (
+                    ticket.kiln?.name || (
+                      <span className="italic text-muted">
+                        Sin horno asociado
+                      </span>
+                    )
+                  ) : (
+                    ticket.createdByUser?.name || "Sin cliente"
+                  )}
                 </p>
                 {!isClient && (
                   <p className="mt-1 text-xs text-secondary">
-                    Horno #{ticket.kilnId}
+                    {ticket.kilnId == null ? (
+                      <span className="italic text-muted">
+                        Sin horno asociado
+                      </span>
+                    ) : (
+                      `Horno #${ticket.kilnId}`
+                    )}
                   </p>
                 )}
               </td>
@@ -549,6 +569,7 @@ export default function SupportTickets() {
   const isAdmin = user.role === ROLES.ADMIN;
   const isAssignedView = location.pathname.endsWith("/assigned");
   const isClientRequests = location.pathname.endsWith("/requests");
+  const initialReasonCode = new URLSearchParams(location.search).get("reason");
   const mode = isAdmin
     ? "admin"
     : isClient
@@ -702,7 +723,12 @@ export default function SupportTickets() {
         />
       </div>
       {mode === "client-form" ? (
-        <ClientTicketForm reasons={reasons} kilns={kilns} onCreated={reload} />
+        <ClientTicketForm
+          reasons={reasons}
+          kilns={kilns}
+          onCreated={reload}
+          initialReasonCode={initialReasonCode}
+        />
       ) : (
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
           <TicketFilters

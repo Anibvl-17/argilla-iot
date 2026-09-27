@@ -27,7 +27,7 @@ export const updateSupportReasonValidation = z
 export const createSupportTicketValidation = z
   .object({
     supportReasonId: positiveId,
-    kilnId: positiveId,
+    kilnId: positiveId.optional(),
     title: trimmedText(3, 150),
     description: trimmedText(10, 5000),
   })

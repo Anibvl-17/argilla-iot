@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { LuFlame, LuPlus } from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
@@ -13,6 +13,7 @@ import { Badge } from "@components/Badge";
 import { ROLES } from "../constants/user.constants";
 import { getControllerConnectionLabel } from "@constants/controller.constants";
 import { SWITCH_LABELS } from "../constants/controller.constants";
+import { SUPPORT_REASON_CODES } from "@constants/support.constants";
 import { pairController } from "@services/controller.service";
 
 function applyTelemetry(controller, telemetry) {
@@ -573,12 +574,12 @@ export default function Home() {
               <div className="border-t border-border text-center pt-4">
                 <p className="text-sm text-muted">
                   ¿No puedes vincular tu horno?{" "}
-                  <a
-                    href="#"
+                  <Link
+                    to={`/support?reason=${SUPPORT_REASON_CODES.CONNECTIVITY}`}
                     className="underline transition-all hover:cursor-pointer hover:text-accent"
                   >
                     Solicita ayuda aquí
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

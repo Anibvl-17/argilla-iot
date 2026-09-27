@@ -6,6 +6,7 @@ import SupportTickets from "@pages/SupportTickets";
 const { authState, mocks } = vi.hoisted(() => ({
   authState: { user: { id: 1, name: "Cliente", role: "CLIENT" } },
   mocks: {
+    createSupportTicket: vi.fn(),
     getSupportReasons: vi.fn(),
     getSupportTickets: vi.fn(),
     getMyKilns: vi.fn(),
@@ -16,7 +17,7 @@ vi.mock("@context/AuthContext", () => ({ useAuth: () => authState }));
 vi.mock("@services/kiln.service", () => ({ getMyKilns: mocks.getMyKilns }));
 vi.mock("@services/support.service", () => ({
   createSupportReason: vi.fn(),
-  createSupportTicket: vi.fn(),
+  createSupportTicket: mocks.createSupportTicket,
   getSupportReasons: mocks.getSupportReasons,
   getSupportTickets: mocks.getSupportTickets,
   updateSupportReason: vi.fn(),
@@ -26,7 +27,20 @@ function arrange(total = 0) {
   vi.clearAllMocks();
   mocks.getSupportReasons.mockResolvedValue({
     success: true,
-    data: [{ supportReasonId: 1, code: "OTHER", name: "Otro", isActive: true }],
+    data: [
+      {
+        supportReasonId: 1,
+        code: "OTHER",
+        name: "Otro",
+        isActive: true,
+      },
+      {
+        supportReasonId: 2,
+        code: "CONNECTIVITY",
+        name: "Problema de conectividad",
+        isActive: true,
+      },
+    ],
   });
   mocks.getSupportTickets.mockResolvedValue({
     success: true,
@@ -36,6 +50,7 @@ function arrange(total = 0) {
     success: true,
     data: { kilns: [{ kilnId: 7, name: "Mi horno" }] },
   });
+  mocks.createSupportTicket.mockResolvedValue({ success: true, data: {} });
 }
 
 function ReturnPathProbe() {
@@ -60,6 +75,82 @@ describe("SupportTickets", () => {
       screen.getByText(/personal técnico autorizado podrá consultar/i),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Asignación")).not.toBeInTheDocument();
+    const fields = screen.getAllByRole("combobox");
+    expect(fields[0]).toHaveAccessibleName("Motivo");
+    expect(fields[1]).toHaveAccessibleName("Horno (opcional)");
+    expect(
+      screen.getByRole("option", { name: "Sin horno asociado" }),
+    ).toBeInTheDocument();
+  });
+
+  it("preselects connectivity and creates a request without a kiln", async () => {
+    arrange();
+    authState.user = { id: 1, name: "Cliente", role: "CLIENT" };
+    mocks.getMyKilns.mockResolvedValue({
+      success: true,
+      data: { kilns: [] },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support?reason=CONNECTIVITY"]}>
+        <SupportTickets />
+      </MemoryRouter>,
+    );
+
+    const reason = await screen.findByRole("combobox", { name: "Motivo" });
+    await waitFor(() => expect(reason).toHaveValue("2"));
+    expect(
+      screen.getByRole("combobox", { name: "Horno (opcional)" }),
+    ).toHaveValue("");
+    fireEvent.change(screen.getByRole("textbox", { name: "Título" }), {
+      target: { value: "No puedo vincular" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Descripción" }), {
+      target: { value: "El controlador no completa la vinculación." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitud" }));
+
+    await waitFor(() => {
+      expect(mocks.createSupportTicket).toHaveBeenCalledWith({
+        supportReasonId: 2,
+        title: "No puedo vincular",
+        description: "El controlador no completa la vinculación.",
+      });
+    });
+  });
+
+  it("does not preselect connectivity when the reason is inactive", async () => {
+    arrange();
+    authState.user = { id: 1, name: "Cliente", role: "CLIENT" };
+    mocks.getSupportReasons.mockResolvedValue({
+      success: true,
+      data: [
+        {
+          supportReasonId: 1,
+          code: "OTHER",
+          name: "Otro",
+          isActive: true,
+        },
+        {
+          supportReasonId: 2,
+          code: "CONNECTIVITY",
+          name: "Problema de conectividad",
+          isActive: false,
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support?reason=CONNECTIVITY"]}>
+        <SupportTickets />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("option", { name: "Otro" });
+    expect(screen.getByRole("combobox", { name: "Motivo" })).toHaveValue("");
+    expect(
+      screen.queryByRole("option", { name: "Problema de conectividad" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the support queue but no client form to technicians", async () => {
@@ -271,5 +362,41 @@ describe("SupportTickets", () => {
 
     expect(await screen.findByText("Horno gres")).toBeInTheDocument();
     expect(screen.queryByText("Horno #7")).not.toBeInTheDocument();
+  });
+
+  it("shows an empty equipment label for tickets without a kiln", async () => {
+    arrange();
+    authState.user = { id: 3, name: "Administrador", role: "ADMIN" };
+    mocks.getSupportTickets.mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            supportTicketId: 10,
+            kilnId: null,
+            kiln: null,
+            title: "Ayuda de vinculación",
+            status: "OPEN",
+            createdAt: "2026-09-26T10:00:00.000Z",
+            supportReason: { name: "Problema de conectividad" },
+            createdByUser: { name: "Camila" },
+            assignedToUser: null,
+          },
+        ],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <SupportTickets />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Ayuda de vinculación")).toBeInTheDocument();
+    expect(screen.getByText("Sin horno asociado")).toHaveClass(
+      "italic",
+      "text-muted",
+    );
   });
 });

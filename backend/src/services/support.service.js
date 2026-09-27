@@ -151,18 +151,27 @@ export async function createSupportTicket(actor, data) {
   }
 
   const [kiln, reason] = await Promise.all([
-    prisma.kiln.findFirst({ where: { kilnId: data.kilnId, userId: actor.id } }),
+    data.kilnId
+      ? prisma.kiln.findFirst({
+          where: { kilnId: data.kilnId, userId: actor.id },
+        })
+      : Promise.resolve(null),
     prisma.supportReason.findFirst({
       where: { supportReasonId: data.supportReasonId, isActive: true },
     }),
   ]);
-  if (!kiln)
+  if (data.kilnId && !kiln)
     throw serviceError("INVALID_KILN", "El horno no pertenece al cliente");
   if (!reason)
     throw serviceError("INVALID_REASON", "El motivo no está disponible");
 
   const ticket = await prisma.supportTicket.create({
-    data: { ...data, createdByUserId: actor.id, status: "OPEN" },
+    data: {
+      ...data,
+      kilnId: data.kilnId ?? null,
+      createdByUserId: actor.id,
+      status: "OPEN",
+    },
     include: ticketInclude,
   });
   return presentTicket(ticket, actor);
@@ -376,6 +385,12 @@ export async function updateSupportTicketStatus(actor, supportTicketId, data) {
 export async function getSupportDiagnostics(actor, supportTicketId) {
   const visible = await findVisibleTicket(actor, supportTicketId, {});
   if (!visible) return null;
+  if (visible.kilnId == null) {
+    throw serviceError(
+      "NO_ASSOCIATED_KILN",
+      "La solicitud no tiene un horno asociado",
+    );
+  }
   const kiln = await prisma.kiln.findUnique({
     where: { kilnId: visible.kilnId },
     select: {
@@ -474,6 +489,13 @@ export async function updateTicketEquipmentStatus(
       );
     }
 
+    if (ticket.kilnId == null || !ticket.kiln) {
+      throw serviceError(
+        "NO_ASSOCIATED_KILN",
+        "La solicitud no tiene un horno asociado",
+      );
+    }
+
     if (target === EQUIPMENT_STATUS_TARGETS.KILN) {
       return updateEquipmentOperationalStatusInTransaction(tx, {
         target,
@@ -504,6 +526,12 @@ export async function updateTicketEquipmentStatus(
 export async function getSupportTelemetry(actor, supportTicketId, query = {}) {
   const visible = await findVisibleTicket(actor, supportTicketId, {});
   if (!visible) return null;
+  if (visible.kilnId == null) {
+    throw serviceError(
+      "NO_ASSOCIATED_KILN",
+      "La solicitud no tiene un horno asociado",
+    );
+  }
   const firingCycleId = Number(query.firingCycleId);
   if (!Number.isInteger(firingCycleId) || firingCycleId < 1) {
     throw serviceError(
@@ -554,6 +582,12 @@ export async function createTicketMaintenance(actor, supportTicketId, data) {
       ticket.assignedToUserId !== actor.id
     ) {
       throw serviceError("NOT_FOUND", "Ticket no encontrado");
+    }
+    if (ticket.kilnId == null || !ticket.kiln) {
+      throw serviceError(
+        "NO_ASSOCIATED_KILN",
+        "La solicitud no tiene un horno asociado",
+      );
     }
     if (!["IN_PROGRESS", "RESOLVED"].includes(ticket.status)) {
       throw serviceError(
@@ -622,6 +656,12 @@ export async function updateTicketMaintenance(
       ticket.assignedToUserId !== actor.id
     ) {
       throw serviceError("NOT_FOUND", "Ticket no encontrado");
+    }
+    if (ticket.kilnId == null || !ticket.kiln) {
+      throw serviceError(
+        "NO_ASSOCIATED_KILN",
+        "La solicitud no tiene un horno asociado",
+      );
     }
     if (data.kilnId && data.kilnId !== ticket.kilnId) {
       throw serviceError("INVALID_TARGET", "El horno no corresponde al ticket");
