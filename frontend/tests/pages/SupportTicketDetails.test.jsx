@@ -340,6 +340,57 @@ describe("SupportTicketDetails", () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each([
+    {
+      role: "TECHNICIAN",
+      status: "RESOLVED",
+      message:
+        "El ticket está resuelto, puedes cerrarlo o reabrirlo si el problema aún no se soluciona.",
+    },
+    {
+      role: "ADMIN",
+      status: "RESOLVED",
+      message:
+        "El ticket está resuelto, puedes cerrarlo o reabrirlo si el problema aún no se soluciona.",
+    },
+    {
+      role: "TECHNICIAN",
+      status: "CLOSED",
+      message:
+        "El ticket está cerrado, puedes reabrirlo para agregar información adicional o si el problema aún no se soluciona.",
+    },
+    {
+      role: "ADMIN",
+      status: "CLOSED",
+      message:
+        "El ticket está cerrado, puedes reabrirlo para agregar información adicional o si el problema aún no se soluciona.",
+    },
+  ])("shows the $status guidance to $role users", async ({
+    role,
+    status,
+    message,
+  }) => {
+    authState.user = {
+      id: role === "ADMIN" ? 1 : 2,
+      name: role === "ADMIN" ? "Administrador" : "Técnico",
+      role,
+    };
+    mocks.getSupportTicket.mockResolvedValue({
+      success: true,
+      data: buildTicket({ status, resolution: "Problema solucionado" }),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support/9"]}>
+        <Routes>
+          <Route path="/support/:ticketId" element={<SupportTicketDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+  });
+
   it("returns clients to their requests before the support home", async () => {
     authState.user = { id: 4, name: "Cliente", role: "CLIENT" };
 

@@ -36,6 +36,26 @@ function normalizeSearch(value) {
     .trim();
 }
 
+function getActionsDescription({ isAdmin, hasAssignee, status, hasKiln }) {
+  if (status === "RESOLVED") {
+    return "El ticket está resuelto, puedes cerrarlo o reabrirlo si el problema aún no se soluciona.";
+  }
+  if (status === "CLOSED") {
+    return "El ticket está cerrado, puedes reabrirlo para agregar información adicional o si el problema aún no se soluciona.";
+  }
+  if (isAdmin) {
+    return hasAssignee
+      ? "Puedes reasignar el ticket."
+      : "Puedes tomar el ticket o asignar un responsable para comenzar la atención.";
+  }
+  if (!hasAssignee) {
+    return "Puedes tomar el ticket para comenzar a trabajar en la solicitud.";
+  }
+  return hasKiln
+    ? "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución. También puedes registrar mantenimientos asociados a este ticket."
+    : "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución.";
+}
+
 function AssigneeSearch({ assignees, value, onSelect }) {
   const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -716,15 +736,12 @@ export default function SupportTicketDetails() {
             <div>
               <h2 className="text-lg font-semibold">Acciones</h2>
               <p className="mt-1 text-sm text-secondary">
-                {isAdmin
-                  ? hasAssignee
-                    ? "Puedes reasignar el ticket."
-                    : "Puedes tomar el ticket o asignar un responsable para comenzar la atención."
-                  : hasAssignee
-                    ? ticket.kilnId == null
-                      ? "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución."
-                      : "Para marcar el ticket como resuelto debes ingresar diagnóstico y solución. También puedes registrar mantenimientos asociados a este ticket."
-                    : "Puedes tomar el ticket para comenzar a trabajar en la solicitud."}
+                {getActionsDescription({
+                  isAdmin,
+                  hasAssignee,
+                  status: ticket.status,
+                  hasKiln: ticket.kilnId != null,
+                })}
               </p>
             </div>
             {!hasAssignee && ticket.status === "OPEN" && (
