@@ -7,6 +7,7 @@
     "build": "npm --prefix frontend run build",
     "validate:schema": "DATABASE_URL=postgresql://validation:validation@localhost:5432/validation npm --prefix backend run validate:schema",
     "check": "npm run lint && npm test && npm run validate:schema && npm run build",
-    "prettier": "cd backend && npx prettier --write ./ && cd ../frontend/ && npx prettier --write ./"
+    "prettier": "cd backend && npx prettier --write ./ && cd ../frontend/ && npx prettier --write ./",
+    "docker-build": "docker compose down && docker compose up --build -d"
   }
 }
