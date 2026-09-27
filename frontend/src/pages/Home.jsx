@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { LuFlame, LuPlus, LuRadio } from "react-icons/lu";
+import { LuFlame, LuPlus } from "react-icons/lu";
 import { useAuth } from "@context/AuthContext";
 import { getMyKilns } from "@services/kiln.service";
 import { getFiringContext, getPrograms } from "@services/firing.service";
@@ -375,8 +375,10 @@ export default function Home() {
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 font-medium">
-                    <LuRadio className="text-accent" /> Controlador ...
-                    {controller.controllerCode}
+                    Controlador ...
+                    <span className="text-mono">
+                      {controller.controllerCode}
+                    </span>
                   </div>
                   {controller.connectionStatus === "ONLINE" && (
                     <ControllerStatus controller={controller} />
