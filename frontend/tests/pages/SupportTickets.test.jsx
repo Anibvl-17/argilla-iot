@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import SupportTickets from "@pages/SupportTickets";
@@ -117,6 +123,94 @@ describe("SupportTickets", () => {
         description: "El controlador no completa la vinculación.",
       });
     });
+
+    const dialog = screen.getByRole("dialog", { name: "Solicitud enviada" });
+    expect(
+      within(dialog).getByText(
+        /tu solicitud fue enviada a soporte y será atendida a la brevedad/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("link", { name: "Ir a mis solicitudes" }),
+    ).toHaveAttribute("href", "/support/requests");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Volver" }));
+    expect(
+      screen.queryByRole("dialog", { name: "Solicitud enviada" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an error dialog without a request-list action when the client has no requests", async () => {
+    arrange();
+    authState.user = { id: 1, name: "Cliente", role: "CLIENT" };
+    mocks.createSupportTicket.mockResolvedValue({
+      success: false,
+      message: "Error inesperado",
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support?reason=CONNECTIVITY"]}>
+        <SupportTickets />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Motivo" })).toHaveValue(
+        "2",
+      ),
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "Título" }), {
+      target: { value: "No puedo vincular" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Descripción" }), {
+      target: { value: "El controlador no completa la vinculación." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitud" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "No pudimos enviar la solicitud",
+    });
+    expect(
+      within(dialog).getByText(
+        "Ocurrió un problema al enviar tu solicitud a soporte, por favor intenta más tarde.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("link", { name: "Ir a mis solicitudes" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Volver" }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers the request list from an error dialog when previous requests exist", async () => {
+    arrange(1);
+    authState.user = { id: 1, name: "Cliente", role: "CLIENT" };
+    mocks.createSupportTicket.mockResolvedValue({
+      success: false,
+      message: "Error inesperado",
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/support?reason=CONNECTIVITY"]}>
+        <SupportTickets />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("link", { name: /mis solicitudes/i });
+    fireEvent.change(screen.getByRole("textbox", { name: "Título" }), {
+      target: { value: "No puedo vincular" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Descripción" }), {
+      target: { value: "El controlador no completa la vinculación." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitud" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "No pudimos enviar la solicitud",
+    });
+    expect(
+      within(dialog).getByRole("link", { name: "Ir a mis solicitudes" }),
+    ).toHaveAttribute("href", "/support/requests");
   });
 
   it("does not preselect connectivity when the reason is inactive", async () => {

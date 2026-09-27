@@ -203,7 +203,7 @@ function TicketFilters({ mode, filters, setFilters, reasons }) {
   );
 }
 
-function ClientTicketForm({ reasons, kilns, onCreated, initialReasonCode }) {
+function ClientTicketForm({ reasons, kilns, onResult, initialReasonCode }) {
   const [form, setForm] = useState({
     supportReasonId: "",
     kilnId: "",
@@ -235,10 +235,12 @@ function ClientTicketForm({ reasons, kilns, onCreated, initialReasonCode }) {
       ...(form.kilnId ? { kilnId: Number(form.kilnId) } : {}),
     });
     setSaving(false);
-    if (!result.success) return toast.error(result.message);
+    if (!result.success) {
+      onResult("error");
+      return;
+    }
     setForm({ supportReasonId: "", kilnId: "", title: "", description: "" });
-    toast.success("Solicitud de soporte creada.");
-    onCreated();
+    onResult("success");
   }
 
   return (
@@ -329,6 +331,68 @@ function ClientTicketForm({ reasons, kilns, onCreated, initialReasonCode }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function TicketSubmissionDialog({ result, canViewRequests, onClose }) {
+  if (!result) return null;
+  const success = result === "success";
+  const title = success ? "Solicitud enviada" : "No pudimos enviar la solicitud";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-3 backdrop-blur-sm"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      role="presentation"
+    >
+      <section
+        className="w-full max-w-lg overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-submission-result-title"
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3 sm:px-6 sm:py-4">
+          <h2
+            id="ticket-submission-result-title"
+            className="text-lg font-bold sm:text-xl"
+          >
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar resultado de la solicitud"
+            className="rounded-md p-2 text-muted hover:bg-surface-hover hover:text-content"
+          >
+            ✕
+          </button>
+        </header>
+        <div className="p-4 sm:p-6">
+          <p className="text-sm leading-relaxed text-secondary">
+            {success
+              ? 'Tu solicitud fue enviada a soporte y será atendida a la brevedad. Puedes ver el estado de tus solicitudes ingresando a "Mis solicitudes".'
+              : "Ocurrió un problema al enviar tu solicitud a soporte, por favor intenta más tarde."}
+          </p>
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-control-border px-4 py-2.5 text-sm font-medium text-secondary hover:bg-surface-hover"
+            >
+              Volver
+            </button>
+            {canViewRequests && (
+              <Link
+                to="/support/requests"
+                className="rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-medium text-on-action hover:bg-primary-hover"
+              >
+                Ir a mis solicitudes
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -592,6 +656,7 @@ export default function SupportTickets() {
   const [hasClientTickets, setHasClientTickets] = useState(false);
   const [hasAssignedTickets, setHasAssignedTickets] = useState(false);
   const [showReasonManager, setShowReasonManager] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
   const [loading, setLoading] = useState(showList);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -678,6 +743,13 @@ export default function SupportTickets() {
     return () => clearTimeout(timer);
   }, [loadTickets, reloadKey]);
   const reload = () => setReloadKey((value) => value + 1);
+  const handleSubmissionResult = (result) => {
+    setSubmissionResult(result);
+    if (result === "success") {
+      setHasClientTickets(true);
+      reload();
+    }
+  };
 
   if (showReasonManager)
     return (
@@ -726,7 +798,7 @@ export default function SupportTickets() {
         <ClientTicketForm
           reasons={reasons}
           kilns={kilns}
-          onCreated={reload}
+          onResult={handleSubmissionResult}
           initialReasonCode={initialReasonCode}
         />
       ) : (
@@ -750,6 +822,11 @@ export default function SupportTickets() {
           />
         </section>
       )}
+      <TicketSubmissionDialog
+        result={submissionResult}
+        canViewRequests={hasClientTickets || submissionResult === "success"}
+        onClose={() => setSubmissionResult(null)}
+      />
     </div>
   );
 }
