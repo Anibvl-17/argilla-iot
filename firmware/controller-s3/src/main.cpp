@@ -1,36 +1,25 @@
 #include <Arduino.h>
 #include <esp_display_panel.hpp>
-#include <lvgl.h>
 
 #include "lvgl_v8_port.h"
+#include "ui/ui.h"
+
+#include "ui/screens/home_screen.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
 
-static lv_obj_t *statusLabel;
-
-static void buttonEvent(lv_event_t *event)
-{
-  if (lv_event_get_code(event) == LV_EVENT_CLICKED)
-  {
-    lv_label_set_text(statusLabel, "Touch OK");
-    Serial.println("Touch OK");
-  }
-}
-
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   delay(1000);
 
   Serial.println("Inicializando controlador...");
 
   Board *board = new Board();
-  if (!board->init())
-  {
-    Serial.println("ERROR: Board init failed");
-    while (true)
-    {
+  if (!board->init()) {
+    Serial.println("[ERROR] Controlador no iniciado");
+    
+    while (true) {
       delay(1000);
     }
   }
@@ -51,32 +40,46 @@ void setup()
 #endif
 #endif
 
-  assert(board->begin());
+  if (!board->begin()) {
+    Serial.println("[ERROR] Controlador no iniciado");
+
+    while (true) {
+      delay(1000);
+    }
+    
+  }
 
   Serial.println("Inicializando LVGL...");
-  assert(lvgl_port_init(board->getLCD(), board->getTouch()));
+
+  if (!lvgl_port_init(board->getLCD(), board->getTouch())) {
+    Serial.println("[ERROR] LVGL falló al iniciar");
+
+    while (true) {
+      delay(1000);
+    }
+  }
 
   lvgl_port_lock(-1);
-
-  statusLabel = lv_label_create(lv_scr_act());
-  lv_label_set_text(statusLabel, "Controlador Argillá");
-  lv_obj_align(statusLabel, LV_ALIGN_CENTER, 0, -50);
-
-  lv_obj_t *button = lv_btn_create(lv_scr_act());
-  lv_obj_set_size(button, 180, 60);
-  lv_obj_align(button, LV_ALIGN_CENTER, 0, 30);
-  lv_obj_add_event_cb(button, buttonEvent, LV_EVENT_CLICKED, nullptr);
-
-  lv_obj_t *buttonLabel = lv_label_create(button);
-  lv_label_set_text(buttonLabel, "Probar touch");
-  lv_obj_center(buttonLabel);
-
+  ui_init();
   lvgl_port_unlock();
 
-  Serial.println("LVGL listo");
+  Serial.println("[INFO] LVGL listo");
+  Serial.println("[INFO] Controlador listo");
 }
 
 void loop()
 {
-  delay(1000);
+  static float temperature = 20.0f;
+
+  temperature += 1.5f;
+
+  if (temperature > 1000.0f) {
+    temperature = 20.0f;
+  }
+
+  lvgl_port_lock(-1);
+  home_screen_set_temperature(temperature);
+  lvgl_port_unlock();
+
+  delay(500);
 }
