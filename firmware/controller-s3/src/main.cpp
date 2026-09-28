@@ -3,18 +3,23 @@
 
 #include "lvgl_v8_port.h"
 #include "ui/ui.h"
+#include "driver/i2c.h"
 
 #include "ui/screens/home_screen.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
 
+constexpr uint8_t SENSOR_I2C_ADDRESS = 0x42;
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  Serial.println("Inicializanco I2C...");
+  
   Serial.println("Inicializando controlador...");
-
+  
   Board *board = new Board();
   if (!board->init()) {
     Serial.println("[ERROR] Controlador no iniciado");
@@ -67,19 +72,38 @@ void setup() {
   Serial.println("[INFO] Controlador listo");
 }
 
-void loop()
-{
-  static float temperature = 20.0f;
+void loop() {
+  constexpr uint8_t SENSOR_I2C_ADDRESS = 0x42;
 
-  temperature += 1.5f;
+  uint8_t buffer[2];
 
-  if (temperature > 1000.0f) {
-    temperature = 20.0f;
+  esp_err_t result = i2c_master_read_from_device(
+    I2C_NUM_0,
+    SENSOR_I2C_ADDRESS,
+    buffer,
+    sizeof(buffer),
+    pdMS_TO_TICKS(100)
+  );
+
+  if (result == ESP_OK) {
+    uint16_t raw =
+      (static_cast<uint16_t>(buffer[0]) << 8) |
+      static_cast<uint16_t>(buffer[1]);
+
+    int16_t temperatureX10 = static_cast<int16_t>(raw);
+    float temperature = temperatureX10 / 10.0f;
+
+    Serial.printf("Temperatura recibida: %.1f °C\n", temperature);
+
+    lvgl_port_lock(-1);
+    home_screen_set_temperature(temperature);
+    lvgl_port_unlock();
+  } else {
+    Serial.printf(
+      "[ERROR] Sensor C3 no responde. Error I2C: %d\n",
+      static_cast<int>(result)
+    );
   }
-
-  lvgl_port_lock(-1);
-  home_screen_set_temperature(temperature);
-  lvgl_port_unlock();
 
   delay(500);
 }
