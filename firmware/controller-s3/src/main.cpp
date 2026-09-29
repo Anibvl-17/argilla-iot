@@ -10,21 +10,34 @@
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
 
-constexpr uint8_t SENSOR_I2C_ADDRESS = 0x42;
+enum SensorStatus : uint8_t
+{
+  SENSOR_OK = 0,
+  SENSOR_FAULT = 1,
+  SENSOR_INVALID = 2
+};
 
-void setup() {
+constexpr uint8_t SENSOR_I2C_ADDRESS = 0x42;
+constexpr uint32_t SENSOR_TIMEOUT_MS = 1500;
+
+uint32_t lastSensorResponse = 0;
+
+void setup()
+{
   Serial.begin(115200);
   delay(1000);
 
   Serial.println("Inicializanco I2C...");
-  
+
   Serial.println("Inicializando controlador...");
-  
+
   Board *board = new Board();
-  if (!board->init()) {
+  if (!board->init())
+  {
     Serial.println("[ERROR] Controlador no iniciado");
-    
-    while (true) {
+
+    while (true)
+    {
       delay(1000);
     }
   }
@@ -45,21 +58,24 @@ void setup() {
 #endif
 #endif
 
-  if (!board->begin()) {
+  if (!board->begin())
+  {
     Serial.println("[ERROR] Controlador no iniciado");
 
-    while (true) {
+    while (true)
+    {
       delay(1000);
     }
-    
   }
 
   Serial.println("Inicializando LVGL...");
 
-  if (!lvgl_port_init(board->getLCD(), board->getTouch())) {
+  if (!lvgl_port_init(board->getLCD(), board->getTouch()))
+  {
     Serial.println("[ERROR] LVGL falló al iniciar");
 
-    while (true) {
+    while (true)
+    {
       delay(1000);
     }
   }
@@ -72,37 +88,82 @@ void setup() {
   Serial.println("[INFO] Controlador listo");
 }
 
-void loop() {
-  constexpr uint8_t SENSOR_I2C_ADDRESS = 0x42;
-
-  uint8_t buffer[2];
+void loop()
+{
+  uint8_t buffer[4];
 
   esp_err_t result = i2c_master_read_from_device(
-    I2C_NUM_0,
-    SENSOR_I2C_ADDRESS,
-    buffer,
-    sizeof(buffer),
-    pdMS_TO_TICKS(100)
-  );
+      I2C_NUM_0,
+      SENSOR_I2C_ADDRESS,
+      buffer,
+      sizeof(buffer),
+      pdMS_TO_TICKS(100));
 
-  if (result == ESP_OK) {
+  if (result == ESP_OK)
+  {
+    lastSensorResponse = millis();
+
+    uint8_t status = buffer[0];
+    uint8_t fault = buffer[1];
+
     uint16_t raw =
-      (static_cast<uint16_t>(buffer[0]) << 8) |
-      static_cast<uint16_t>(buffer[1]);
+        (static_cast<uint16_t>(buffer[2]) << 8) |
+        static_cast<uint16_t>(buffer[3]);
 
-    int16_t temperatureX10 = static_cast<int16_t>(raw);
-    float temperature = temperatureX10 / 10.0f;
+    int16_t temperatureX10 =
+        static_cast<int16_t>(raw);
 
-    Serial.printf("Temperatura recibida: %.1f °C\n", temperature);
+    if (status == SENSOR_OK)
+    {
+      float temperature =
+          temperatureX10 / 10.0f;
+
+      Serial.printf(
+          "[S3:INFO] Temperatura recibida: %.1f C\n",
+          temperature);
+
+      lvgl_port_lock(-1);
+
+      home_screen_set_temperature(temperature);
+      home_screen_set_sensor_status("OK");
+
+      lvgl_port_unlock();
+    }
+    else if (status == SENSOR_FAULT)
+    {
+      Serial.printf(
+          "Sensor FAULT: 0x%02X\n",
+          fault);
+
+      lvgl_port_lock(-1);
+
+      home_screen_set_temperature_unavailable();
+      home_screen_set_sensor_status("FALLA");
+
+      lvgl_port_unlock();
+    }
+    else
+    {
+      Serial.println("[S3:ERROR] Lectura de sensor inválida");
+
+      lvgl_port_lock(-1);
+
+      home_screen_set_temperature_unavailable();
+      home_screen_set_sensor_status("INVÁLIDA");
+
+      lvgl_port_unlock();
+    }
+  }
+  else if (millis() - lastSensorResponse > SENSOR_TIMEOUT_MS)
+  {
+    Serial.println("[S3:ERROR] Sensor C3 OFFLINE");
 
     lvgl_port_lock(-1);
-    home_screen_set_temperature(temperature);
+
+    home_screen_set_temperature_unavailable();
+    home_screen_set_sensor_status("DESCONECTADO");
+
     lvgl_port_unlock();
-  } else {
-    Serial.printf(
-      "[ERROR] Sensor C3 no responde. Error I2C: %d\n",
-      static_cast<int>(result)
-    );
   }
 
   delay(500);

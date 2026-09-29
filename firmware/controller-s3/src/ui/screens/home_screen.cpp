@@ -4,6 +4,7 @@
 #include "ui/screens/home_screen.h"
 
 static lv_obj_t *temperatureValueLabel = nullptr;
+static lv_obj_t *sensorStatusLabel = nullptr;
 static lv_obj_t *statusValueLabel = nullptr;
 static lv_obj_t *buttonLabel = nullptr;
 
@@ -19,7 +20,7 @@ static void startButtonEvent(lv_event_t *event) {
 }
 
 void home_screen_create() {
-  // Obtiena la pantalla activa
+  // Obtiene la pantalla activa
   lv_obj_t *screen = lv_scr_act();
 
   lv_obj_t *title = lv_label_create(screen);
@@ -60,6 +61,10 @@ void home_screen_create() {
   buttonLabel = lv_label_create(startButton);
   lv_label_set_text(buttonLabel, "Iniciar programa");
   lv_obj_center(buttonLabel);
+
+  sensorStatusLabel = lv_label_create(screen);
+  lv_label_set_text(sensorStatusLabel, "Sensor: --");
+  lv_obj_align(sensorStatusLabel, LV_ALIGN_CENTER, 0, 45);
 }
 
 void home_screen_set_temperature(float temperature) {
@@ -80,4 +85,20 @@ void home_screen_set_status(const char *status) {
   }
 
   lv_label_set_text(statusValueLabel, status);
+}
+
+void home_screen_set_temperature_unavailable() {
+  if (temperatureValueLabel == nullptr) {
+    return;
+  }
+
+  lv_label_set_text(temperatureValueLabel, "--.- °C");
+}
+
+void home_screen_set_sensor_status(const char *status) {
+  if (sensorStatusLabel == nullptr) {
+    return;
+  }
+
+  lv_label_set_text_fmt(sensorStatusLabel, "Sensor: %s", status);
 }
